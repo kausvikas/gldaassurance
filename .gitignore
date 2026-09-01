@@ -1,0 +1,22 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+# Synthetic data is regenerable from the committed seed and manifest (REQ-DATA-007).
+# The manifest — seed, generator version, record counts, content hash — IS committed.
+data/synthetic/*.ndjson
+
+# Firebase CLI local state and logs. The hosting config (firebase.json) and the project alias
+# (.firebaserc) ARE committed; the cache, debug logs and any token file are not.
+.firebase/
+firebase-debug.log
+*firebase-debug*.log
+.runtimeconfig.json

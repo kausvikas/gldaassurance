@@ -1,0 +1,406 @@
+{
+  "version": "1.0.0",
+  "phase": 6,
+  "authority": [
+    "docs/adr/ADR-0001-poc-architecture.md §Decision 3-6",
+    "ARCHITECTURE_DECISIONS.md §4.1 dependency rules",
+    "ARCHITECTURE_DECISIONS.md §4.2 context responsibilities",
+    "docs/adr/ADR-0004-fact-derived-inferred-layering.md §2 directional rules",
+    "TEST_STRATEGY.md §5 architecture tests"
+  ],
+  "note": "This file is the machine-readable form of the accepted dependency rules. Changing it is an architectural change and requires an ADR (ARCHITECTURE_DECISIONS.md §3.1).",
+  "layers": {
+    "presentation": {
+      "dir": "src/presentation",
+      "alias": "@presentation",
+      "mayDependOn": [
+        "app"
+      ],
+      "allowedExternal": [
+        "react",
+        "react-dom"
+      ],
+      "rationale": "ADR-0001 §Decision 5 + PRODUCT_SPEC.md §8.4. The UI may consume only application contracts — never a domain context, never platform persistence, never a seed file. React and react-dom are the presentation runtime named by ADR-0001 §Decision 7 and scoped by ADR-0017; no other package, and no client-side router, state library or charting library, may enter this layer."
+    },
+    "app": {
+      "dir": "src/app",
+      "alias": "@app",
+      "mayDependOn": [
+        "contexts",
+        "platform"
+      ],
+      "allowedExternal": [],
+      "rationale": "ADR-0005 §1. The Application layer is the authorization enforcement point and the only orchestrator of contexts."
+    },
+    "contexts": {
+      "dir": "src/contexts",
+      "alias": "@contexts",
+      "mayDependOn": [
+        "contexts",
+        "platform"
+      ],
+      "allowedExternal": [],
+      "rationale": "ADR-0001 §Decision 5. Domain contexts depend downward on platform and sideways only through published public surfaces, per the per-context allow-lists below."
+    },
+    "platform": {
+      "dir": "src/platform",
+      "alias": "@platform",
+      "mayDependOn": [
+        "platform"
+      ],
+      "allowedExternal": [
+        "decimal.js"
+      ],
+      "rationale": "ADR-0002 §Decision 1 names an arbitrary-precision decimal library. It is confined to the platform layer so no context can reach a raw Decimal."
+    }
+  },
+  "layerOrder": [
+    "presentation",
+    "app",
+    "contexts",
+    "platform"
+  ],
+  "tiers": {
+    "0": "Support — depended upon, depends on nothing but platform",
+    "1": "Foundation identity/structure facts",
+    "2": "Domain facts (L1), some producing first-order derived values",
+    "3": "Deterministic derived (L2)",
+    "4": "Inferred (L3)"
+  },
+  "contexts": {
+    "identity": {
+      "tier": 1,
+      "outputLayers": [
+        "L1"
+      ],
+      "mayDependOn": [],
+      "owns": "Users, roles, sessions, permission grants",
+      "why": "ARCHITECTURE_DECISIONS.md §4.2. Identity is referenced by id everywhere and imports nothing."
+    },
+    "organization": {
+      "tier": 1,
+      "outputLayers": [
+        "L1"
+      ],
+      "mayDependOn": [],
+      "owns": "Legal entities, business units, geographies, hierarchy",
+      "why": "Structural fact. Other contexts hold organisational ids as opaque values (ADR-0001 §Decision 3)."
+    },
+    "portfolio": {
+      "tier": 1,
+      "outputLayers": [
+        "L1"
+      ],
+      "mayDependOn": [],
+      "owns": "Portfolio/program grouping and rollup membership",
+      "why": "Owns membership only. MET-PORT-001..008 are aggregation RULES owned here but executed over inputs supplied by the Application layer, so Portfolio never imports Financial/Health/Forecast. See ADR-0012 (Proposed) and CONFLICT C-1."
+    },
+    "project": {
+      "tier": 1,
+      "outputLayers": [
+        "L1"
+      ],
+      "mayDependOn": [],
+      "owns": "Project identity, lifecycle, engagement model, dates",
+      "why": "Holds organisational and portfolio ids as opaque references."
+    },
+    "contract": {
+      "tier": 1,
+      "outputLayers": [
+        "L1"
+      ],
+      "mayDependOn": [],
+      "owns": "As-sold baseline, executed changes, pending changes, contractual terms",
+      "why": "ADR-0003 §1. Sole owner of baseline derivation; duplicating it elsewhere is a boundary violation."
+    },
+    "financial": {
+      "tier": 2,
+      "outputLayers": [
+        "L1",
+        "L2"
+      ],
+      "mayDependOn": [
+        "contract"
+      ],
+      "owns": "Actuals, revenue recognition, cost, ETC/EAC, margin, FX",
+      "why": "Every MET-FIN variance names a baseline (METRIC_CATALOG.md §1.1 rule 6), and baselines live in Contract."
+    },
+    "delivery": {
+      "tier": 2,
+      "outputLayers": [
+        "L1",
+        "L2"
+      ],
+      "mayDependOn": [
+        "contract"
+      ],
+      "owns": "Milestones, scope items, schedule, progress, EVM inputs",
+      "why": "Schedule variance is measured against the contractual schedule baseline."
+    },
+    "commercial": {
+      "tier": 2,
+      "outputLayers": [
+        "L1",
+        "L2"
+      ],
+      "mayDependOn": [
+        "contract"
+      ],
+      "owns": "Rates, pricing, invoicing, receivables, unsecured upside",
+      "why": "MET-FIN-011 unsecured upside derives from pending change records owned by Contract. Emits L2: MET-COM-007/008/009 are registered L2_DERIVED with owner Commercial, and CommercialSnapshot has declared them since Phase 2. Corrected from L1-only at Phase 8 closure (ADR-0022 D-2, CONFLICT C-21)."
+    },
+    "quality": {
+      "tier": 2,
+      "outputLayers": [
+        "L1",
+        "L2"
+      ],
+      "mayDependOn": [],
+      "owns": "Defects, escapes, coverage, rework, engineering signals",
+      "why": "Self-contained fact domain. Emits L2: MET-QUA-003/006/009/011/012 are registered L2_DERIVED with owner Quality, and QualitySnapshot has declared them since Phase 2. Corrected from L1-only at Phase 8 closure (ADR-0022 D-3, CONFLICT C-21)."
+    },
+    "resource": {
+      "tier": 2,
+      "outputLayers": [
+        "L1",
+        "L2"
+      ],
+      "mayDependOn": [],
+      "owns": "Assignments, utilisation, pyramid, attrition, key-person concentration",
+      "why": "Self-contained fact domain. PERSONAL_DATA classification applies (SECURITY_MODEL.md §4.3). Emits L2: MET-RES-001..010 are registered L2_DERIVED with owner Resource, and ResourceSnapshot has declared them since Phase 2. Corrected from L1-only at Phase 9 under ADR-0022 D-1 — the same stale-entry pattern C-21 resolved for Commercial and Quality."
+    },
+    "risk": {
+      "tier": 2,
+      "outputLayers": [
+        "L1",
+        "L2"
+      ],
+      "mayDependOn": [],
+      "owns": "Risk register, exposure, proximity, mitigation state",
+      "why": "Self-contained fact domain with first-order exposure derivation."
+    },
+    "assurance": {
+      "tier": 2,
+      "outputLayers": [
+        "L1"
+      ],
+      "mayDependOn": [],
+      "owns": "Reviews, findings, audit records, evidence retention",
+      "why": "Reads the platform audit sink; never reaches into business contexts."
+    },
+    "rules": {
+      "tier": 0,
+      "outputLayers": [],
+      "mayDependOn": [],
+      "owns": "Versioned rule definitions, thresholds, weights, explanations, and the metric registry",
+      "why": "ARCHITECTURE_DECISIONS.md §4.1 rule 5 — Rules is depended upon and depends on nothing. Phase 2 placed the metric registry here for the same reason thresholds live here: a metric definition is versioned, effective-dated configuration that many contexts consume and none may fork."
+    },
+    "integration": {
+      "tier": 0,
+      "outputLayers": [],
+      "mayDependOn": [],
+      "owns": "Adapter seams and ingestion contracts (POC: synthetic loader only)",
+      "why": "Publishes canonical staged records. It must not import its consumers, or the adapter seam becomes a coupling. See ADR-0008 (Proposed)."
+    },
+    "health": {
+      "tier": 3,
+      "outputLayers": [
+        "L2"
+      ],
+      "mayDependOn": [
+        "rules",
+        "financial",
+        "delivery",
+        "commercial",
+        "quality",
+        "resource",
+        "risk"
+      ],
+      "owns": "Composite scoring, RAG assessment, divergence, contribution breakdown",
+      "why": "METRIC_CATALOG.md §8 — MET-HLTH-001..006 read exactly these six fact domains, with thresholds and weights from Rules."
+    },
+    "data-quality": {
+      "tier": 3,
+      "outputLayers": [
+        "L2"
+      ],
+      "mayDependOn": [
+        "rules"
+      ],
+      "owns": "Completeness, freshness, consistency, confidence scoring",
+      "why": "Defines a DataQualityProbe port that fact contexts implement and the Application layer registers, so it does not import eleven contexts. See ADR-0012 (Proposed)."
+    },
+    "recovery": {
+      "tier": 3,
+      "outputLayers": [
+        "L1",
+        "L2"
+      ],
+      "mayDependOn": [
+        "rules",
+        "contract",
+        "delivery",
+        "risk"
+      ],
+      "owns": "Recovery plans, recovery baselines, intervention outcomes",
+      "why": "A recovery baseline is measured against contractual scope and schedule and closes risks. DQ-4 may retire this context after Phase 10."
+    },
+    "forecast": {
+      "tier": 4,
+      "outputLayers": [
+        "L3"
+      ],
+      "mayDependOn": [
+        "rules",
+        "health",
+        "financial"
+      ],
+      "owns": "Trajectory, deterioration detection, projected outturn",
+      "why": "METRIC_CATALOG.md §9 declares Forecast L3 inferred; ARCHITECTURE_DECISIONS.md §4.2 lists it L2. Resolved by ADR-0004 §Consequences and ADR-0011 (Proposed) — see CONFLICT C-2. MET-FCST-001/006 read Health, MET-FCST-004 reads Financial."
+    },
+    "ai-intelligence": {
+      "tier": 4,
+      "outputLayers": [
+        "L3"
+      ],
+      "mayDependOn": [],
+      "forbidAllContexts": true,
+      "owns": "Retrieval, grounding, narration, citation assembly",
+      "why": "ARCHITECTURE_DECISIONS.md §4.1 rule 4 and ADR-0004 §3. It declares ports and the Application layer injects authorised implementations. This is what makes AC-6 testable."
+    }
+  },
+  "platformModules": {
+    "decimal": {
+      "mayDependOn": [],
+      "owns": "Money value object, Decimal arithmetic (ADR-0002)"
+    },
+    "time": {
+      "mayDependOn": [],
+      "owns": "Injected Clock, week/period arithmetic (ADR-0003 §5)"
+    },
+    "provenance": {
+      "mayDependOn": [
+        "time"
+      ],
+      "owns": "Provenance envelope shared primitive (ADR-0004 §1)"
+    },
+    "explainability": {
+      "mayDependOn": [
+        "time",
+        "provenance"
+      ],
+      "owns": "Rule evaluation and explanation shapes (REQ-HLTH-006, AC-3)"
+    },
+    "authz": {
+      "mayDependOn": [],
+      "owns": "AuthorizationContext, field classification, decision types (ADR-0005)"
+    },
+    "audit": {
+      "mayDependOn": [
+        "time",
+        "authz",
+        "provenance"
+      ],
+      "owns": "Append-only audit record and sink contract (ADR-0005 §6); records the ruleVersion in force"
+    },
+    "persistence": {
+      "mayDependOn": [
+        "time"
+      ],
+      "owns": "Unit of work, repository and migration contracts (ADR-0001 §Decision 3)"
+    },
+    "config": {
+      "mayDependOn": [],
+      "owns": "Typed, externalised configuration access (REQ-SEC-008)"
+    },
+    "observability": {
+      "mayDependOn": [
+        "time",
+        "authz"
+      ],
+      "owns": "OpenTelemetry-shaped traces, metrics and structured logs, with a redaction guard (Phase 5; ADR-0009 remains Proposed and no OTel package is imported)"
+    }
+  },
+  "sourceGates": [
+    {
+      "id": "G-CLOCK",
+      "description": "Domain and application code must take time from the injected Clock, never ambient system time.",
+      "authority": "ADR-0003 §5, TEST_STRATEGY.md §5",
+      "appliesTo": [
+        "src/contexts",
+        "src/app",
+        "src/presentation"
+      ],
+      "exempt": [
+        "src/platform/time"
+      ],
+      "pattern": "\\bDate\\.now\\s*\\(|\\bnew\\s+Date\\s*\\(\\s*\\)"
+    },
+    {
+      "id": "G-FLOAT",
+      "description": "No float coercion in domain, application or presentation code. Money is decimal-safe by construction, and a component that parses a number is a component that has started computing one.",
+      "authority": "ADR-0002 §Verification",
+      "appliesTo": [
+        "src/contexts",
+        "src/app",
+        "src/presentation"
+      ],
+      "exempt": [],
+      "pattern": "\\bparseFloat\\s*\\(|\\bparseInt\\s*\\(|(?<![\\w.])Number\\s*\\("
+    },
+    {
+      "id": "G-ORACLE",
+      "description": "No production source file may import the Phase 3 generator or its recomputation oracle. The oracle exists only to prove the generated L1 facts are mathematically coherent; the Phase 4 engines must be implemented independently from the metric registry. If it became a shared calculation library, an engine would be validated against the thing that produced its inputs.",
+      "authority": "Phase 3 correction, Correction 8; debt DR-015",
+      "appliesTo": [
+        "src"
+      ],
+      "exempt": [],
+      "pattern": "from\\s*['\"][^'\"]*(scripts/)?generator/(validate|cohorts|recognition|simulate|curated|index)"
+    },
+    {
+      "id": "G-EXEC",
+      "description": "No dynamic code execution or process spawning anywhere in the product source. eval, the Function constructor, child_process and vm turn a data-injection bug into remote code execution, and nothing in this product needs any of them.",
+      "authority": "SECURITY_MODEL.md §7 (injection), docs/THREAT_MODEL.md T-API-2",
+      "appliesTo": [
+        "src"
+      ],
+      "exempt": [],
+      "pattern": "\\beval\\s*\\(|\\bnew\\s+Function\\s*\\(|node:child_process|node:vm|['\"]child_process['\"]|['\"]vm['\"]"
+    },
+    {
+      "id": "G-COLOUR",
+      "description": "No ad-hoc colour literals; colour comes from design tokens. The single exempt file is the palette itself — the one place a brand hex value is allowed to exist (BRAND_DESIGN_SYSTEM.md §1).",
+      "authority": "REQ-UX-001, BRAND_DESIGN_SYSTEM.md",
+      "appliesTo": [
+        "src/presentation"
+      ],
+      "exempt": [
+        "src/presentation/tokens/palette.ts"
+      ],
+      "pattern": "#[0-9a-fA-F]{3,8}\\b|\\brgba?\\s*\\(|\\bhsla?\\s*\\("
+    },
+    {
+      "id": "G-DEMO",
+      "description": "Presentation modules must carry the DEMO - SYNTHETIC DATA marker constant, never a hand-typed string. A marker someone can typo is a marker someone can omit.",
+      "authority": "REQ-UX-005, global invariant 11, BRAND_DESIGN_SYSTEM.md §6",
+      "appliesTo": [
+        "src/presentation"
+      ],
+      "exempt": [],
+      "pattern": "DEMO\\s*[\\u2014\\u2013-]\\s*SYNTHETIC\\s*DATA"
+    },
+    {
+      "id": "G-BROWSER",
+      "description": "Browser APIs belong to the presentation layer alone. Domain, application and platform code must never reach for the DOM, web storage or the navigator — the DOM lib is enabled repository-wide so React can be typed, and this gate is what stops that convenience becoming a coupling. The pattern targets browser *members* rather than the bare identifier `window`, which is a legitimate domain term here (a rate-limit window, a trajectory window) and must stay usable.",
+      "authority": "ADR-0001 §Decision 5, ADR-0017, SECURITY_MODEL.md §2 B1",
+      "appliesTo": [
+        "src/contexts",
+        "src/app",
+        "src/platform"
+      ],
+      "exempt": [],
+      "pattern": "\\b(?:localStorage|sessionStorage|navigator)\\s*\\.|\\bdocument\\s*\\.\\s*(?:getElement|querySelector|createElement|body|cookie|title|addEventListener)|\\bwindow\\s*\\.\\s*(?:document|location|localStorage|sessionStorage|navigator|history|alert|open|addEventListener|fetch)"
+    }
+  ]
+}
