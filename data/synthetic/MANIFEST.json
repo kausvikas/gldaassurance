@@ -1,0 +1,105 @@
+{
+  "demoMarker": "DEMO — SYNTHETIC DATA",
+  "seed": "gldi-portfolio-2026-08-31",
+  "generatorVersion": "1.2.0",
+  "specVersion": "2.0.0",
+  "asOfDate": "2026-08-31",
+  "contentHash": "514e835b4eeacce13b54f92831caf94dfb8155b507259145211adcb98e782ccd",
+  "recordCounts": {
+    "businessUnits": 3,
+    "regions": 4,
+    "industries": 8,
+    "customers": 16,
+    "accounts": 16,
+    "portfolios": 3,
+    "programs": 16,
+    "projects": 91,
+    "fxRates": 160,
+    "users": 7,
+    "assignments": 1128,
+    "effort": 79951,
+    "actualCosts": 7188,
+    "progressClaims": 3412,
+    "etcLineItems": 1304,
+    "commitments": 652,
+    "contingencyDrawdowns": 2622,
+    "defects": 20644,
+    "acceptanceItems": 44,
+    "dependencies": 178,
+    "risks": 386,
+    "milestones": 527,
+    "scopeItems": 1531,
+    "executedChanges": 563,
+    "pendingChanges": 1107,
+    "baselineRevisions": 563,
+    "statusReports": 1819,
+    "recognisedRevenue": 912,
+    "invoices": 713,
+    "payments": 494,
+    "exposures": 69,
+    "ragOverrides": 2,
+    "recoveryPlans": 28,
+    "recoveryActions": 84,
+    "warningDispositions": 65,
+    "scheduleForecasts": 91,
+    "assuranceReviews": 58
+  },
+  "totalRecords": 126459,
+  "curatedScenarios": [
+    {
+      "letter": "A",
+      "projectId": "prj-007",
+      "archetype": "HEALTHY_REFERENCE",
+      "title": "Healthy Green"
+    },
+    {
+      "letter": "B",
+      "projectId": "prj-001",
+      "archetype": "SILENT_DETERIORATOR",
+      "title": "Green-at-Risk"
+    },
+    {
+      "letter": "C",
+      "projectId": "prj-009",
+      "archetype": "SILENT_DETERIORATOR",
+      "title": "Reported Green, Evidence Amber"
+    },
+    {
+      "letter": "D",
+      "projectId": "prj-004",
+      "archetype": "RECOVERING_RED",
+      "title": "Amber Recovering"
+    },
+    {
+      "letter": "E",
+      "projectId": "prj-016",
+      "archetype": "UNCOMPENSATED_SCOPE",
+      "title": "Scope and Commercial Leakage"
+    },
+    {
+      "letter": "F",
+      "projectId": "prj-014",
+      "archetype": "ETC_OPTIMISM",
+      "title": "ETC Optimism"
+    },
+    {
+      "letter": "G",
+      "projectId": "prj-006",
+      "archetype": "QUALITY_SPIRAL",
+      "title": "Quality Margin Leakage"
+    },
+    {
+      "letter": "H",
+      "projectId": "prj-011",
+      "archetype": "CONTRACT_LOSS_RISK",
+      "title": "Contract-Loss Risk"
+    },
+    {
+      "letter": "LR",
+      "projectId": "prj-029",
+      "archetype": "SCHEDULE_SLIP_HONEST",
+      "title": "Leading Risk, No Cost Overrun"
+    }
+  ],
+  "note": "Regeneration with the same seed and generator version must reproduce this contentHash. A changed hash without a changed seed or generator version is a defect (REQ-DATA-007). The .ndjson files are regenerable and are not committed; this manifest is."
+}

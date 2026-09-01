@@ -1,0 +1,45 @@
+{
+  "name": "gl-delivery-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "GlobalLogic Delivery Intelligence \u2014 DEMO / SYNTHETIC DATA proof of concept",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "check:architecture": "node architecture/check.mjs",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "verify": "npm run typecheck && npm run check:architecture && npm run check:schema && npm run lint && npm run test && npm run data:validate && npm run design:gallery && npm run design:command-center && npm run design:project-health && npm run design:margin && npm run design:forward-risk && npm run design:assistant",
+    "catalog:generate": "METRIC_CATALOG_UPDATE=1 vitest run tests/integration/metric-catalog.test.ts",
+    "check:schema": "node scripts/ci/check-schema-boundaries.mjs",
+    "data:generate": "vite-node -c vitest.config.ts scripts/generate-data.ts",
+    "data:validate": "vite-node -c vitest.config.ts scripts/validate-data.ts",
+    "db:verify": "node scripts/db/verify-postgres.mjs",
+    "assess:curated": "vite-node -c vitest.config.ts scripts/assess-curated.ts",
+    "design:gallery": "vite-node -c vitest.config.ts scripts/design/build-gallery.tsx",
+    "design:command-center": "vite-node -c vitest.config.ts scripts/design/build-command-center.tsx",
+    "design:project-health": "vite-node -c vitest.config.ts scripts/design/build-project-health.tsx",
+    "design:margin": "vite-node -c vitest.config.ts scripts/design/build-margin-intelligence.tsx",
+    "design:forward-risk": "vite-node -c vitest.config.ts scripts/design/build-forward-risk.tsx",
+    "design:assistant": "vite-node -c vitest.config.ts scripts/design/build-assistant.tsx"
+  },
+  "dependencies": {
+    "decimal.js": "^10.6.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@typescript-eslint/parser": "^8.19.0",
+    "eslint": "^9.17.0",
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.7"
+  }
+}
