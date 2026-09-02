@@ -172,7 +172,14 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
     const recoveryWeeks = inRecovery ? weekIndex - (dr.recoveryFromWeek as number) : 0;
     const drag = Math.max(0.9,
       dr.productivityDrag + dr.productivityDragPerWeek * dragWeeks + (inRecovery ? dr.productivityDragPerWeek * recoveryWeeks : 0));
-    const rate = asSoldRate * (1 + dr.rateDriftPerWeek * weekIndex);
+    /*
+     * Rate drift saturates. Compounded linearly across a 130-week engagement, the North America
+     * cohort's 0.0009/week reached +12% on the blended rate — a cost overrun large enough, on its
+     * own, to erode 9pp of margin and fire ELV-MARGIN-EROSION on projects whose archetype declares
+     * them healthy. A cohort pattern is a tendency, not a sentence: it may move a project within a
+     * band, never out of one by itself. The archetype decides the project's condition.
+     */
+    const rate = asSoldRate * (1 + Math.min(0.03, dr.rateDriftPerWeek * weekIndex));
 
     // Customer dependency → blocked effort → progress down and absorbed cost up.
     if (!openDependency && w.chance(dr.dependencyBlockChance)) {
@@ -210,7 +217,23 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
     const plannedThisWeek = plannedProgressAt((weekIndex + 1) / spec.durationWeeks)
       - plannedProgressAt(weekIndex / spec.durationWeeks);
     const plannedWeeklyHours = plannedHours / spec.durationWeeks;
-    const grossHours = Math.max(plannedThisWeek * plannedHours, plannedWeeklyHours * 0.3);
+    /*
+     * Inside the planned duration the weekly effort is exactly the plan's own increment, so the
+     * whole-project total equals plannedHours and a project that performs to plan lands on its
+     * sold margin. A floor applied here instead — max(increment, 0.3 x average) — overspends on
+     * both flat ends of the S-curve, where the increment is smallest, and that unbudgeted excess
+     * was enough to erode 6-13pp of margin on projects with no adverse driver at all. It fired
+     * ELV-MARGIN-EROSION (>= 5pp) on 24 of 37 HEALTHY_REFERENCE projects, and because an elevation
+     * demotes a Green composite to Amber, it was the single largest reason the portfolio had no
+     * healthy population.
+     *
+     * Past the planned end date the floor is the right model and is kept: an overrunning team is
+     * smaller than a full one but is not free, and that residual is what makes an overrun cost
+     * money rather than quietly completing for nothing.
+     */
+    const grossHours = plannedThisWeek > 0
+      ? plannedThisWeek * plannedHours
+      : plannedWeeklyHours * 0.3;
     const weekRework = Math.min(grossHours * 0.42, openMajorDefects * dr.reworkHoursPerDefectWeek);
     const blockedHours = grossHours * blockedFraction;
     const productiveHours = Math.max(0, grossHours - weekRework - blockedHours);
@@ -399,7 +422,20 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
     // ETC revision every six weeks. `etcOptimism` < 1 is what MET-FIN-030 later detects.
     if (weekIndex % 6 === 0) {
       const remaining = Math.max(0, 1 - physical);
-      const honestEtc = remaining * hoursPerProgressPoint * drag * rate * 1.06;
+      /*
+       * An honest estimate to complete is the remaining work at the cost the project is actually
+       * demonstrating — no more. The 1.06 here was an undeclared 6% pessimism applied to every
+       * revision on every project, and because EAC is dominated by ETC early in delivery it eroded
+       * 5-8pp of margin on projects at the start of their life while converging to nothing by the
+       * end. That is the shape the diagnostic found: EAC/budget of 1.098 at 23% complete against
+       * 1.005 at 97% complete on the same archetype.
+       *
+       * Estimating bias belongs in `etcOptimism`, which is a declared driver an archetype sets
+       * deliberately and which MET-FIN-030 exists to detect. A constant applied to every project
+       * is not a bias the product can detect or an executive can act on — it is noise in the
+       * baseline.
+       */
+      const honestEtc = remaining * hoursPerProgressPoint * drag * rate;
       etcRecorded = honestEtc * dr.etcOptimism;
       committed = etcRecorded * w.range(0.05, 0.14);
       f.etcLineItems.push({
