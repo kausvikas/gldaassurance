@@ -158,8 +158,22 @@ export function commandCenterProject(
       reasons: reasonsFor(economics, econInput),
       bandEvidence: evidence('health'),
       dataConfidence: dataConfidence.confidenceScore,
-      weeksToBandChange:
-        trajectory.state === 'STABLE' || trajectory.state === 'IMPROVING' ? null : 6,
+      /*
+       * No band-change clock is claimed, because the domain does not compute one.
+       *
+       * This adapter previously returned a literal 6 for every deteriorating project. Tier 3 of
+       * MET-PORT-007 takes the minimum of the band-change clock and the next gating milestone, so
+       * that constant became the time-to-act on 42 of 75 projects and the product rendered it as a
+       * project-specific intervention horizon. It was a stub asserting a precision no evidence
+       * supports, and it is exactly the kind of figure an executive would plan against.
+       *
+       * TRAJECTORY-v1 projects a *band* at 30 and 60 days; it does not project the date a band
+       * edge is crossed. Until a governed metric for that exists, the honest value is null, which
+       * the ranking already handles: "no clock known" and "now" are different statements and the
+       * surface keeps them apart. The real clock — weeks to the next payment-gating milestone — is
+       * supplied below and now carries tier 3 alone, giving genuine per-project variation.
+       */
+      weeksToBandChange: null,
       minimumInterventionWeeks: 4,
     }),
   }, clock);
