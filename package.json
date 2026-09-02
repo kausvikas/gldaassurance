@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "GlobalLogic Delivery Intelligence \u2014 DEMO / SYNTHETIC DATA proof of concept",
+  "description": "GlobalLogic Delivery Intelligence — DEMO / SYNTHETIC DATA proof of concept",
   "engines": {
     "node": ">=20"
   },
@@ -26,7 +26,11 @@
     "design:project-health": "vite-node -c vitest.config.ts scripts/design/build-project-health.tsx",
     "design:margin": "vite-node -c vitest.config.ts scripts/design/build-margin-intelligence.tsx",
     "design:forward-risk": "vite-node -c vitest.config.ts scripts/design/build-forward-risk.tsx",
-    "design:assistant": "vite-node -c vitest.config.ts scripts/design/build-assistant.tsx"
+    "design:assistant": "vite-node -c vitest.config.ts scripts/design/build-assistant.tsx",
+    "build:dist": "node scripts/deploy/build-dist.mjs",
+    "audit:links": "node scripts/deploy/link-audit.mjs",
+    "preview": "node scripts/deploy/serve-preview.mjs",
+    "deploy": "npm run build:dist && npm run audit:links && firebase deploy --only hosting"
   },
   "dependencies": {
     "decimal.js": "^10.6.0",
@@ -39,6 +43,7 @@
     "@types/react-dom": "^19.2.5",
     "@typescript-eslint/parser": "^8.19.0",
     "eslint": "^9.17.0",
+    "firebase-tools": "^15.28.2",
     "typescript": "^5.7.2",
     "vitest": "^3.2.7"
   }
