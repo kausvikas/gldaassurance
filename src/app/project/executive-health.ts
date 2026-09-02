@@ -282,6 +282,21 @@ export interface ConfidenceDto {
    * Computed here, server-side, and stated on the page whether or not it is currently breached.
    */
   readonly greenClaimSupported: boolean;
+  /*
+   * R1.7. The headline is composed here, not chosen in the view.
+   *
+   * This block evaluates one narrow rule: whether data confidence is strong enough to *present* a
+   * reported GREEN. It says nothing about whether the reported status matches the system
+   * assessment — that is the Status divergence block, which on the same page can be reporting
+   * "Reported GREEN while the evidence supports RED". The view previously rendered a generic
+   * "The evidence supports the status being claimed" whenever this rule passed, which on a
+   * divergent project read as ratifying the reported RAG the page had just contradicted. The same
+   * generic headline also appeared over "No Green claim is being made", where no status was being
+   * supported at all.
+   *
+   * "Status" is never used unqualified where a reported status and a system status both exist.
+   */
+  readonly greenClaimHeadline: string;
   readonly greenClaimNarrative: string;
   readonly evidence: EvidenceDto;
 }
@@ -734,16 +749,27 @@ export function buildProjectExecutiveHealth(
       treatment: 'fact',
       metricId: 'MET-DEL-009',
     },
-    {
-      label: 'Commercial exposure',
-      originalSold: formatMoneyCompact(zero),
-      currentContract: formatMoneyCompact(input.uncommercialisedExposure),
-      currentForecast: formatMoneyCompact(e.incrementalRiskExposure),
-      variance: moneyVariance(zero, input.uncommercialisedExposure.plus(e.incrementalRiskExposure), false).display,
-      sentiment: 'negative',
-      treatment: 'computed',
-      metricId: 'MET-COM-009',
-    },
+    /*
+     * R1.4. The "Commercial exposure" row is removed from the commitment comparison.
+     *
+     * This table's contract is one measure shown at three baselines — as-sold, current contract,
+     * current forecast — so that "a gap between the first two is commercial change; a gap between
+     * the last two is delivery risk". The row broke that contract three ways:
+     *
+     *   - the three columns held three *different* quantities: a literal zero, MET-COM-009
+     *     uncommercialised exposure, and `incrementalRiskExposure` (a risk measure, not a
+     *     commercial one), so no gap between columns meant what the header says it means;
+     *   - the variance summed two of them ($90K + $93K = $183K) where every other row in the
+     *     table differences original against forecast, roughly doubling the stated exposure;
+     *   - it therefore had no single governed definition to correct it to.
+     *
+     * MET-COM-009 is a current-state exposure with no as-sold baseline — nothing is uncommercialised
+     * at signature by definition — so it has no three-baseline reading. Rather than invent one,
+     * which would be choosing a formula silently, the measure stays where its evidence sits: the
+     * Scope and commercial block below already reports it as "Uncommercialised exposure"
+     * (MET-COM-009), and incremental risk exposure is reported on Margin & Driver Intelligence
+     * under risk-adjusted economics. No figure is lost; one incoherent row is.
+     */
   ];
 
   // --- Financial strip ------------------------------------------------------
@@ -941,6 +967,11 @@ export function buildProjectExecutiveHealth(
       ? 'No independent or DA review is recorded for this project.'
       : `${input.lastIndependentReview.reviewer} on ${input.lastIndependentReview.reviewedOn}: ${input.lastIndependentReview.outcome}`,
     greenClaimSupported,
+    greenClaimHeadline: greenClaimSupported
+      ? (claimsGreen
+        ? 'Data confidence is sufficient to present the reported Green'
+        : 'No Green is reported, so this evidence rule does not apply')
+      : 'No evidence means no high confidence in Green',
     greenClaimNarrative: greenClaimSupported
       ? (claimsGreen
         ? `This project is reported GREEN and the evidence supports presenting it at ${dc.band} data confidence.`

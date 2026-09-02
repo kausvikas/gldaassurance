@@ -26,7 +26,7 @@ import type {
   AssessmentStatus, Caveat, ClaimEnvelope, ExecutiveAuthority, IntentId, MaterialClaim,
 } from '@contexts/ai-intelligence';
 import { isFullyAuthoritative } from './envelope.js';
-import { neutraliseRetrievedText } from './validator.js';
+import { NEUTRALISED, neutraliseRetrievedText } from './validator.js';
 
 /**
  * Which claim families each intent speaks about.
@@ -205,7 +205,12 @@ export function why(intent: IntentId, claims: readonly MaterialClaim[]): readonl
     default:
       break;
   }
-  return claims.filter((c) => !headlineIds.has(c.claimId)).map((c) => neutraliseRetrievedText(c.text));
+  // R1.6. Defensive: a fully-redacted claim is never a supporting sentence. The seam in
+  // service.ts drops these already; this keeps the invariant local to composition too.
+  return claims
+    .filter((c) => !headlineIds.has(c.claimId))
+    .map((c) => neutraliseRetrievedText(c.text))
+    .filter((t) => t.trim() !== NEUTRALISED);
 }
 
 /**
