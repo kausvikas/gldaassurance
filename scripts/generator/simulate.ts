@@ -189,12 +189,64 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
     const blockedFraction = openDependency && weekIndex < openDependency.untilWeek ? w.range(0.15, 0.45) : 0;
     if (openDependency && weekIndex >= openDependency.untilWeek) openDependency = undefined;
 
-    const grossHours = spec.teamSize * WEEKLY_HOURS_PER_FTE;
+    /*
+     * Effort is spent against the plan's shape too, for the same reason progress is earned against
+     * it.
+     *
+     * `spec.teamSize` is clamped to [4, 18] in portfolio.ts, so using it as the weekly effort
+     * quota decoupled spend from the budget it is measured against: a project whose planned effort
+     * implies 30 FTE burned 60% of its budgeted rate, and one implying 2 FTE burned double. Burn
+     * gap is cost consumed minus physical completion, so that clamp alone produced +12 to +25pp
+     * burn gaps and negative forecast margin on projects with no productivity drag and no scope
+     * problem — the second reason the portfolio had almost no healthy population.
+     *
+     * Weekly effort is now the plan's own effort curve. Past the planned end date a project still
+     * burns, at a reduced rate, because an overrunning team is smaller than a full one but is not
+     * free — that residual is what makes a genuine overrun cost money.
+     *
+     * teamSize remains the organisational fact it always was, and still drives assignments and the
+     * seniority pyramid. It is simply no longer the hidden denominator of delivery economics.
+     */
+    const plannedThisWeek = plannedProgressAt((weekIndex + 1) / spec.durationWeeks)
+      - plannedProgressAt(weekIndex / spec.durationWeeks);
+    const plannedWeeklyHours = plannedHours / spec.durationWeeks;
+    const grossHours = Math.max(plannedThisWeek * plannedHours, plannedWeeklyHours * 0.3);
     const weekRework = Math.min(grossHours * 0.42, openMajorDefects * dr.reworkHoursPerDefectWeek);
     const blockedHours = grossHours * blockedFraction;
     const productiveHours = Math.max(0, grossHours - weekRework - blockedHours);
 
-    const progressIncrement = productiveHours / (hoursPerProgressPoint * drag);
+    /*
+     * Progress is earned against the **plan's own shape**, not against a flat hourly quota.
+     *
+     * This previously read `productiveHours / (plannedHours * drag)`, which accrued completion
+     * linearly while `plannedProgressAt` follows an S-curve (3f² − 2f³). Two structural biases fell
+     * out of that, and together they made the synthetic portfolio unusable as a demonstration:
+     *
+     *   1. **Every project drifted behind its own plan through the back half of its life.** At 75%
+     *      elapsed the S-curve expects 84.4% complete while a linear accrual reaches 75% — a ~9pp
+     *      deficit that no driver caused and no intervention could fix, applied to every project
+     *      regardless of archetype.
+     *   2. **Large projects were starved outright.** `teamSize` is clamped to [4, 18] in
+     *      portfolio.ts while it is also the numerator of progress, so a project whose planned
+     *      effort implies 30 FTE received 18 and could never track its plan. Progress variances
+     *      of −50pp and worse on HEALTHY_REFERENCE projects came from this clamp, not from
+     *      productivity.
+     *
+     * The result was that 37 fixed-bid HEALTHY_REFERENCE projects produced 1 Green, 20 Amber and
+     * 16 Red, which is why System Green-at-Risk had an empty candidate pool: the metric requires a
+     * healthy population and the generator could not produce one.
+     *
+     * Progress is now the planned increment for this week, scaled by how much of the team's
+     * capacity actually reached productive work (capacity lost to rework and customer blocking)
+     * and by the archetype's productivity drag. A project with no drag, no rework and no blocked
+     * effort tracks its plan exactly; every departure from plan is now caused by a driver the
+     * archetype declares, which is what the archetypes were written to express.
+     *
+     * No threshold, weight, band edge or health rule is touched — this is synthetic input
+     * generation only.
+     */
+    const capacityRatio = grossHours === 0 ? 0 : productiveHours / grossHours;
+    const progressIncrement = plannedThisWeek * (capacityRatio / drag);
     physical = Math.min(1, physical + progressIncrement);
     totalHours += grossHours;
     reworkHours += weekRework;

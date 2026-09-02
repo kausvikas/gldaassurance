@@ -84,6 +84,14 @@ export const TARGET_CAPACITY = 5;
 export const TARGET_TOTAL = TARGET_FIXED_BID + TARGET_TIME_AND_MATERIALS + TARGET_CAPACITY;
 
 /** Band shares, chosen so the portfolio needs ranking rather than reading (AC-1). */
+/**
+ * Share of the as-sold cost budget priced for non-labour and pass-through spend.
+ *
+ * Mirrors the 5–11% simulate.ts charges on top of labour, at its midpoint. Kept here beside the
+ * as-sold baseline because it is an estimating assumption, not a simulation parameter.
+ */
+const NON_LABOUR_BUDGET_SHARE = 0.08;
+
 const BAND_PLAN: readonly { band: TcvBand; count: number; minUsd: number; maxUsd: number }[] = [
   { band: 'LT_1M', count: 18, minUsd: 420_000, maxUsd: 980_000 },
   { band: 'B_1_5M', count: 38, minUsd: 1_100_000, maxUsd: 4_900_000 },
@@ -208,7 +216,23 @@ export function buildStructure(masterSeed: string): Structure {
     const plannedEndDate = addDays(startDate, durationWeeks * 7);
 
     const blendedRateUsd = p.range(52, 96);
-    const plannedHours = Math.round(budgetedCostUsd / blendedRateUsd);
+    /*
+     * The as-sold plan reserves a share of the cost budget for non-labour spend.
+     *
+     * `plannedHours` previously consumed the entire budgeted cost as labour, while simulate.ts
+     * charges non-labour and pass-through at 5–11% of labour every week on top. Non-labour was
+     * therefore an overrun *by construction* on every project in the portfolio — roughly 8pp of
+     * margin erosion applied uniformly, before any archetype driver did anything. A project with
+     * no productivity drag, no scope creep and no rework still finished materially below its sold
+     * margin, which is why so few could be assessed healthy.
+     *
+     * A real fixed-bid estimate prices non-labour inside the cost base. The plan now does too, so
+     * a project that performs to plan lands on its sold margin and any erosion is caused by a
+     * driver rather than by an accounting gap in the generator.
+     *
+     * This changes a synthetic as-sold input. No formula, threshold or band edge is affected.
+     */
+    const plannedHours = Math.round((budgetedCostUsd * (1 - NON_LABOUR_BUDGET_SHARE)) / blendedRateUsd);
     const currency = REGION_CURRENCY[customer.regionCode] ?? 'USD';
 
     projects.push({
