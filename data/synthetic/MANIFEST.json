@@ -4,7 +4,7 @@
   "generatorVersion": "1.2.0",
   "specVersion": "2.0.0",
   "asOfDate": "2026-08-31",
-  "contentHash": "de5633fb571f3da7f136f2774bb55b8f683b601979c2f7827f411712868851cb",
+  "contentHash": "0cb5e05a3318c5d13b24a79dd432879035028e76cb6d709fcd79740eb97510f4",
   "recordCounts": {
     "businessUnits": 3,
     "regions": 4,
@@ -20,8 +20,8 @@
     "effort": 75292,
     "actualCosts": 7156,
     "progressClaims": 3375,
-    "etcLineItems": 1300,
-    "commitments": 650,
+    "etcLineItems": 1846,
+    "commitments": 923,
     "contingencyDrawdowns": 3021,
     "defects": 27619,
     "acceptanceItems": 44,
@@ -32,10 +32,10 @@
     "executedChanges": 587,
     "pendingChanges": 1173,
     "baselineRevisions": 587,
-    "statusReports": 1811,
-    "recognisedRevenue": 908,
-    "invoices": 694,
-    "payments": 478,
+    "statusReports": 1004,
+    "recognisedRevenue": 915,
+    "invoices": 795,
+    "payments": 557,
     "exposures": 69,
     "ragOverrides": 2,
     "recoveryPlans": 27,
@@ -44,7 +44,7 @@
     "scheduleForecasts": 91,
     "assuranceReviews": 58
   },
-  "totalRecords": 129148,
+  "totalRecords": 129347,
   "curatedScenarios": [
     {
       "letter": "A",

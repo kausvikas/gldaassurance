@@ -419,8 +419,20 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
       }
     }
 
-    // ETC revision every six weeks. `etcOptimism` < 1 is what MET-FIN-030 later detects.
-    if (weekIndex % 6 === 0) {
+    /*
+     * ETC is revised on a monthly cycle, not a six-weekly one.
+     *
+     * Progress only rises between revisions, so a stale ETC always overstates the work remaining,
+     * never understates it. At a six-week cadence that one-sided lag was worth several points of
+     * apparent margin erosion on every project in the portfolio - enough to fire ELV-MARGIN-EROSION
+     * and demote an otherwise Green composite to Amber. A monthly revision matches financial close
+     * for a delivery organisation reporting progress weekly, and leaves the remaining lag small
+     * enough to be ordinary noise rather than a systematic penalty.
+     *
+     * `etcOptimism` < 1 remains what MET-FIN-030 detects; that is a declared estimating bias, and
+     * it is the only one the portfolio should contain.
+     */
+    if (weekIndex % 4 === 0) {
       const remaining = Math.max(0, 1 - physical);
       /*
        * An honest estimate to complete is the remaining work at the cost the project is actually
@@ -475,7 +487,7 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
     // Reported RAG (MET-HLTH-012) — the team's declaration. The generator works out what an honest
     // report would say, then applies the archetype's optimism. The gap between the two is what
     // MET-HLTH-030 later detects; the divergence is caused here, not asserted.
-    if (weekIndex % 2 === 0) {
+    if (weekIndex % 4 === 0) {
       const eac = costToDate + etcRecorded + committed;
       const forecastRevenue = contractValue + executedValueDelta;
       const gm = forecastRevenue > 0 ? (forecastRevenue - eac) / forecastRevenue : 0;
