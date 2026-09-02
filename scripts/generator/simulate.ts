@@ -246,7 +246,32 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
      * generation only.
      */
     const capacityRatio = grossHours === 0 ? 0 : productiveHours / grossHours;
-    const progressIncrement = plannedThisWeek * (capacityRatio / drag);
+    /*
+     * Past the planned end date the plan has no increment left to earn, but the work does.
+     *
+     * Without this an overrunning project freezes just short of complete, and the portfolio loses
+     * the "delivered, still open" lifecycle state entirely — the one that makes
+     * REQUIRED_VELOCITY_RATIO NOT_APPLICABLE for NO_REMAINING_WORK rather than not computable.
+     * That state is a governed control condition the portfolio is required to exercise, so it is
+     * generated deliberately here rather than left to fall out of an arithmetic edge.
+     */
+    /*
+     * Delivery finishes when the project reaches acceptance, not when the calendar runs out.
+     *
+     * A project in UAT_ACCEPTANCE or CLOSED_OUT has built what it was contracted to build; what
+     * remains is acceptance, not construction. Physical completion therefore converges on 1.0
+     * across those sub-stages, which is both the realistic reading and the condition that makes
+     * REQUIRED_VELOCITY_RATIO NOT_APPLICABLE for NO_REMAINING_WORK rather than not computable.
+     *
+     * That control state used to appear only by accident: the teamSize clamp let some projects
+     * overshoot to 100% while still mid-execution, and a coverage test pinned itself to one of
+     * them. Correcting the clamp removed the state along with the defect. It is generated
+     * deliberately here so the portfolio exercises the state by contract instead of by artifact.
+     */
+    const elapsedFraction = weekIndex / spec.durationWeeks;
+    const inAcceptance = elapsedFraction >= 0.87;
+    const overrunCatchUp = plannedThisWeek <= 0 || inAcceptance ? (1 - physical) * 0.28 : 0;
+    const progressIncrement = plannedThisWeek * (capacityRatio / drag) + overrunCatchUp * capacityRatio;
     physical = Math.min(1, physical + progressIncrement);
     totalHours += grossHours;
     reworkHours += weekRework;
