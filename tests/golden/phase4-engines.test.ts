@@ -699,11 +699,24 @@ describe('Phase 4 golden — CONFLICT C-10 (ADR-0015)', () => {
 
   it('does not flag scenario B as Green-at-Risk under the System-Assessed reading', () => {
     const a = assessCurated(portfolio, 'B');
-    // RAPIDLY_DETERIORATING rather than DETERIORATING since DR-021: with six signals supplied
-    // instead of one, three of B's move materially adversely at once. B is the "silent
-    // deteriorator" archetype, so several signals agreeing is the expected finding, not a surprise.
-    expect(a.trajectory.state).toBe('RAPIDLY_DETERIORATING');
-    expect(a.trajectory.adverseConfluence).toBeGreaterThanOrEqual(3);
+    /*
+     * DETERIORATING, not RAPIDLY_DETERIORATING, since the cumulative-signal ADR.
+     *
+     * CONTINGENCY_CONSUMPTION and SCOPE_EXPOSURE_TREND used to observe running totals, which are
+     * monotone by construction: both were materially adverse on every project in the portfolio at
+     * all times, whatever the project was doing. With a rapid-confluence threshold of 3, any
+     * project carrying a single genuine adverse signal was therefore reported as RAPIDLY
+     * DETERIORATING, and no project could ever be IMPROVING. Those two signals now observe
+     * movement per period, so confluence counts real agreement between signals.
+     *
+     * The scenario's contract is unchanged and still holds: reported GREEN over a system
+     * assessment that disagrees, deteriorating on leading evidence. What it no longer claims is a
+     * confluence it never had.
+     */
+    expect(a.trajectory.state).toBe('DETERIORATING');
+    expect(a.trajectory.adverseConfluence).toBeGreaterThanOrEqual(1);
+    expect(a.trajectory.trends.filter((t) => t.materiallyAdverse).map((t) => t.signalId))
+      .toContain('DELIVERY_VELOCITY');
     // C-10 / ADR-0018: B is Reported GREEN over a System-Assessed AMBER. That makes it a
     // **Reported Green Risk**, and deliberately NOT a System Green-at-Risk — the system already
     // says AMBER, so there is nothing forward-looking to discover.
@@ -804,17 +817,37 @@ describe('Phase 6 closure — multi-signal trajectory (DR-021)', () => {
     // Cost is NOT outrunning progress — the single signal the old adapter had is clean.
     expect(velocity?.materiallyAdverse).toBe(false);
 
-    // Yet the project is deteriorating, on signals the old adapter never supplied.
-    expect(lr.trajectory.state).toBe('RAPIDLY_DETERIORATING');
+    /*
+     * The scenario's point is that deterioration is visible in schedule before it reaches cost —
+     * that is what "leading risk" means here, and it is asserted directly below. The tier was
+     * RAPIDLY only because the two cumulative signals were adverse on every project unconditionally;
+     * see the note on scenario B above.
+     */
+    expect(lr.trajectory.state).toBe('DETERIORATING');
     const adverse = lr.trajectory.trends.filter((t) => t.materiallyAdverse).map((t) => t.signalId);
     expect(adverse).toContain('MILESTONE_HIT_RATE');
-    expect(adverse.length).toBeGreaterThanOrEqual(3);
+    expect(adverse.length).toBeGreaterThanOrEqual(1);
 
-    // And it is exactly the finding the product exists to make: System GREEN today, worse ahead.
+    /*
+     * Exactly the finding the product exists to make: System GREEN today, worse ahead, and still
+     * time to act.
+     *
+     * The projected bands are one step later than they were. `projectOutlook` degrades half a band
+     * per period for DETERIORATING and a full band for RAPIDLY, and LR is no longer classified
+     * RAPIDLY now that the two cumulative signals have stopped being adverse on every project
+     * unconditionally. Its two genuine leading signals — the milestone slip and an accelerating
+     * contingency draw — put it at 60-day Amber rather than 30-day Amber and 60-day Red.
+     *
+     * That is a better reading of a scenario named "leading risk", not a weaker one: the evidence
+     * is early, so the projection should be too. The contract that matters is unchanged and is
+     * asserted here in full — healthy today, adverse inside the governed horizon, flagged as System
+     * Green-at-Risk, with the intervention window still open.
+     */
     expect(lr.health.systemAssessedRag).toBe('GREEN');
-    expect(lr.greenAtRisk.outlook30).toBe('AMBER');
-    expect(lr.greenAtRisk.outlook60).toBe('RED');
+    expect(lr.greenAtRisk.outlook30).toBe('GREEN');
+    expect(lr.greenAtRisk.outlook60).toBe('AMBER');
     expect(lr.greenAtRisk.isSystemGreenAtRisk).toBe(true);
+    expect(lr.greenAtRisk.interventionWindowOpen).toBe(true);
   });
 
   it('does not import the Phase 3 recomputation oracle into production intelligence', () => {

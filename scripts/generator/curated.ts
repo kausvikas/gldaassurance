@@ -53,6 +53,16 @@ export interface CuratedScenario {
   readonly letter: ScenarioLetter;
   readonly archetype: ArchetypeId;
   readonly title: string;
+  /*
+   * The name the client and the delivery organisation would use.
+   *
+   * `title` names the *scenario* — "Green-at-Risk", "Contract-Loss Risk" — and exists so tests and
+   * reports can address a case by what it demonstrates. It must never reach a screen: a portfolio
+   * whose project names announce which product feature each one was built to exercise tells an
+   * executive that the data was constructed for the demo, and every figure beside it inherits that
+   * doubt. SYNTHETIC_ENTERPRISE_PORTFOLIO_CONTRACT.md 4.2.
+   */
+  readonly projectName: string;
   readonly vertical: string;
   readonly region: string;
   readonly subStage: 'MOBILIZATION' | 'EARLY_EXECUTION' | 'MID_PROJECT' | 'LATE_STAGE' | 'UAT_ACCEPTANCE' | 'CLOSED_OUT';
@@ -120,7 +130,7 @@ const cp = (
 export const CURATED: readonly CuratedScenario[] = [
   // ---------------------------------------------------------------- A -------
   {
-    letter: 'A', archetype: 'HEALTHY_REFERENCE', title: 'Healthy Green',
+    letter: 'A', archetype: 'HEALTHY_REFERENCE', title: 'Healthy Green', projectName: 'Connected Platform Programme',
     vertical: 'Technology', region: 'Europe', subStage: 'MID_PROJECT',
     // Sold GM = (3,200,000 − 2,432,000) / 3,200,000 = 24.00%
     contractValue: 3_200_000, budgetedCost: 2_432_000, contingencyBudget: 160_000,
@@ -143,7 +153,7 @@ export const CURATED: readonly CuratedScenario[] = [
   },
   // ---------------------------------------------------------------- B -------
   {
-    letter: 'B', archetype: 'SILENT_DETERIORATOR', title: 'Green-at-Risk',
+    letter: 'B', archetype: 'SILENT_DETERIORATOR', title: 'Green-at-Risk', projectName: 'Connected Cockpit Platform',
     vertical: 'Mobility', region: 'North America', subStage: 'MID_PROJECT',
     // Sold GM = (8,000,000 − 5,760,000) / 8,000,000 = 28.00%
     contractValue: 8_000_000, budgetedCost: 5_760_000, contingencyBudget: 400_000,
@@ -182,7 +192,7 @@ export const CURATED: readonly CuratedScenario[] = [
   },
   // ---------------------------------------------------------------- C -------
   {
-    letter: 'C', archetype: 'SILENT_DETERIORATOR', title: 'Reported Green, Evidence Amber',
+    letter: 'C', archetype: 'SILENT_DETERIORATOR', title: 'Reported Green, Evidence Amber', projectName: 'Claims Modernisation Wave 2',
     vertical: 'Financial Services', region: 'North America', subStage: 'MID_PROJECT',
     // Sold GM = (5,000,000 − 3,900,000) / 5,000,000 = 22.00%
     contractValue: 5_000_000, budgetedCost: 3_900_000, contingencyBudget: 250_000,
@@ -213,7 +223,7 @@ export const CURATED: readonly CuratedScenario[] = [
   },
   // ---------------------------------------------------------------- D -------
   {
-    letter: 'D', archetype: 'RECOVERING_RED', title: 'Amber Recovering',
+    letter: 'D', archetype: 'RECOVERING_RED', title: 'Amber Recovering', projectName: 'Grid Operations Replatform',
     vertical: 'Industrial & Energy', region: 'Europe', subStage: 'LATE_STAGE',
     // Sold GM = (4,000,000 − 2,960,000) / 4,000,000 = 26.00%
     contractValue: 4_000_000, budgetedCost: 2_960_000, contingencyBudget: 200_000,
@@ -245,7 +255,7 @@ export const CURATED: readonly CuratedScenario[] = [
   },
   // ---------------------------------------------------------------- E -------
   {
-    letter: 'E', archetype: 'UNCOMPENSATED_SCOPE', title: 'Scope and Commercial Leakage',
+    letter: 'E', archetype: 'UNCOMPENSATED_SCOPE', title: 'Scope and Commercial Leakage', projectName: 'Customer Data Platform R2',
     vertical: 'Retail & Consumer', region: 'LATAM', subStage: 'MID_PROJECT',
     // Sold GM = (2,400,000 − 1,824,000) / 2,400,000 = 24.00%
     contractValue: 2_400_000, budgetedCost: 1_824_000, contingencyBudget: 110_000,
@@ -279,7 +289,7 @@ export const CURATED: readonly CuratedScenario[] = [
   },
   // ---------------------------------------------------------------- F -------
   {
-    letter: 'F', archetype: 'ETC_OPTIMISM', title: 'ETC Optimism',
+    letter: 'F', archetype: 'ETC_OPTIMISM', title: 'ETC Optimism', projectName: 'Payments Core Migration',
     vertical: 'Communications', region: 'India/APAC', subStage: 'MID_PROJECT',
     // Sold GM = (3,600,000 − 2,700,000) / 3,600,000 = 25.00%
     contractValue: 3_600_000, budgetedCost: 2_700_000, contingencyBudget: 150_000,
@@ -309,7 +319,7 @@ export const CURATED: readonly CuratedScenario[] = [
   },
   // ---------------------------------------------------------------- G -------
   {
-    letter: 'G', archetype: 'QUALITY_SPIRAL', title: 'Quality Margin Leakage',
+    letter: 'G', archetype: 'QUALITY_SPIRAL', title: 'Quality Margin Leakage', projectName: 'Media Supply Chain Rebuild',
     vertical: 'Media & Entertainment', region: 'North America', subStage: 'LATE_STAGE',
     // Sold GM = (3,000,000 − 2,280,000) / 3,000,000 = 24.00%
     // Excess rework = (0.16 − 0.06) × 1,900,000 = 190,000
@@ -338,7 +348,7 @@ export const CURATED: readonly CuratedScenario[] = [
   },
   // ---------------------------------------------------------------- H -------
   {
-    letter: 'H', archetype: 'CONTRACT_LOSS_RISK', title: 'Contract-Loss Risk',
+    letter: 'H', archetype: 'CONTRACT_LOSS_RISK', title: 'Contract-Loss Risk', projectName: 'Clinical Integration Platform',
     vertical: 'Healthcare & Life Sciences', region: 'Europe', subStage: 'LATE_STAGE',
     // Sold GM = (6,000,000 − 4,560,000) / 6,000,000 = 24.00%
     contractValue: 6_000_000, budgetedCost: 4_560_000, contingencyBudget: 300_000,
@@ -374,7 +384,7 @@ export const CURATED: readonly CuratedScenario[] = [
   },
   // --------------------------------------------------------------- LR ------
   {
-    letter: 'LR', archetype: 'SCHEDULE_SLIP_HONEST', title: 'Leading Risk, No Cost Overrun',
+    letter: 'LR', archetype: 'SCHEDULE_SLIP_HONEST', title: 'Leading Risk, No Cost Overrun', projectName: 'Network Operations Transformation',
     vertical: 'Communications', region: 'Europe', subStage: 'LATE_STAGE',
     // Sold GM = (4,200,000 − 3,150,000) / 4,200,000 = 25.00%
     contractValue: 4_200_000, budgetedCost: 3_150_000, contingencyBudget: 200_000,
@@ -383,6 +393,19 @@ export const CURATED: readonly CuratedScenario[] = [
       cp(24, 0.38, 0.40, 1_120_000, 1_910_000, 60_000, 60_000, 0, 'GREEN'),
       cp(16, 0.45, 0.47, 1_340_000, 1_720_000, 72_000, 78_000, 0, 'GREEN'),
       cp(8, 0.50, 0.53, 1_520_000, 1_500_000, 84_000, 104_000, 0, 'GREEN'),
+      /*
+       * A fourth checkpoint four weeks out, so the contingency draw *accelerates* into the as-of
+       * date rather than running linearly to it.
+       *
+       * Checkpoints are interpolated weekly, so two points eight weeks apart produce a constant
+       * weekly draw and a flat trend. That was invisible while CONTINGENCY_CONSUMPTION observed a
+       * running total — a cumulative series is adverse whatever its shape — but the signal now reads
+       * movement, and a leading-risk scenario has to actually exhibit the movement it claims. The
+       * buffer here is being spent faster as the schedule tightens, which is the second leading
+       * indicator the scenario is built to show, alongside the milestone slip. Cost and margin stay
+       * clean: that is the whole point of LR.
+       */
+      cp(4, 0.54, 0.565, 1_626_000, 1_400_000, 87_000, 111_000, 0, 'GREEN'),
       // Cost consumed = 1,732,500 / 3,150,000 = 55.00%, BELOW physical completion of 58%.
       // EAC = 1,732,500 + 1,300,000 + 90,000 = 3,122,500 → GM$ 1,077,500 → 25.65%, above as-sold.
       // Nothing in the cost or margin picture is adverse. Everything below it is.

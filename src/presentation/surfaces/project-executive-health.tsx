@@ -507,9 +507,8 @@ export function ProjectExecutiveHealth(
           <InsightCallout insight={{
             id: 'green-claim',
             tone: view.confidence.greenClaimSupported ? 'positive' : 'critical',
-            headline: view.confidence.greenClaimSupported
-              ? 'The evidence supports the status being claimed'
-              : 'No evidence means no high confidence in Green',
+            // R1.7. Wording is governed in the view model — see greenClaimHeadline.
+            headline: view.confidence.greenClaimHeadline,
             body: view.confidence.greenClaimNarrative,
             treatment: 'computed',
           }} />

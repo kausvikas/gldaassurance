@@ -512,9 +512,22 @@ describe('the surface renders and does not compute', () => {
       .toBe(JSON.stringify(viewH));
   });
 
-  it('carries the demo marker and the denial case through the built artifact', () => {
+  /*
+   * The published executive route carries the synthetic marker and exactly one application shell.
+   *
+   * This asserted that the built page also contained an authorization *denial* — because the build
+   * script rendered every persona into one document, so a Delivery Manager's refusal screen was
+   * published inside the Chief Delivery Officer's route. That was a design-review artefact, not a
+   * product: an executive scrolled from their own portfolio into another role's error state.
+   *
+   * The denial behaviour itself is unchanged and still governed; it is asserted where a security
+   * behaviour belongs, in the authorization suite under tests/authz, against the gateway rather
+   * than against published HTML.
+   */
+  it('carries the demo marker and exactly one shell through the built artifact', () => {
     const built = readFileSync('docs/design/margin-intelligence.html', 'utf8');
     expect(built).toMatch(/DEMO\s*[—-]\s*SYNTHETIC DATA/i);
-    expect(built).toContain('Not available to this role');
+    expect(built).not.toContain('Not available to this role');
+    expect(built.match(/href="\/portfolio"/g) ?? []).toHaveLength(1);
   });
 });

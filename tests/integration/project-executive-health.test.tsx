@@ -247,7 +247,28 @@ describe('no evidence means no high confidence in Green', () => {
   });
 
   it('renders the rule on the page, not only in the payload', () => {
-    expect(pageC).toMatch(/evidence supports the status being claimed|No evidence means no high confidence in Green/);
+    expect(pageC).toMatch(
+      /Data confidence is sufficient to present the reported Green|No Green is reported, so this evidence rule does not apply|No evidence means no high confidence in Green/,
+    );
+  });
+
+  /*
+   * R1.7. The assurance headline states what it supports, never a bare "status".
+   *
+   * Project C reports GREEN while the system assesses RED, so a headline saying the evidence
+   * supports "the status being claimed" read as ratifying the reported RAG on the very page whose
+   * headline finding is that the two disagree. This rule only ever judged whether data confidence
+   * is strong enough to present a Green claim.
+   */
+  it('never claims the evidence supports an unqualified "status"', () => {
+    expect(pageC).not.toMatch(/evidence supports the status being claimed/);
+  });
+
+  it('names data confidence, not status agreement, when the Green claim is supported', () => {
+    expect(viewC.confidence.greenClaimSupported).toBe(true);
+    expect(viewC.confidence.greenClaimHeadline).toBe(
+      'Data confidence is sufficient to present the reported Green',
+    );
   });
 });
 
@@ -272,7 +293,20 @@ describe('the commitment comparison keeps three baselines distinct', () => {
     expect(labels).toContain('Physical completion (planned vs actual)');
     expect(labels).toContain('End date');
     expect(labels).toContain('Next critical milestone');
-    expect(labels).toContain('Commercial exposure');
+  });
+
+  /*
+   * R1.4. Every row is one measure at three baselines.
+   *
+   * "Commercial exposure" was not: its columns held a literal zero, MET-COM-009 uncommercialised
+   * exposure and incrementalRiskExposure — three different quantities — and its variance summed
+   * the last two instead of differencing original against forecast, roughly doubling the figure.
+   * MET-COM-009 is a current-state measure with no as-sold baseline, so it has no three-baseline
+   * reading and belongs in the scope and commercial block, where it still appears.
+   */
+  it('does not place a current-state exposure in a three-baseline table', () => {
+    expect(viewC.commitment.map((r) => r.label)).not.toContain('Commercial exposure');
+    expect(viewC.scopeCommercial.map((f) => f.label)).toContain('Uncommercialised exposure');
   });
 
   it('does not invent a current-contractual gross margin percentage', () => {
@@ -612,6 +646,8 @@ describe('the forward outlook is projected from MET-HLTH-011', () => {
 // 12. Determinism and the built artifact
 // ---------------------------------------------------------------------------
 
+const PROJECT_PAGE_ID = viewC.header.projectId;
+
 describe('determinism and the artifact', () => {
   it('produces a byte-identical view for identical inputs (AC-7)', () => {
     expect(JSON.stringify(projectExecutiveHealthFor(portfolio, C))).toBe(JSON.stringify(viewC));
@@ -622,8 +658,22 @@ describe('determinism and the artifact', () => {
     expect(built).toMatch(/DEMO\s*[—-]\s*SYNTHETIC DATA/i);
   });
 
-  it('renders the denial case in the built page, not only the happy path', () => {
-    const built = readFileSync('docs/design/project-executive-health.html', 'utf8');
-    expect(built).toContain('Not available to this role');
+  /*
+   * The published executive route carries the synthetic marker and exactly one application shell.
+   *
+   * This asserted that the built page also contained an authorization *denial* — because the build
+   * script rendered every persona into one document, so a Delivery Manager's refusal screen was
+   * published inside the Chief Delivery Officer's route. That was a design-review artefact, not a
+   * product: an executive scrolled from their own portfolio into another role's error state.
+   *
+   * The denial behaviour itself is unchanged and still governed; it is asserted where a security
+   * behaviour belongs, in the authorization suite under tests/authz, against the gateway rather
+   * than against published HTML.
+   */
+  it('publishes one project per page, with no denial fixture in the executive route', () => {
+    const built = readFileSync('docs/design/projects/' + PROJECT_PAGE_ID + '.html', 'utf8');
+    expect(built).toMatch(/DEMO\s*[—-]\s*SYNTHETIC DATA/i);
+    expect(built).not.toContain('Not available to this role');
+    expect(built.match(/href="\/portfolio"/g) ?? []).toHaveLength(1);
   });
 });

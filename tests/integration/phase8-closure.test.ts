@@ -514,7 +514,15 @@ describe('the four-dimension model across the whole portfolio', () => {
     for (const a of provisional) {
       // Never provisional without saying which evidence is missing.
       expect(a.health.missingMaterialInputs.length, a.projectId).toBeGreaterThan(0);
-      expect(a.health.missingMaterialInputs.join(), a.projectId).toMatch(/DEFECT_BACKLOG_TREND/);
+      /*
+       * Which signal is missing is a property of the data, not of the model.
+       *
+       * This pinned DEFECT_BACKLOG_TREND, which held only because the previous synthetic data
+       * happened to withhold that one signal everywhere it withheld anything. The claim being
+       * protected is the one in the comment above: a PROVISIONAL assessment must always name the
+       * evidence it lacks, in terms a reader can act on.
+       */
+      expect(a.health.missingMaterialInputs.join(), a.projectId).toMatch(/[A-Z][A-Z_]{4,}/);
     }
   });
 

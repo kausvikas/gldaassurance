@@ -660,11 +660,23 @@ export function qualityReworkSeries(p: SyntheticPortfolio, projectId: string): S
 export function contingencySeries(p: SyntheticPortfolio, projectId: string): SignalSeries | null {
   const draws = byWeek(p.facts.contingencyDrawdowns.filter((d) => d.projectId === projectId));
   if (draws.length === 0) return null;
-  let cumulative = 0;
-  const observations = draws.map((d) => {
-    cumulative += Number(d.amount.amount);
-    return { period: d.week as WeekId, value: cumulative.toFixed(2) };
-  }).slice(-8);
+  /*
+   * ADR: trajectory reads movement, not the running total (approved).
+   *
+   * This observed cumulative consumption, which is monotone by construction: a project can only
+   * ever have drawn more contingency than it had drawn before, so the slope was adverse or flat and
+   * never improving. A project that stopped drawing entirely still reported CONTINGENCY_CONSUMPTION
+   * as deteriorating. Combined with SCOPE_EXPOSURE_TREND, two of the six trajectory signals could
+   * not improve under any circumstances, and IMPROVING - which requires a majority improving with
+   * none adverse - was unreachable for every project in the portfolio.
+   *
+   * The cumulative business fact is untouched and still drives MET-FIN-035 and the contingency
+   * panel. What the trajectory engine now reads is the draw *in each period*: a recovery that stops
+   * consuming the buffer shows as a falling series, which is the movement the signal is named for.
+   */
+  const observations = draws.map((d) => ({
+    period: d.week as WeekId, value: Number(d.amount.amount).toFixed(2),
+  })).slice(-8);
   return seriesOf('CONTINGENCY_CONSUMPTION', 'MET-FIN-035', true, '1000', observations,
     ref('financial', 'contingencyDrawdown', projectId, 'MET-FIN-035'));
 }
@@ -709,11 +721,19 @@ export function scopeExposureSeries(p: SyntheticPortfolio, projectId: string): S
     .filter((c) => c.contractId === spec.contractId && c.supersededByExecutedId === undefined)
     .sort((a, b) => a.raisedOn.localeCompare(b.raisedOn));
   if (pending.length === 0) return null;
-  let cumulative = 0;
-  const observations = pending.map((c, i) => {
-    cumulative += Number(c.proposedValue.amount) * (1 - Number(c.approvalProbability));
-    return { period: `P${String(i + 1)}` as WeekId, value: cumulative.toFixed(2) };
-  }).slice(-4);
+  /*
+   * ADR: trajectory reads movement, not the running total (approved).
+   *
+   * As with contingency, accumulating exposure made this signal monotone and therefore incapable of
+   * reporting improvement. The exposure *level* remains a cumulative fact and still feeds
+   * MET-COM-009 and the commercial panels; the trajectory signal is the exposure arriving in each
+   * period, so a project that has stopped taking on unrecovered scope - or is landing the change
+   * requests behind it - shows a falling series.
+   */
+  const observations = pending.map((c, i) => ({
+    period: `P${String(i + 1)}` as WeekId,
+    value: (Number(c.proposedValue.amount) * (1 - Number(c.approvalProbability))).toFixed(2),
+  })).slice(-4);
   return seriesOf('SCOPE_EXPOSURE_TREND', 'MET-COM-009', true, '1000', observations,
     ref('commercial', 'pendingChange', projectId, 'MET-COM-009'));
 }

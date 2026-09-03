@@ -118,7 +118,8 @@ export function generatePortfolio(seed: string = DEFAULT_SEED): SyntheticPortfol
     const rate = 74;
     const spec: ProjectSpec = {
       ...base,
-      name: `${base.name.split(' ').slice(0, 2).join(' ')} ${scenario.title}`,
+      // The client-facing name, never the scenario label — see CuratedScenario.projectName.
+      name: `${base.name.split(' ').slice(0, 2).join(' ')} ${scenario.projectName}`,
       curatedScenario: scenario.letter,
       archetype: scenario.archetype,
       lifecycleSubStage: scenario.subStage,

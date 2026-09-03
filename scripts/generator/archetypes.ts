@@ -88,16 +88,31 @@ const baseline: ArchetypeDrivers = {
 
 const d = (over: Partial<ArchetypeDrivers>): ArchetypeDrivers => ({ ...baseline, ...over });
 
+/*
+ * Archetype proportions, revised during the enterprise reframe.
+ *
+ * The adverse archetypes' minimums previously summed to 39 of 91 projects, so even after the
+ * generator's baseline defects were corrected and ordinary projects behaved plausibly, more than
+ * half the portfolio was constructed to be in difficulty. A delivery organisation shaped that way
+ * is not operating, and an intervention ranking over it cannot discriminate.
+ *
+ * Each adverse archetype keeps enough instances to be demonstrable and to survive one project
+ * drifting out of its scenario; RECOVERING_RED is raised rather than cut, because recovery must be
+ * a visible portfolio state and not a single specimen. The health engine is untouched: this changes
+ * how many projects are given adverse business conditions, not how any project is assessed.
+ *
+ * Governed by SYNTHETIC_ENTERPRISE_PORTFOLIO_CONTRACT.md 2 and 4.1.
+ */
 export const ARCHETYPES: readonly Archetype[] = [
   {
-    id: 'HEALTHY_REFERENCE', minCount: 22,
+    id: 'HEALTHY_REFERENCE', minCount: 44,
     narrative:
       'Genuinely well run. Metrics near baseline, no divergence, high confidence. Without a credible ' +
       'healthy majority every signal looks like noise and the ranking proves nothing.',
     drivers: d({}),
   },
   {
-    id: 'SILENT_DETERIORATOR', minCount: 6,
+    id: 'SILENT_DETERIORATOR', minCount: 3,
     narrative:
       'Reported Green throughout while the evidence drifts Green → Amber over roughly ten weeks. The ' +
       "product's entire claim (AC-2).",
@@ -109,7 +124,7 @@ export const ARCHETYPES: readonly Archetype[] = [
     }),
   },
   {
-    id: 'UNCOMPENSATED_SCOPE', minCount: 5,
+    id: 'UNCOMPENSATED_SCOPE', minCount: 3,
     narrative:
       'Client requests absorbed without change requests. Pending CRs raised late and ageing unexecuted, ' +
       'so unsecured upside is material and excluded from forecast revenue.',
@@ -119,14 +134,14 @@ export const ARCHETYPES: readonly Archetype[] = [
     }),
   },
   {
-    id: 'PYRAMID_EROSION', minCount: 3,
+    id: 'PYRAMID_EROSION', minCount: 2,
     narrative:
       'Date pressure met by staffing seniors. Schedule green, margin red — the case that proves health ' +
       'cannot be one number.',
     drivers: d({ rateDriftPerWeek: 0.0021, productivityDrag: 0.97, reportedRagOptimism: 1 }),
   },
   {
-    id: 'QUALITY_SPIRAL', minCount: 4,
+    id: 'QUALITY_SPIRAL', minCount: 2,
     narrative:
       'Late-discovered quality debt consuming the remaining budget. Margin follows quality with roughly ' +
       'a six-week lag, visible in the trajectory series.',
@@ -136,7 +151,7 @@ export const ARCHETYPES: readonly Archetype[] = [
     }),
   },
   {
-    id: 'RECOVERING_RED', minCount: 4,
+    id: 'RECOVERING_RED', minCount: 5,
     narrative:
       'Declared Red months ago, under an active recovery plan, genuinely improving. Proves the product ' +
       'distinguishes improving Red from deteriorating Green.',
@@ -147,7 +162,7 @@ export const ARCHETYPES: readonly Archetype[] = [
     }),
   },
   {
-    id: 'ETC_OPTIMISM', minCount: 3,
+    id: 'ETC_OPTIMISM', minCount: 2,
     narrative:
       "Cost is running well ahead of delivered progress, but management's estimate to complete has not " +
       'moved to match. The gap between demonstrated performance and the stated forecast is the signal.',
@@ -171,7 +186,7 @@ export const ARCHETYPES: readonly Archetype[] = [
     }),
   },
   {
-    id: 'LOW_CONFIDENCE', minCount: 4,
+    id: 'LOW_CONFIDENCE', minCount: 2,
     narrative:
       'Reporting has degraded: stale updates, missing fields, absent quality data. Health computes, but ' +
       'confidence is Low. Escalates as a reporting failure, never hidden.',
@@ -188,14 +203,14 @@ export const ARCHETYPES: readonly Archetype[] = [
     }),
   },
   {
-    id: 'FX_EXPOSED', minCount: 3,
+    id: 'FX_EXPOSED', minCount: 2,
     narrative:
       'Non-USD contract with local-currency delivery cost. Exchange movement contributes measurably to ' +
       'margin variance and appears as its own named cause — a cause the delivery team did not create.',
     drivers: d({ productivityDrag: 1.02, reportedRagOptimism: 0 }),
   },
   {
-    id: 'SCHEDULE_SLIP_HONEST', minCount: 3,
+    id: 'SCHEDULE_SLIP_HONEST', minCount: 2,
     narrative:
       'Genuine slip, well managed, transparently reported. Reported Amber, evidence Amber, divergence ' +
       'zero. The control case: a system that penalises candour destroys the reporting it depends on.',
@@ -212,6 +227,13 @@ export const ARCHETYPE_BY_ID = new Map(ARCHETYPES.map((a) => [a.id, a]));
  * Portfolio-level patterns — fictional systematic tendencies, present only to make the demo
  * interesting. **These are demo narratives and are never claims about actual delivery performance.**
  * Applied as a small nudge to drivers, not as an override of the archetype.
+ *
+ * "Small" is a constraint, not a description. These magnitudes were large enough that a cohort
+ * alone eroded 6-14pp of margin on HEALTHY_REFERENCE projects and pushed them out of Green through
+ * ELV-MARGIN-EROSION, which made the pattern indistinguishable from genuine project distress.
+ * SYNTHETIC_ENTERPRISE_PORTFOLIO_CONTRACT.md 2J: no cohort modifier may make a healthy archetype
+ * unhealthy on its own. A pattern is visible as concentration across many projects, not as a
+ * band change on any one of them.
  */
 export interface PortfolioPattern {
   readonly id: string;
@@ -224,7 +246,7 @@ export const PORTFOLIO_PATTERNS: readonly PortfolioPattern[] = [
   {
     id: 'MOBILITY_SCOPE_PRESSURE',
     appliesTo: (v) => v === 'Mobility',
-    nudge: { scopeCreepPerWeek: 0.0018, scopeCommercialisationRate: 0.55 },
+    nudge: { scopeCreepPerWeek: 0.0010, scopeCommercialisationRate: 0.68 },
     narrative: 'Mobility engagements tend to absorb late requirement changes without a change request.',
   },
   {
@@ -236,13 +258,13 @@ export const PORTFOLIO_PATTERNS: readonly PortfolioPattern[] = [
   {
     id: 'MEDIA_QUALITY_PRESSURE',
     appliesTo: (v) => v === 'Media & Entertainment',
-    nudge: { defectInjectionPer100h: 1.8, reworkHoursPerDefectWeek: 2.6 },
+    nudge: { defectInjectionPer100h: 1.15, reworkHoursPerDefectWeek: 1.8 },
     narrative: 'Media engagements carry higher rework from late content and integration churn.',
   },
   {
     id: 'FINANCIAL_SERVICES_ACCEPTANCE_LATENCY',
     appliesTo: (v) => v === 'Financial Services',
-    nudge: { dependencyBlockChance: 0.12 },
+    nudge: { dependencyBlockChance: 0.07 },
     narrative: 'Financial Services clients take materially longer to formally accept deliverables.',
   },
 ];

@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tholen Energy Systems Claims Automation Wave 1 — GlobalLogic Delivery Intelligence</title>
+<style>
+:root{
+  --white:#FFFFFF; --steel-05:#F2F3F6; --steel-25:#C8CAD3; --steel-50:#858A9B;
+  --steel-75:#484F6B; --steel-100:#181A24;
+  --orange:#FF5F2D; --orange-deep:#CF3708; --orange-light:#FFCEB9;
+  --blue:#4442E3; --blue-light:#D5D4FF; --blue-deep:#00018B; --cyan:#81CAFF;
+  --green:#2E776A; --green-light:#91C4BB;
+  --rag-red:#B3261E; --rag-red-bg:#FCEBE9;
+  --rag-amber:#8A5A00; --rag-amber-bg:#FBF1DE;
+  --rag-green:#2E776A; --rag-green-bg:#E4F0ED;
+  --rule:#E3E5EB; --rule-strong:#C8CAD3;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --sp:8px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--steel-05);color:var(--steel-100);font-family:var(--font);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums lining-nums}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-0.02em;line-height:1.12;text-wrap:balance}
+p{margin:0}
+a{color:inherit}
+.gl-skip{position:absolute;left:-9999px}
+.gl-skip:focus{left:24px;top:24px;z-index:100;background:var(--white);padding:12px 20px;border-radius:8px}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:4px}
+
+/* ---- floating navigation, as the site does it ---- */
+.gl-navwrap{position:sticky;top:0;z-index:50;padding:16px 40px 0;background:linear-gradient(var(--steel-05) 70%,transparent)}
+.gl-nav{display:flex;align-items:center;gap:32px;background:var(--white);border-radius:14px;
+  padding:14px 22px;box-shadow:0 1px 2px rgba(24,26,36,.06),0 8px 24px rgba(24,26,36,.05)}
+.gl-brand{display:flex;flex-direction:column;line-height:1.1;flex:none}
+.gl-brand b{font-size:17px;font-weight:600;letter-spacing:-0.01em}
+.gl-brand span{font-size:10.5px;color:var(--steel-50);letter-spacing:.04em}
+.gl-navlinks{display:flex;gap:26px;margin:0 auto;list-style:none;padding:0}
+.gl-navlinks a{text-decoration:none;font-size:15px;font-weight:500;color:var(--steel-100);
+  padding:4px 2px;border-bottom:2px solid transparent}
+.gl-navlinks a:hover{border-bottom-color:var(--steel-25)}
+/* Active state is weight, rule and colour together — never colour alone (WCAG 1.4.1). */
+.gl-navlinks a[aria-current="page"]{color:var(--orange);font-weight:600;border-bottom-color:var(--orange)}
+.gl-navmeta{display:flex;align-items:center;gap:14px;flex:none;font-size:12.5px;color:var(--steel-50)}
+.gl-demo{border:1px solid var(--orange);color:var(--orange-deep);border-radius:999px;
+  padding:4px 11px;font-size:10.5px;letter-spacing:.09em;font-weight:600;white-space:nowrap}
+
+/* ---- editorial bands, not cards ---- */
+.gl-band{padding:56px 0}
+.gl-band--white{background:var(--white)}
+.gl-band--tint{background:var(--steel-05)}
+.gl-wrap{max-width:1240px;margin:0 auto;padding:0 40px}
+.gl-eyebrow{font-size:12px;letter-spacing:.11em;text-transform:uppercase;color:var(--steel-50);
+  font-weight:600;margin-bottom:14px}
+.gl-lede{font-size:clamp(28px,3.4vw,44px);font-weight:600;letter-spacing:-0.025em;max-width:22ch}
+.gl-lede em{font-style:normal;color:var(--orange)}
+.gl-sub{margin-top:14px;color:var(--steel-75);max-width:64ch;font-size:16px}
+h2.gl-h2{font-size:26px;margin-bottom:6px}
+.gl-note{color:var(--steel-50);font-size:14px;max-width:70ch}
+.gl-rule{border:0;border-top:1px solid var(--rule);margin:0}
+
+/* ---- figures: aligned columns, no boxes ---- */
+.gl-figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0;
+  border-top:1px solid var(--rule-strong);margin-top:32px}
+.gl-fig{padding:20px 24px 20px 0;border-right:1px solid var(--rule)}
+.gl-fig:last-child{border-right:0}
+.gl-fig dt{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--steel-50);font-weight:600}
+.gl-fig dd{margin:8px 0 0;font-size:30px;font-weight:600;letter-spacing:-0.02em}
+.gl-fig .gl-vs{margin-top:6px;font-size:13.5px;color:var(--steel-50)}
+
+/* ---- RAG: text + shape, never colour alone ---- */
+.gl-rag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+  letter-spacing:.05em;padding:2px 9px;border-radius:4px;white-space:nowrap}
+.gl-rag::before{content:"";width:7px;height:7px;flex:none}
+.gl-rag--GREEN{color:var(--rag-green);background:var(--rag-green-bg)}
+.gl-rag--GREEN::before{background:var(--rag-green);border-radius:50%}
+.gl-rag--AMBER{color:var(--rag-amber);background:var(--rag-amber-bg)}
+.gl-rag--AMBER::before{background:var(--rag-amber);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.gl-rag--RED{color:var(--rag-red);background:var(--rag-red-bg)}
+.gl-rag--RED::before{background:var(--rag-red)}
+
+/* ---- health split: count and economic weight ---- */
+.gl-split{display:grid;grid-template-columns:1fr 1fr;gap:56px;margin-top:28px}
+.gl-meter{margin-top:18px}
+.gl-meter h3{font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--steel-50);margin-bottom:12px}
+.gl-bar{display:flex;height:34px;border-radius:5px;overflow:hidden;background:var(--steel-05)}
+.gl-bar span{display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:var(--white)}
+.gl-bar .g{background:var(--rag-green)} .gl-bar .a{background:#B07A16} .gl-bar .r{background:var(--rag-red)}
+.gl-legend{display:flex;gap:20px;margin-top:10px;font-size:13px;color:var(--steel-75);flex-wrap:wrap}
+
+/* ---- tables: editorial, no vertical rules ---- */
+.gl-tablewrap{overflow-x:auto;margin-top:22px}
+table.gl-t{width:100%;border-collapse:collapse;font-size:14px;min-width:860px}
+table.gl-t th{text-align:left;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--steel-50);font-weight:600;padding:0 16px 10px 0;border-bottom:1px solid var(--rule-strong);white-space:nowrap}
+table.gl-t td{padding:14px 16px 14px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+table.gl-t tbody tr:hover{background:var(--steel-05)}
+table.gl-t .num{text-align:right;padding-right:24px;white-space:nowrap}
+table.gl-t th.num{text-align:right;padding-right:24px}
+.gl-pname{font-weight:600}
+.gl-pname a{text-decoration:none;border-bottom:1px solid var(--steel-25)}
+.gl-pname a:hover{border-bottom-color:var(--orange)}
+.gl-pmeta{color:var(--steel-50);font-size:12.5px;margin-top:3px}
+.gl-sticky{position:sticky;left:0;background:var(--white);z-index:1}
+table.gl-t tbody tr:hover .gl-sticky{background:var(--steel-05)}
+
+/* ---- filters: real controls ---- */
+.gl-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:18px 0}
+.gl-filters label{display:inline-flex;flex-direction:column;gap:5px;font-size:11.5px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--steel-50);font-weight:600}
+.gl-filters select{font:inherit;font-size:14px;color:var(--steel-100);background:var(--white);
+  border:1px solid var(--rule-strong);border-radius:8px;padding:8px 11px;min-width:150px}
+.gl-quick{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:6px}
+.gl-quick button{font:inherit;font-size:13px;background:var(--white);border:1px solid var(--rule-strong);
+  color:var(--steel-75);border-radius:999px;padding:7px 15px;cursor:pointer}
+.gl-quick button:hover{border-color:var(--steel-50)}
+.gl-quick button[aria-pressed="true"]{background:var(--steel-100);color:var(--white);border-color:var(--steel-100)}
+.gl-reset{font:inherit;font-size:13.5px;background:none;border:0;color:var(--orange-deep);
+  cursor:pointer;text-decoration:underline;padding:8px 2px}
+.gl-scope{font-size:13.5px;color:var(--steel-75);padding:6px 0 0}
+.gl-scope b{font-weight:600;color:var(--steel-100)}
+
+/* ---- transitions ---- */
+.gl-flow{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:26px;
+  border-top:1px solid var(--rule-strong)}
+.gl-flow>div{padding:22px 24px 22px 0;border-right:1px solid var(--rule)}
+.gl-flow>div:last-child{border-right:0}
+.gl-flow h3{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--steel-50);margin-bottom:14px}
+.gl-moves{list-style:none;padding:0;margin:18px 0 0;font-size:14px}
+.gl-moves li{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid var(--rule)}
+.gl-moves li:last-child{border-bottom:0}
+.gl-moves .to{color:var(--steel-75)}
+
+/* ---- changes / drivers ---- */
+.gl-list{list-style:none;padding:0;margin:22px 0 0}
+.gl-list li{padding:15px 0;border-bottom:1px solid var(--rule);display:flex;gap:18px;align-items:baseline}
+.gl-list li:last-child{border-bottom:0}
+/* A driver is selectable: it reads as text until it is chosen, then it holds. */
+.gl-driver{font:inherit;background:none;border:0;padding:0;text-align:left;cursor:pointer;color:inherit}
+.gl-driver:hover b{border-bottom:1px solid var(--orange)}
+.gl-driver[aria-pressed="true"] b{color:var(--orange-deep);border-bottom:2px solid var(--orange)}
+.gl-list .k{flex:none;min-width:78px;font-weight:600;font-size:22px;letter-spacing:-0.02em}
+.gl-list .v{color:var(--steel-75)}
+.gl-empty{color:var(--steel-50);font-size:14.5px;padding:20px 0;max-width:64ch}
+details summary{cursor:pointer;font-size:12px;color:var(--steel-50);margin-top:6px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▸ ";color:var(--steel-25)}
+details[open] summary::before{content:"▾ "}
+details summary:hover{color:var(--steel-75)}
+details span{display:block;margin-top:8px;font-size:12.5px;color:var(--steel-50)}
+.gl-arrow{text-decoration:none;font-weight:600;font-size:14.5px;border-bottom:1px solid var(--orange);padding-bottom:2px}
+footer.gl-foot{padding:40px 0 64px;color:var(--steel-50);font-size:13px}
+footer.gl-foot p{max-width:78ch}
+/* Keep the primary navigation on one line down to the 1024 target. */
+@media (max-width:1240px){.gl-navlinks{gap:18px}.gl-navlinks a{font-size:14px}
+  .gl-nav{gap:20px;padding:12px 18px}.gl-navmeta{font-size:11.5px;gap:10px}}
+@media (max-width:1100px){.gl-split{grid-template-columns:1fr;gap:34px}.gl-flow{grid-template-columns:1fr}
+  .gl-flow>div{border-right:0;border-bottom:1px solid var(--rule)}}
+@media (max-width:820px){.gl-navlinks{display:none}.gl-wrap{padding:0 22px}.gl-navwrap{padding:12px 16px 0}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<a class="gl-skip" href="#main">Skip to content</a>
+<div class="gl-navwrap">
+  <nav class="gl-nav" aria-label="Primary">
+    <a class="gl-brand" href="/"><b>GlobalLogic</b><span>Delivery Intelligence</span></a>
+    <ul class="gl-navlinks">
+      <li><a href="/">Command Center</a></li>
+      <li><a href="/projects" aria-current="page">Projects</a></li>
+      <li><a href="/forward-risk">Forward Risk</a></li>
+      <li><a href="/interventions">Interventions</a></li>
+      <li><a href="/assistant">Assistant</a></li>
+    </ul>
+    <span class="gl-navmeta">
+      <span>as at 31 Aug 2026</span>
+      <span class="gl-demo">DEMO — SYNTHETIC DATA</span>
+    </span>
+  </nav>
+</div>
+<div class="gl-band gl-band--tint" style="padding:26px 0 0"><div class="gl-wrap">
+    <p class="gl-note" style="font-size:13.5px"><a class="gl-arrow" href="/projects" data-carry>← All projects</a></p>
+  </div></div>
+<main id="main">
+  <section class="gl-band gl-band--tint"><div class="gl-wrap">
+      <p class="gl-eyebrow">Tholen Energy Systems · Industrial &amp; Energy · Europe</p>
+      <h1 class="gl-lede" style="max-width:26ch">Tholen Energy Systems Claims Automation Wave 1</h1>
+      <dl class="gl-figs">
+        <div class="gl-fig"><dt>Reported</dt><dd style="font-size:20px"><span class="gl-rag gl-rag--GREEN">GREEN</span></dd>
+          <div class="gl-vs">delivery management</div></div>
+        <div class="gl-fig"><dt>Assessed</dt><dd style="font-size:20px"><span class="gl-rag gl-rag--GREEN">GREEN</span></dd>
+          <div class="gl-vs">governed evidence</div></div>
+        <div class="gl-fig"><dt>Trajectory</dt><dd style="font-size:20px">Improving</dd>
+          <div class="gl-vs">30-day <span class="gl-rag gl-rag--GREEN">GREEN</span> · 60-day <span class="gl-rag gl-rag--GREEN">GREEN</span></div></div>
+        <div class="gl-fig"><dt>Margin at risk</dt><dd>$1.17M</dd>
+          <div class="gl-vs">of $14.40M contracted</div></div>
+      </dl></div></section>
+  <section class="gl-band gl-band--white"><div class="gl-wrap">
+      <h2 class="gl-h2">Why it is in this condition</h2>
+      <ul class="gl-list" style="max-width:82ch">
+        <li><span class="v"><b>Status</b><br>GREEN and stable.</span></li>
+        <li><span class="v"><b>Cause</b><br>Margin has eroded -4.3pp against the as-sold position; the plan now needs 1.08× the delivery rate the team has demonstrated.</span></li>
+        <li><span class="v"><b>Outlook</b><br>GREEN at 30 days, GREEN at 60 days.</span></li>
+        <li><span class="v"><b>Economic impact</b><br>$1.17M of sold margin at risk; $6K of scope is being delivered without commercial recovery.</span></li>
+        <li><span class="v"><b>Action</b><br>Commercialise the uncontracted scope, close the productivity gap or rebaseline the schedule.</span></li>
+      </ul></div></section>
+  <section class="gl-band gl-band--tint"><div class="gl-wrap">
+      <h2 class="gl-h2">Performance against commitment</h2>
+      <p class="gl-note" style="max-width:78ch">Progress is on or ahead of plan, but cost is +0.2pp ahead of progress: the work is being done, and it is costing more than it was priced to cost.</p>
+      <dl class="gl-figs">
+        <div class="gl-fig"><dt>Planned completion</dt><dd>17.9%</dd></div>
+        <div class="gl-fig"><dt>Actual completion</dt><dd>19.4%</dd></div>
+        <div class="gl-fig"><dt>Cost consumed</dt><dd>19.7%</dd></div>
+        <div class="gl-fig"><dt>Scope uncovered</dt><dd>$6K</dd>
+          <div class="gl-vs">delivered without a change request</div></div>
+      </dl></div></section>
+  <section class="gl-band gl-band--white"><div class="gl-wrap">
+      <h2 class="gl-h2">Economics</h2>
+      <dl class="gl-figs">
+        <div class="gl-fig"><dt>Sold margin</dt><dd>27.7%</dd></div>
+        <div class="gl-fig"><dt>Forecast margin</dt><dd>23.4%</dd></div>
+        <div class="gl-fig"><dt>Risk-adjusted</dt><dd>19.5%</dd>
+          <div class="gl-vs">scenario, not accounting</div></div>
+        <div class="gl-fig"><dt>Cost at completion</dt><dd>$11.03M</dd></div>
+      </dl></div></section>
+  <section class="gl-band gl-band--tint"><div class="gl-wrap">
+      <h2 class="gl-h2">What to do, and how far to trust it</h2>
+      <p class="gl-sub" style="max-width:76ch;color:var(--steel-100)">Monitor</p>
+      <p class="gl-note" style="margin-top:16px">No critical contractual exposure; the outlook does not worsen; 15 weeks until the next irreversible point; GM value at risk $1.17M; actionability not assessed. Rank confidence low. Placed on partial evidence — missing: no intervention assessment.</p>
+      <p class="gl-note" style="margin-top:22px"><b>Evidence.</b> Data confidence is sufficient to present the reported Green.
+        Data confidence high; forecast confidence
+        low. Time to act: 15 weeks.</p></div></section>
+  <footer class="gl-foot"><div class="gl-wrap">
+    <p><b>Synthetic demonstration data.</b> This public proof of concept renders representative
+      executive views over a generated portfolio. Production identity, authentication, authorization
+      and enterprise integrations are not enabled in this demonstration, and static access to this
+      page does not exercise them.</p>
+  </div></footer>
+</main>
+
+
+</body>
+</html>

@@ -116,7 +116,7 @@ describe('the command-centre service', () => {
   });
 
   it('reconciles the Green-at-Risk panel to the engine, project for project', () => {
-    const fromEngine = someProjects
+    const fromEngine = someFixedBid
       .map((id) => commandCenterProject(portfolio, id))
       .filter((p) => p.assessment.greenAtRisk.isSystemGreenAtRisk)
       .map((p) => p.projectId);
@@ -125,7 +125,7 @@ describe('the command-centre service', () => {
   });
 
   it('counts Reported Green Risk separately from System Green-at-Risk (ADR-0018)', () => {
-    const reported = someProjects
+    const reported = someFixedBid
       .map((id) => commandCenterProject(portfolio, id))
       .filter((p) => p.assessment.greenAtRisk.isReportedGreenRisk)
       .map((p) => p.projectId);
@@ -134,7 +134,7 @@ describe('the command-centre service', () => {
   });
 
   it('reconciles the Green-at-Risk value at risk to the sum of its own projects', () => {
-    const expected = someProjects
+    const expected = someFixedBid
       .map((id) => commandCenterProject(portfolio, id))
       .filter((p) => p.assessment.greenAtRisk.isSystemGreenAtRisk)
       .reduce((m, p) => m.plus(p.assessment.economics.gmValueAtRisk), Money.zero(USD));

@@ -29,7 +29,7 @@
  */
 import {
   type CurrencyCode, type Money, type Quantity, type Ratio,
-  qFixed, qMul, qToNumber, qty,
+  qAbs, qCompare, qDiv, qFixed, qMul, qToNumber, qty,
 } from '@platform/decimal';
 import type { RuleVersion } from '@platform/provenance';
 import type { Instant, WeekId } from '@platform/time';
@@ -226,6 +226,67 @@ const LIFECYCLE_DETAIL: Readonly<Record<string, string>> = {
   ACCEPTED_RISK: 'Assurance accepted the risk explicitly. A decision, not an oversight.',
 };
 
+/*
+ * Executive formatting for the signals table.
+ *
+ * Three columns rendered domain values verbatim: a ratio arrived as
+ * "2.333333333333333333333333333333334", an economic impact as "USD 235000", and an evidence stamp
+ * as "2026-08-31T00:00:00.000Z". Decimal precision is a property of the arithmetic, not a statement
+ * about the world, and printing all of it on an executive surface asserts a certainty the
+ * measurement does not have - beside a rounded threshold, which makes the comparison unreadable.
+ *
+ * All three go through the decimal helpers rather than JavaScript numbers. G-FLOAT forbids float
+ * coercion anywhere in domain, application or presentation code, and it is right to: a component
+ * that parses a number is a component that has started computing one. Domain values are untouched;
+ * only their presentation changes, at the projection boundary.
+ */
+
+/** A governed observation, at a precision an executive can compare against its threshold. */
+function formatObserved(raw: string | null | undefined): string {
+  if (raw === undefined || raw === null) return NC;
+  let q: Quantity;
+  try { q = qty(raw); } catch { return raw; }
+  // Small ratios keep a third place so they stay distinguishable from their threshold; larger
+  // values do not need one.
+  return qFixed(q, qCompare(qAbs(q), qty('1')) < 0 ? 3 : 2);
+}
+
+/** `$235K` rather than `USD 235000`, matching every other money figure in the product. */
+function compactAmount(amount: string, currency: string): string {
+  let q: Quantity;
+  try { q = qty(amount); } catch { return `${currency} ${amount}`; }
+  const sign = qCompare(q, qty('0')) < 0 ? '\u2212' : '';
+  const abs = qAbs(q);
+  const symbol = currency === 'USD' ? '$' : `${currency} `;
+  if (qCompare(abs, qty('1000000')) >= 0) {
+    return `${sign}${symbol}${qFixed(qDiv(abs, qty('1000000')) ?? qty('0'), 2)}M`;
+  }
+  if (qCompare(abs, qty('1000')) >= 0) {
+    return `${sign}${symbol}${qFixed(qDiv(abs, qty('1000')) ?? qty('0'), 0)}K`;
+  }
+  return `${sign}${symbol}${qFixed(abs, 0)}`;
+}
+
+/**
+ * `2026-08-31T00:00:00.000Z` reads as a machine stamp. An executive reads a date.
+ *
+ * Done with string operations rather than Date or parseInt: G-FLOAT bans numeric coercion here, and
+ * an ISO-8601 prefix is already ordered and fixed-width, so there is nothing to parse. Anything not
+ * matching that prefix is returned untouched rather than guessed at.
+ */
+const MONTHS: Readonly<Record<string, string>> = {
+  '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun',
+  '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec',
+};
+function formatAsOf(instant: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(instant);
+  if (m === null) return instant;
+  const [, year, month, day] = m as unknown as [string, string, string, string];
+  const monthName = MONTHS[month];
+  if (monthName === undefined) return instant;
+  return `${day.startsWith('0') ? day.slice(1) : day} ${monthName} ${year}`;
+}
+
 function signalRow(w: EarlyWarningAssessment['warnings'][number]): SignalRowDto {
   const openAction = w.linkedActions.find((a) => a.status !== 'COMPLETE') ?? w.linkedActions[0];
   return {
@@ -233,7 +294,7 @@ function signalRow(w: EarlyWarningAssessment['warnings'][number]): SignalRowDto 
     name: w.ruleName,
     signalId: w.signalId,
     metricId: w.metricId ?? '—',
-    currentValue: w.observedValue ?? NC,
+    currentValue: formatObserved(w.observedValue),
     expectedState: w.threshold === undefined
       ? 'no threshold set'
       : `${w.comparison} ${w.threshold} fires`,
@@ -244,12 +305,13 @@ function signalRow(w: EarlyWarningAssessment['warnings'][number]): SignalRowDto 
       : `${qFixed(w.thresholdMultiple, 2)}× its own threshold`,
     economicImpact: w.estimatedImpact === undefined
       ? 'not estimated for this signal'
-      : `${w.estimatedImpact.currency} ${qFixed(qty(w.estimatedImpact.amount), 0)}`,
+      // A DTO, not a Money instance, so the magnitude is formatted directly.
+      : compactAmount(w.estimatedImpact.amount, w.estimatedImpact.currency),
     scheduleImpact: w.scheduleImpactWeeks === null
       ? 'not estimated'
       : formatWeeks(w.scheduleImpactWeeks),
     ruleVersion: String(w.ruleVersion),
-    evidenceAsOf: w.evidenceAsOf,
+    evidenceAsOf: formatAsOf(w.evidenceAsOf),
     narrative: w.narrative,
     lifecycle: w.lifecycle,
     lifecycleDetail: w.assuranceExceptionReason

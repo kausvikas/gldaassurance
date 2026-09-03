@@ -308,11 +308,22 @@ export function buildMarginIntelligence(
     { label: 'Risk-adjusted GM %', value: pct(e.riskAdjustedGmPercent), metricId: 'MET-FIN-033', treatment: 'computed' },
     { label: 'GM erosion', value: `${money(e.gmErosionValue)} · ${formatPercentagePoints(e.marginErosionPp)}`, metricId: 'MET-FIN-025', treatment: 'computed' },
     { label: 'GM value at risk', value: money(e.gmValueAtRisk), metricId: 'MET-FIN-019', treatment: 'computed' },
-    {
-      label: 'Potential contract loss',
-      value: e.forecastGmValue.isNegative() ? money(e.forecastGmValue.negated()) : money(input.zero),
-      metricId: 'MET-FIN-024', treatment: 'computed',
-    },
+    /*
+     * R1.5. "Potential contract loss" is removed rather than re-identified.
+     *
+     * It carried `MET-FIN-024`, which METRIC_CATALOG.md registers as **Forecast GM $** — so one
+     * frozen metric ID named two different figures on one surface ($180K and $0). There is no
+     * registered project-level contract-loss metric to move it to: MET-PORT-009 Portfolio
+     * Forecast Loss Exposure is a portfolio aggregate, not a project figure.
+     *
+     * The value was `forecastGm < 0 ? |forecastGm| : 0` — a restatement of MET-FIN-024 itself,
+     * carrying no information the "Forecast GM $" tile above does not already carry. Worse, it
+     * read $0 directly beneath the OVR-CONTRACT-LOSS banner announcing a downside of −$552K,
+     * because the tile described the most-likely case while the banner described the downside
+     * scenario. The banner states the contract-loss position with its scenarios and is retained.
+     *
+     * Inventing a new metric here would reopen governed economics, which this gate forbids.
+     */
   ];
 
   // --- Margin bridge --------------------------------------------------------
@@ -446,7 +457,22 @@ export function buildMarginIntelligence(
     { label: 'Consumed', value: money(input.contingencyConsumed), metricId: 'MET-FIN-037', treatment: 'fact' },
     { label: 'Remaining', value: money(input.contingencyBudget.minus(input.contingencyConsumed)), metricId: 'MET-FIN-036', treatment: 'computed' },
     { label: '% consumed', value: pct(e.contingencyConsumedPercent), metricId: 'MET-FIN-035', treatment: 'computed' },
-    { label: 'Physical completion', value: pct(e.costConsumedPercent), metricId: 'MET-DEL-016', treatment: 'fact' },
+    /*
+     * R1.1. This row is MET-DEL-016 Actual Physical Completion, and it must be read from the
+     * delivery observation — not from MET-FIN-028 Cost Consumed %. It previously projected
+     * `e.costConsumedPercent` under the MET-DEL-016 label, which made a project read as 85.5%
+     * complete when the governed physical completion was 66.0%. The contingency burn gap beside
+     * it (MET-FIN-034 = MET-FIN-035 − MET-DEL-016) is computed from the correct value, so the
+     * two disagreed on the same page. Cost consumed is a different measure with its own ID and
+     * belongs to the burn narrative, not the contingency one.
+     */
+    {
+      label: 'Physical completion',
+      value: input.delivery.progressAtLatest === null
+        ? NC
+        : qPct(qty(input.delivery.progressAtLatest.physicalCompletion)),
+      metricId: 'MET-DEL-016', treatment: 'fact',
+    },
     { label: 'Contingency burn gap', value: formatPercentagePoints(e.contingencyBurnGap), metricId: 'MET-FIN-034', treatment: 'computed' },
   ];
 

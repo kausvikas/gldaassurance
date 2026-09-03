@@ -31,6 +31,9 @@ import { AS_OF, historyStart, type ProjectSpec } from './portfolio.js';
 import { Rng, dec } from './rng.js';
 
 const WEEKLY_HOURS_PER_FTE = 34;
+/** The healthy baseline a recovering project decays back toward — see `baseline` in archetypes.ts. */
+const BASELINE_DEFECTS = 0.9;
+const BASELINE_REWORK = 1.4;
 
 /** Classic delivery S-curve: slow start, fast middle, long tail. */
 function plannedProgressAt(fraction: number): number {
@@ -125,13 +128,49 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
     // DR-051: a project carrying productivity drag slips its **undelivered** milestones. Before
     // this, 2 of 527 milestones had a forecast different from baseline, so MET-DEL-009 and
     // MET-DEL-010 were constant zero and read as *perfect* into the Delivery dimension.
-    const slipDays = dr.productivityDrag > 1 && at > AS_OF
-      ? Math.round((dr.productivityDrag - 1) * 90 * rng.range(0.4, 1.3))
+    /*
+     * Slip is judged against the drag the project will actually be carrying when the milestone
+     * falls due, not against the archetype's opening value.
+     *
+     * This read `dr.productivityDrag > 1`, a constant for the life of the project, so every
+     * undelivered milestone on a recovering project slipped even after the recovery had returned
+     * its productivity to baseline. MILESTONE_HIT_RATE was therefore materially adverse on all of
+     * them, and because `evaluateTrajectory` reports IMPROVING only when no signal is adverse,
+     * no project in the portfolio could ever be seen to improve however well it was performing.
+     *
+     * Using the effective drag at the milestone's own week lets a recovery show up where delivery
+     * evidence actually appears — in milestones that stop slipping — rather than only in the
+     * velocity series.
+     */
+    const milestoneWeek = Math.round(
+      (Date.parse(at) - Date.parse(spec.startDate)) / (7 * 86_400_000),
+    );
+    const dragAtMilestone = Math.max(0.9,
+      dr.productivityDrag + dr.productivityDragPerWeek * milestoneWeek);
+    const slipDays = dragAtMilestone > 1 && at > AS_OF
+      ? Math.round((dragAtMilestone - 1) * 90 * rng.range(0.4, 1.3))
+      : 0;
+    /*
+     * A milestone whose baseline has passed has a delivery record.
+     *
+     * Ordinary projects previously carried no `actualDate` at all — only the curated scenarios set
+     * one — so MET-DEL-009, MET-DEL-010 and the milestone hit rate were vacuous across most of the
+     * portfolio, and MILESTONE_HIT_RATE could never trend in either direction. Delivered milestones
+     * are now recorded, late in proportion to the drag the project was carrying when they fell due.
+     *
+     * For a recovering project that means early milestones land late and later ones land on time,
+     * so the hit rate genuinely rises through the series. The improvement is evidence, produced by
+     * the same drag curve that drives everything else, rather than a trajectory label.
+     */
+    const pastDue = compareDates(at, AS_OF) < 0;
+    const lateBy = dragAtMilestone > 1.02
+      ? Math.round((dragAtMilestone - 1) * 70 * rng.range(0.5, 1.4))
       : 0;
     f.milestones.push({
       id: `mst-${spec.projectId}-${m}`, projectId: spec.projectId,
       name: `Milestone ${m}`, baselineDate: at,
       forecastDate: slipDays > 0 ? addDays(at, slipDays) : at,
+      ...(pastDue ? { actualDate: lateBy > 0 ? addDays(at, lateBy) : at } : {}),
       paymentGating: gating,
       ...(gating ? { gatedValue: money(contractValue / Math.ceil(milestoneCount / 2)) } : {}),
       synthetic: true,
@@ -170,12 +209,54 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
     // gradual, which is what distinguishes an improving Red from a healthy Green.
     const dragWeeks = inRecovery ? dr.recoveryFromWeek as number : weekIndex;
     const recoveryWeeks = inRecovery ? weekIndex - (dr.recoveryFromWeek as number) : 0;
+    /*
+     * Recovery in the productivity dimension. RECOVERING_RED carries a negative
+     * `productivityDragPerWeek`, so this expression walks drag down from week zero and the project
+     * is genuinely getting cheaper to deliver over time.
+     *
+     * Productivity alone is not recovery. `evaluateTrajectory` reports IMPROVING only when **no**
+     * signal is materially adverse and a majority are improving, so a project whose defect intake,
+     * rework and contingency draw all continue at their distressed rate stays DETERIORATING however
+     * fast its velocity improves. That is correct: an organisation that fixed one thing has not
+     * recovered. The remaining dimensions are recovered below, through time, so the improvement is
+     * evidence the trajectory engine reads rather than a label applied to it.
+     */
     const drag = Math.max(0.9,
-      dr.productivityDrag + dr.productivityDragPerWeek * dragWeeks + (inRecovery ? dr.productivityDragPerWeek * recoveryWeeks : 0));
-    const rate = asSoldRate * (1 + dr.rateDriftPerWeek * weekIndex);
+      dr.productivityDrag + dr.productivityDragPerWeek * dragWeeks
+      + (inRecovery ? dr.productivityDragPerWeek * recoveryWeeks : 0));
+    /*
+     * Rate drift saturates. Compounded linearly across a 130-week engagement, the North America
+     * cohort's 0.0009/week reached +12% on the blended rate — a cost overrun large enough, on its
+     * own, to erode 9pp of margin and fire ELV-MARGIN-EROSION on projects whose archetype declares
+     * them healthy. A cohort pattern is a tendency, not a sentence: it may move a project within a
+     * band, never out of one by itself. The archetype decides the project's condition.
+     */
+    const rate = asSoldRate * (1 + Math.min(0.03, dr.rateDriftPerWeek * weekIndex));
+
+    /*
+     * Recovery across the dimensions that caused the distress, not only productivity.
+     *
+     * A funded recovery plan closes defects faster than they arrive, works the rework backlog down,
+     * stops drawing contingency, and lands the change requests that were sitting unsigned. Each of
+     * those is a separate governed signal with its own time series, and IMPROVING requires a
+     * majority of them to be moving the right way with none still materially adverse.
+     *
+     * The taper is gradual and bounded: quality intake and rework decay toward — never below — the
+     * healthy baseline, because a recovering project becomes ordinary, not exceptional. Decision B:
+     * recovery happens through time and past snapshots are never rewritten.
+     */
+    const recoveryTaper = inRecovery ? Math.max(0.25, 1 - recoveryWeeks * 0.035) : 1;
+    const defectIntake = BASELINE_DEFECTS
+      + (dr.defectInjectionPer100h - BASELINE_DEFECTS) * recoveryTaper;
+    const reworkPerDefect = BASELINE_REWORK
+      + (dr.reworkHoursPerDefectWeek - BASELINE_REWORK) * recoveryTaper;
+    const contingencyDraw = dr.contingencyDrawPerWeek * (inRecovery ? recoveryTaper * 0.4 : 1);
+    const commercialisation = inRecovery
+      ? Math.min(0.95, dr.scopeCommercialisationRate + (1 - recoveryTaper) * 0.5)
+      : dr.scopeCommercialisationRate;
 
     // Customer dependency → blocked effort → progress down and absorbed cost up.
-    if (!openDependency && w.chance(dr.dependencyBlockChance)) {
+    if (!openDependency && w.chance(dr.dependencyBlockChance * (inRecovery ? 0.35 : 1))) {
       const id = `dep-${spec.projectId}-${weekIndex}`;
       const durationWeeks = w.int(1, 5);
       openDependency = { id, untilWeek: weekIndex + durationWeeks };
@@ -189,12 +270,105 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
     const blockedFraction = openDependency && weekIndex < openDependency.untilWeek ? w.range(0.15, 0.45) : 0;
     if (openDependency && weekIndex >= openDependency.untilWeek) openDependency = undefined;
 
-    const grossHours = spec.teamSize * WEEKLY_HOURS_PER_FTE;
-    const weekRework = Math.min(grossHours * 0.42, openMajorDefects * dr.reworkHoursPerDefectWeek);
+    /*
+     * Effort is spent against the plan's shape too, for the same reason progress is earned against
+     * it.
+     *
+     * `spec.teamSize` is clamped to [4, 18] in portfolio.ts, so using it as the weekly effort
+     * quota decoupled spend from the budget it is measured against: a project whose planned effort
+     * implies 30 FTE burned 60% of its budgeted rate, and one implying 2 FTE burned double. Burn
+     * gap is cost consumed minus physical completion, so that clamp alone produced +12 to +25pp
+     * burn gaps and negative forecast margin on projects with no productivity drag and no scope
+     * problem — the second reason the portfolio had almost no healthy population.
+     *
+     * Weekly effort is now the plan's own effort curve. Past the planned end date a project still
+     * burns, at a reduced rate, because an overrunning team is smaller than a full one but is not
+     * free — that residual is what makes a genuine overrun cost money.
+     *
+     * teamSize remains the organisational fact it always was, and still drives assignments and the
+     * seniority pyramid. It is simply no longer the hidden denominator of delivery economics.
+     */
+    const plannedThisWeek = plannedProgressAt((weekIndex + 1) / spec.durationWeeks)
+      - plannedProgressAt(weekIndex / spec.durationWeeks);
+    const plannedWeeklyHours = plannedHours / spec.durationWeeks;
+    /*
+     * Inside the planned duration the weekly effort is exactly the plan's own increment, so the
+     * whole-project total equals plannedHours and a project that performs to plan lands on its
+     * sold margin. A floor applied here instead — max(increment, 0.3 x average) — overspends on
+     * both flat ends of the S-curve, where the increment is smallest, and that unbudgeted excess
+     * was enough to erode 6-13pp of margin on projects with no adverse driver at all. It fired
+     * ELV-MARGIN-EROSION (>= 5pp) on 24 of 37 HEALTHY_REFERENCE projects, and because an elevation
+     * demotes a Green composite to Amber, it was the single largest reason the portfolio had no
+     * healthy population.
+     *
+     * Past the planned end date the floor is the right model and is kept: an overrunning team is
+     * smaller than a full one but is not free, and that residual is what makes an overrun cost
+     * money rather than quietly completing for nothing.
+     */
+    const grossHours = plannedThisWeek > 0
+      ? plannedThisWeek * plannedHours
+      : plannedWeeklyHours * 0.3;
+    const weekRework = Math.min(grossHours * 0.42, openMajorDefects * reworkPerDefect);
     const blockedHours = grossHours * blockedFraction;
     const productiveHours = Math.max(0, grossHours - weekRework - blockedHours);
 
-    const progressIncrement = productiveHours / (hoursPerProgressPoint * drag);
+    /*
+     * Progress is earned against the **plan's own shape**, not against a flat hourly quota.
+     *
+     * This previously read `productiveHours / (plannedHours * drag)`, which accrued completion
+     * linearly while `plannedProgressAt` follows an S-curve (3f² − 2f³). Two structural biases fell
+     * out of that, and together they made the synthetic portfolio unusable as a demonstration:
+     *
+     *   1. **Every project drifted behind its own plan through the back half of its life.** At 75%
+     *      elapsed the S-curve expects 84.4% complete while a linear accrual reaches 75% — a ~9pp
+     *      deficit that no driver caused and no intervention could fix, applied to every project
+     *      regardless of archetype.
+     *   2. **Large projects were starved outright.** `teamSize` is clamped to [4, 18] in
+     *      portfolio.ts while it is also the numerator of progress, so a project whose planned
+     *      effort implies 30 FTE received 18 and could never track its plan. Progress variances
+     *      of −50pp and worse on HEALTHY_REFERENCE projects came from this clamp, not from
+     *      productivity.
+     *
+     * The result was that 37 fixed-bid HEALTHY_REFERENCE projects produced 1 Green, 20 Amber and
+     * 16 Red, which is why System Green-at-Risk had an empty candidate pool: the metric requires a
+     * healthy population and the generator could not produce one.
+     *
+     * Progress is now the planned increment for this week, scaled by how much of the team's
+     * capacity actually reached productive work (capacity lost to rework and customer blocking)
+     * and by the archetype's productivity drag. A project with no drag, no rework and no blocked
+     * effort tracks its plan exactly; every departure from plan is now caused by a driver the
+     * archetype declares, which is what the archetypes were written to express.
+     *
+     * No threshold, weight, band edge or health rule is touched — this is synthetic input
+     * generation only.
+     */
+    const capacityRatio = grossHours === 0 ? 0 : productiveHours / grossHours;
+    /*
+     * Past the planned end date the plan has no increment left to earn, but the work does.
+     *
+     * Without this an overrunning project freezes just short of complete, and the portfolio loses
+     * the "delivered, still open" lifecycle state entirely — the one that makes
+     * REQUIRED_VELOCITY_RATIO NOT_APPLICABLE for NO_REMAINING_WORK rather than not computable.
+     * That state is a governed control condition the portfolio is required to exercise, so it is
+     * generated deliberately here rather than left to fall out of an arithmetic edge.
+     */
+    /*
+     * Delivery finishes when the project reaches acceptance, not when the calendar runs out.
+     *
+     * A project in UAT_ACCEPTANCE or CLOSED_OUT has built what it was contracted to build; what
+     * remains is acceptance, not construction. Physical completion therefore converges on 1.0
+     * across those sub-stages, which is both the realistic reading and the condition that makes
+     * REQUIRED_VELOCITY_RATIO NOT_APPLICABLE for NO_REMAINING_WORK rather than not computable.
+     *
+     * That control state used to appear only by accident: the teamSize clamp let some projects
+     * overshoot to 100% while still mid-execution, and a coverage test pinned itself to one of
+     * them. Correcting the clamp removed the state along with the defect. It is generated
+     * deliberately here so the portfolio exercises the state by contract instead of by artifact.
+     */
+    const elapsedFraction = weekIndex / spec.durationWeeks;
+    const inAcceptance = elapsedFraction >= 0.87;
+    const overrunCatchUp = plannedThisWeek <= 0 || inAcceptance ? (1 - physical) * 0.28 : 0;
+    const progressIncrement = plannedThisWeek * (capacityRatio / drag) + overrunCatchUp * capacityRatio;
     physical = Math.min(1, physical + progressIncrement);
     totalHours += grossHours;
     reworkHours += weekRework;
@@ -247,7 +421,7 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
     }
 
     // Quality: defects injected by volume of work, closed at a rate the archetype controls.
-    const injected = Math.round((productiveHours / 100) * dr.defectInjectionPer100h * w.range(0.6, 1.4));
+    const injected = Math.round((productiveHours / 100) * defectIntake * w.range(0.6, 1.4));
     for (let i = 0; i < injected; i += 1) {
       defectSeq += 1;
       const severity = w.chance(0.1) ? 'CRITICAL' : w.chance(0.35) ? 'MAJOR' : w.chance(0.7) ? 'MINOR' : 'TRIVIAL';
@@ -268,7 +442,7 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
     // Scope arrival → either an executed CR (commercially protected) or absorbed cost.
     const scopeValue = dr.scopeCreepPerWeek * contractValue;
     if (scopeValue > 500 && w.chance(0.55)) {
-      const commercialised = w.chance(dr.scopeCommercialisationRate);
+      const commercialised = w.chance(commercialisation);
       const scopeId = `scp-${spec.projectId}-${weekIndex}`;
       f.scopeItems.push({
         id: scopeId, projectId: spec.projectId,
@@ -319,10 +493,35 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
       }
     }
 
-    // ETC revision every six weeks. `etcOptimism` < 1 is what MET-FIN-030 later detects.
-    if (weekIndex % 6 === 0) {
+    /*
+     * ETC is revised on a monthly cycle, not a six-weekly one.
+     *
+     * Progress only rises between revisions, so a stale ETC always overstates the work remaining,
+     * never understates it. At a six-week cadence that one-sided lag was worth several points of
+     * apparent margin erosion on every project in the portfolio - enough to fire ELV-MARGIN-EROSION
+     * and demote an otherwise Green composite to Amber. A monthly revision matches financial close
+     * for a delivery organisation reporting progress weekly, and leaves the remaining lag small
+     * enough to be ordinary noise rather than a systematic penalty.
+     *
+     * `etcOptimism` < 1 remains what MET-FIN-030 detects; that is a declared estimating bias, and
+     * it is the only one the portfolio should contain.
+     */
+    if (weekIndex % 4 === 0) {
       const remaining = Math.max(0, 1 - physical);
-      const honestEtc = remaining * hoursPerProgressPoint * drag * rate * 1.06;
+      /*
+       * An honest estimate to complete is the remaining work at the cost the project is actually
+       * demonstrating — no more. The 1.06 here was an undeclared 6% pessimism applied to every
+       * revision on every project, and because EAC is dominated by ETC early in delivery it eroded
+       * 5-8pp of margin on projects at the start of their life while converging to nothing by the
+       * end. That is the shape the diagnostic found: EAC/budget of 1.098 at 23% complete against
+       * 1.005 at 97% complete on the same archetype.
+       *
+       * Estimating bias belongs in `etcOptimism`, which is a declared driver an archetype sets
+       * deliberately and which MET-FIN-030 exists to detect. A constant applied to every project
+       * is not a bias the product can detect or an executive can act on — it is noise in the
+       * baseline.
+       */
+      const honestEtc = remaining * hoursPerProgressPoint * drag * rate;
       etcRecorded = honestEtc * dr.etcOptimism;
       committed = etcRecorded * w.range(0.05, 0.14);
       f.etcLineItems.push({
@@ -348,7 +547,7 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
     // Contingency is drawn once cost runs ahead of the planned curve.
     const plannedCostToDate = planned * budgetedCost;
     if (costToDate > plannedCostToDate * 1.02 && contingencyConsumed < contingencyBudget) {
-      const draw = Math.min(contingencyBudget - contingencyConsumed, contingencyBudget * dr.contingencyDrawPerWeek);
+      const draw = Math.min(contingencyBudget - contingencyConsumed, contingencyBudget * contingencyDraw);
       if (draw > 1) {
         contingencyConsumed += draw;
         f.contingencyDrawdowns.push({
@@ -362,15 +561,38 @@ export function simulateProject(spec: ProjectSpec, masterSeed: string): Simulati
     // Reported RAG (MET-HLTH-012) — the team's declaration. The generator works out what an honest
     // report would say, then applies the archetype's optimism. The gap between the two is what
     // MET-HLTH-030 later detects; the divergence is caused here, not asserted.
-    if (weekIndex % 2 === 0) {
+    if (weekIndex % 4 === 0) {
       const eac = costToDate + etcRecorded + committed;
       const forecastRevenue = contractValue + executedValueDelta;
       const gm = forecastRevenue > 0 ? (forecastRevenue - eac) / forecastRevenue : 0;
       gmHistory.push({ week, forecastGmPercent: gm });
       const soldGm = (contractValue - budgetedCost) / contractValue;
       const erosionPoints = (soldGm - gm) * 100;
-      const honest = erosionPoints > 9 || physical < planned - 0.16 ? 'RED'
-        : erosionPoints > 4 || physical < planned - 0.07 ? 'AMBER' : 'GREEN';
+      /*
+       * What an honest delivery manager would report, from what a delivery manager can see.
+       *
+       * Reported RAG is deliberately not a simplified run of the System assessment — the two are
+       * independent authorities and their disagreement is the enterprise-control signal the product
+       * exists to surface. But an honest report is not a *narrow* one either. This previously read
+       * only margin erosion and progress, so every quality, acceptance or dependency condition
+       * became divergence with no reporting-history cause behind it: the delivery line was
+       * reporting Green because the generator never let it see the problem. That is a generator
+       * defect, not a governance finding.
+       *
+       * A delivery manager reviewing a status pack sees the schedule, the cost position, open
+       * critical defects and whether the customer is blocking. Those are included here.
+       *
+       * Divergence therefore has exactly two designed causes, both explainable against a reporting
+       * history: the reporting lag (this block runs on a four-week cycle, so a report can be up to
+       * four weeks behind the evidence), and `reportedRagOptimism`, which an archetype sets
+       * deliberately. Nothing else may produce it.
+       */
+      const qualityPressure = openMajorDefects > Math.max(6, spec.teamSize * 1.5);
+      const customerBlocked = openDependency !== undefined;
+      const honest = erosionPoints > 9 || physical < planned - 0.16
+        || (qualityPressure && erosionPoints > 6) ? 'RED'
+        : erosionPoints > 4 || physical < planned - 0.07 || qualityPressure || customerBlocked
+          ? 'AMBER' : 'GREEN';
       const order = ['RED', 'AMBER', 'GREEN'] as const;
       const declaredIndex = Math.min(2, order.indexOf(honest) + dr.reportedRagOptimism);
       f.statusReports.push({

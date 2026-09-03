@@ -218,6 +218,24 @@ async function ranking(tc: ToolContext): Promise<ToolResult> {
     entityType: 'project', entityId: str(r, 'projectId') ?? '',
     asOf: tc.asOf, sourceDomain: 'portfolio',
     refs: [{ context: 'portfolio', entityType: 'project', entityId: str(r, 'projectId') ?? '', metricId: 'MET-PORT-007' }],
+    /*
+     * R1.2. State the ranking's epistemic state explicitly.
+     *
+     * `claim()` defaults `signalState` to NOT_COMPUTABLE — a deliberately conservative default
+     * where every unstated field takes the reading that weakens the claim. This call site never
+     * passed one, so every rank claim inherited NOT_COMPUTABLE while the Portfolio surface, reading
+     * the same MET-PORT-007 output, presented the ordering as usable at rank confidence MEDIUM.
+     * One governed metric therefore carried two epistemic states for the same object and as-of,
+     * and the Assistant listed all 25 ranks under "What could not be computed" beneath an answer
+     * built from them.
+     *
+     * The rank is OBSERVED when the domain produced a position: the ordering is a governed rule
+     * output that exists and is being read, not a value that failed to compute. What is genuinely
+     * partial — no intervention assessment — is carried by `assessmentStatus` PROVISIONAL and by
+     * DR-055, exactly as the Portfolio's rank-confidence qualifier carries it. Absent a position,
+     * the conservative default stands.
+     */
+    signalState: r['rank'] === undefined || r['rank'] === null ? 'NOT_COMPUTABLE' : 'OBSERVED',
     overrides: { limitations: LIMITATIONS_FOR['MET-PORT-007'] ?? [] },
   }));
   return { tool: 'portfolio.ranking.list', claims, untrustedContent: [] };

@@ -35,7 +35,7 @@ import {
 import {
   authorityOf, claimsFor, compose, missingEvidence, missingRequiredClaims, why, worstStatus,
 } from './compose.js';
-import { containsMarkup, neutraliseRetrievedText, validate } from './validator.js';
+import { NEUTRALISED, containsMarkup, neutraliseRetrievedText, validate } from './validator.js';
 import { POC_CALIBRATION } from './envelope.js';
 
 /** One generic string for every unauthorised cause. The reason code is for the audit record only. */
@@ -229,8 +229,23 @@ export async function ask(question: string, opts: AskOptions): Promise<Assistant
    * Neutralising at this seam - between retrieval and everything downstream - means composition,
    * licensing and validation all see the same neutralised text, and a payload cannot license itself.
    */
+  /*
+   * R1.6. A claim whose text did not survive neutralisation is dropped, not rendered.
+   *
+   * `neutraliseRetrievedText` returns the bare NEUTRALISED marker when every sentence in a
+   * retrieved note matched an instruction shape. That marker is a redaction notice for a reader,
+   * never a finding — but it was flowing on as the claim's own text, so the Assistant rendered
+   * "[retrieved content omitted: not a governed finding]" as an L2 OBSERVED claim against
+   * MET-COM-009, in the "Why" list and in the claims-and-provenance table. An omission had become
+   * a business assertion, which is the one thing the epistemic algebra exists to prevent.
+   *
+   * Dropping is the correct disposition rather than qualifying: nothing governed remains to
+   * qualify. Where text partly survives, the claim is kept with its surviving sentences and the
+   * marker appended, which is a truthful partial redaction.
+   */
   const claims = claimsFor(intent, results.flatMap((r) => r.claims))
-    .map((c) => ({ ...c, text: neutraliseRetrievedText(c.text) }));
+    .map((c) => ({ ...c, text: neutraliseRetrievedText(c.text) }))
+    .filter((c) => c.text.trim() !== NEUTRALISED);
   if (claims.length === 0) {
     return empty(question, asOf, opts, refusal(
       'METRIC_NOT_COMPUTABLE',

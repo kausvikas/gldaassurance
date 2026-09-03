@@ -114,20 +114,31 @@ export function DataTable(
   );
 }
 
+/*
+ * These read as current context, not as controls.
+ *
+ * They were <label class="gl-select"> wrappers carrying a ▾ affordance, an aria-label and a
+ * visually-hidden "N options available" — around no form control at all. Nothing could operate
+ * them by mouse or by keyboard, and a screen reader was told there were options to choose that did
+ * not exist. A control that advertises interaction it does not have is worse than no control:
+ * an executive who clicks it and gets nothing stops trusting the rest of the screen.
+ *
+ * This static demonstration has no client runtime to filter with, so the honest presentation is a
+ * statement of the context the server resolved. The chevron and the false option counts are gone;
+ * the label and the resolved value remain, which is the information these ever carried. Real
+ * enterprise filtering is a product capability still to be built, and it will bring real controls
+ * with it.
+ */
 export function FilterBar({ filters }: { readonly filters: readonly FilterViewModel[] }): JSX.Element {
   return (
-    <div className="gl-row" role="group" aria-label="Filters">
+    <div className="gl-row" role="group" aria-label="Applied view context">
       {filters.map((filter) => {
         const selected = filter.options.find((o) => o.value === filter.selected);
         return (
-          <label className="gl-select" key={filter.id}>
+          <span className="gl-select" key={filter.id}>
             <span className="gl-select-label gl-caption">{`${filter.label}:`}</span>
             <span className="gl-select-value gl-body-sm">{selected?.label ?? '—'}</span>
-            <span aria-hidden="true" className="gl-caption">▾</span>
-            <span className="gl-visually-hidden">
-              {`${filter.options.length} options available`}
-            </span>
-          </label>
+          </span>
         );
       })}
     </div>
@@ -147,14 +158,10 @@ export function PortfolioScopeSelector(
 ): JSX.Element {
   const selected = scope.available.find((n) => n.id === scope.selectedId);
   return (
-    <label className="gl-select" aria-label={scope.label}>
+    <span className="gl-select">
       <span className="gl-select-label gl-caption">Scope:</span>
       <span className="gl-select-value gl-body-sm">{selected?.label ?? 'All authorised'}</span>
-      <span aria-hidden="true" className="gl-caption">▾</span>
-      <span className="gl-visually-hidden">
-        {`${scope.available.length} authorised scopes available`}
-      </span>
-    </label>
+    </span>
   );
 }
 
@@ -164,11 +171,10 @@ export function ReportingPeriodSelector(
   const selected = period.periods.find((p) => p.id === period.selectedId);
   return (
     <div className="gl-row-tight">
-      <label className="gl-select" aria-label="Reporting period">
+      <span className="gl-select">
         <span className="gl-select-label gl-caption">Period:</span>
         <span className="gl-select-value gl-body-sm">{selected?.label ?? '—'}</span>
-        <span aria-hidden="true" className="gl-caption">▾</span>
-      </label>
+      </span>
       <span className="gl-caption">{period.asAtLabel}</span>
     </div>
   );
