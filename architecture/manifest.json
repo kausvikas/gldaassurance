@@ -1,14 +1,15 @@
 {
   "version": "1.0.0",
-  "phase": 6,
+  "phase": 13,
   "authority": [
-    "docs/adr/ADR-0001-poc-architecture.md §Decision 3-6",
-    "ARCHITECTURE_DECISIONS.md §4.1 dependency rules",
-    "ARCHITECTURE_DECISIONS.md §4.2 context responsibilities",
-    "docs/adr/ADR-0004-fact-derived-inferred-layering.md §2 directional rules",
-    "TEST_STRATEGY.md §5 architecture tests"
+    "docs/adr/ADR-0001-poc-architecture.md \u00a7Decision 3-6",
+    "ARCHITECTURE_DECISIONS.md \u00a74.1 dependency rules",
+    "ARCHITECTURE_DECISIONS.md \u00a74.2 context responsibilities",
+    "docs/adr/ADR-0004-fact-derived-inferred-layering.md \u00a72 directional rules",
+    "TEST_STRATEGY.md \u00a75 architecture tests",
+    "docs/adr/ADR-0032 \u00a71-\u00a77, ADR-0035 \u00a72-\u00a78, ADR-0036 \u00a72, ADR-0037 \u00a71 (Phase 13)"
   ],
-  "note": "This file is the machine-readable form of the accepted dependency rules. Changing it is an architectural change and requires an ADR (ARCHITECTURE_DECISIONS.md §3.1).",
+  "note": "This file is the machine-readable form of the accepted dependency rules. Changing it is an architectural change and requires an ADR (ARCHITECTURE_DECISIONS.md \u00a73.1).",
   "layers": {
     "presentation": {
       "dir": "src/presentation",
@@ -20,7 +21,7 @@
         "react",
         "react-dom"
       ],
-      "rationale": "ADR-0001 §Decision 5 + PRODUCT_SPEC.md §8.4. The UI may consume only application contracts — never a domain context, never platform persistence, never a seed file. React and react-dom are the presentation runtime named by ADR-0001 §Decision 7 and scoped by ADR-0017; no other package, and no client-side router, state library or charting library, may enter this layer."
+      "rationale": "ADR-0001 \u00a7Decision 5 + PRODUCT_SPEC.md \u00a78.4. The UI may consume only application contracts \u2014 never a domain context, never platform persistence, never a seed file. React and react-dom are the presentation runtime named by ADR-0001 \u00a7Decision 7 and scoped by ADR-0017; no other package, and no client-side router, state library or charting library, may enter this layer."
     },
     "app": {
       "dir": "src/app",
@@ -30,7 +31,7 @@
         "platform"
       ],
       "allowedExternal": [],
-      "rationale": "ADR-0005 §1. The Application layer is the authorization enforcement point and the only orchestrator of contexts."
+      "rationale": "ADR-0005 \u00a71. The Application layer is the authorization enforcement point and the only orchestrator of contexts."
     },
     "contexts": {
       "dir": "src/contexts",
@@ -40,7 +41,7 @@
         "platform"
       ],
       "allowedExternal": [],
-      "rationale": "ADR-0001 §Decision 5. Domain contexts depend downward on platform and sideways only through published public surfaces, per the per-context allow-lists below."
+      "rationale": "ADR-0001 \u00a7Decision 5. Domain contexts depend downward on platform and sideways only through published public surfaces, per the per-context allow-lists below."
     },
     "platform": {
       "dir": "src/platform",
@@ -51,7 +52,7 @@
       "allowedExternal": [
         "decimal.js"
       ],
-      "rationale": "ADR-0002 §Decision 1 names an arbitrary-precision decimal library. It is confined to the platform layer so no context can reach a raw Decimal."
+      "rationale": "ADR-0002 \u00a7Decision 1 names an arbitrary-precision decimal library. It is confined to the platform layer so no context can reach a raw Decimal."
     }
   },
   "layerOrder": [
@@ -61,7 +62,7 @@
     "platform"
   ],
   "tiers": {
-    "0": "Support — depended upon, depends on nothing but platform",
+    "0": "Support \u2014 depended upon, depends on nothing but platform",
     "1": "Foundation identity/structure facts",
     "2": "Domain facts (L1), some producing first-order derived values",
     "3": "Deterministic derived (L2)",
@@ -75,7 +76,7 @@
       ],
       "mayDependOn": [],
       "owns": "Users, roles, sessions, permission grants",
-      "why": "ARCHITECTURE_DECISIONS.md §4.2. Identity is referenced by id everywhere and imports nothing."
+      "why": "ARCHITECTURE_DECISIONS.md \u00a74.2. Identity is referenced by id everywhere and imports nothing."
     },
     "organization": {
       "tier": 1,
@@ -84,7 +85,7 @@
       ],
       "mayDependOn": [],
       "owns": "Legal entities, business units, geographies, hierarchy",
-      "why": "Structural fact. Other contexts hold organisational ids as opaque values (ADR-0001 §Decision 3)."
+      "why": "Structural fact. Other contexts hold organisational ids as opaque values (ADR-0001 \u00a7Decision 3)."
     },
     "portfolio": {
       "tier": 1,
@@ -111,7 +112,7 @@
       ],
       "mayDependOn": [],
       "owns": "As-sold baseline, executed changes, pending changes, contractual terms",
-      "why": "ADR-0003 §1. Sole owner of baseline derivation; duplicating it elsewhere is a boundary violation."
+      "why": "ADR-0003 \u00a71. Sole owner of baseline derivation; duplicating it elsewhere is a boundary violation."
     },
     "financial": {
       "tier": 2,
@@ -123,7 +124,7 @@
         "contract"
       ],
       "owns": "Actuals, revenue recognition, cost, ETC/EAC, margin, FX",
-      "why": "Every MET-FIN variance names a baseline (METRIC_CATALOG.md §1.1 rule 6), and baselines live in Contract."
+      "why": "Every MET-FIN variance names a baseline (METRIC_CATALOG.md \u00a71.1 rule 6), and baselines live in Contract."
     },
     "delivery": {
       "tier": 2,
@@ -167,7 +168,7 @@
       ],
       "mayDependOn": [],
       "owns": "Assignments, utilisation, pyramid, attrition, key-person concentration",
-      "why": "Self-contained fact domain. PERSONAL_DATA classification applies (SECURITY_MODEL.md §4.3). Emits L2: MET-RES-001..010 are registered L2_DERIVED with owner Resource, and ResourceSnapshot has declared them since Phase 2. Corrected from L1-only at Phase 9 under ADR-0022 D-1 — the same stale-entry pattern C-21 resolved for Commercial and Quality."
+      "why": "Self-contained fact domain. PERSONAL_DATA classification applies (SECURITY_MODEL.md \u00a74.3). Emits L2: MET-RES-001..010 are registered L2_DERIVED with owner Resource, and ResourceSnapshot has declared them since Phase 2. Corrected from L1-only at Phase 9 under ADR-0022 D-1 \u2014 the same stale-entry pattern C-21 resolved for Commercial and Quality."
     },
     "risk": {
       "tier": 2,
@@ -193,14 +194,21 @@
       "outputLayers": [],
       "mayDependOn": [],
       "owns": "Versioned rule definitions, thresholds, weights, explanations, and the metric registry",
-      "why": "ARCHITECTURE_DECISIONS.md §4.1 rule 5 — Rules is depended upon and depends on nothing. Phase 2 placed the metric registry here for the same reason thresholds live here: a metric definition is versioned, effective-dated configuration that many contexts consume and none may fork."
+      "why": "ARCHITECTURE_DECISIONS.md \u00a74.1 rule 5 \u2014 Rules is depended upon and depends on nothing. Phase 2 placed the metric registry here for the same reason thresholds live here: a metric definition is versioned, effective-dated configuration that many contexts consume and none may fork."
     },
     "integration": {
       "tier": 0,
       "outputLayers": [],
       "mayDependOn": [],
-      "owns": "Adapter seams and ingestion contracts (POC: synthetic loader only)",
-      "why": "Publishes canonical staged records. It must not import its consumers, or the adapter seam becomes a coupling. See ADR-0008 (Proposed)."
+      "owns": "Connector contract and adapters, staging, identity resolution, source authority registry, conflict detection, ingestion receipts and data-context classification",
+      "why": "ADR-0008 (Accepted 2026-09-03), ADR-0035, ADR-0037. Publishes canonical staged records and the authority registry. It must not import its consumers, or the adapter seam becomes a coupling \u2014 and an adapter that could reach the domain it feeds could resolve its own conflicts."
+    },
+    "knowledge": {
+      "tier": 0,
+      "outputLayers": [],
+      "why": "ADR-0036. Owns the evidence plane: document identity, versioning, page-anchored chunks, the lexical index, retrieval and citation. Tier 0 because evidence is depended upon and depends on nothing: a document does not know which project's health it will be cited in, and a context that imported its consumers would make the evidence plane a back door into the fact plane.",
+      "owns": "Documents, versions, fingerprints, chunks, the knowledge index, retrieval results and citations",
+      "mayDependOn": []
     },
     "health": {
       "tier": 3,
@@ -217,7 +225,7 @@
         "risk"
       ],
       "owns": "Composite scoring, RAG assessment, divergence, contribution breakdown",
-      "why": "METRIC_CATALOG.md §8 — MET-HLTH-001..006 read exactly these six fact domains, with thresholds and weights from Rules."
+      "why": "METRIC_CATALOG.md \u00a78 \u2014 MET-HLTH-001..006 read exactly these six fact domains, with thresholds and weights from Rules."
     },
     "data-quality": {
       "tier": 3,
@@ -256,7 +264,7 @@
         "financial"
       ],
       "owns": "Trajectory, deterioration detection, projected outturn",
-      "why": "METRIC_CATALOG.md §9 declares Forecast L3 inferred; ARCHITECTURE_DECISIONS.md §4.2 lists it L2. Resolved by ADR-0004 §Consequences and ADR-0011 (Proposed) — see CONFLICT C-2. MET-FCST-001/006 read Health, MET-FCST-004 reads Financial."
+      "why": "METRIC_CATALOG.md \u00a79 declares Forecast L3 inferred; ARCHITECTURE_DECISIONS.md \u00a74.2 lists it L2. Resolved by ADR-0004 \u00a7Consequences and ADR-0011 (Proposed) \u2014 see CONFLICT C-2. MET-FCST-001/006 read Health, MET-FCST-004 reads Financial."
     },
     "ai-intelligence": {
       "tier": 4,
@@ -266,7 +274,7 @@
       "mayDependOn": [],
       "forbidAllContexts": true,
       "owns": "Retrieval, grounding, narration, citation assembly",
-      "why": "ARCHITECTURE_DECISIONS.md §4.1 rule 4 and ADR-0004 §3. It declares ports and the Application layer injects authorised implementations. This is what makes AC-6 testable."
+      "why": "ARCHITECTURE_DECISIONS.md \u00a74.1 rule 4 and ADR-0004 \u00a73. It declares ports and the Application layer injects authorised implementations. This is what makes AC-6 testable."
     }
   },
   "platformModules": {
@@ -276,13 +284,13 @@
     },
     "time": {
       "mayDependOn": [],
-      "owns": "Injected Clock, week/period arithmetic (ADR-0003 §5)"
+      "owns": "Injected Clock, week/period arithmetic (ADR-0003 \u00a75)"
     },
     "provenance": {
       "mayDependOn": [
         "time"
       ],
-      "owns": "Provenance envelope shared primitive (ADR-0004 §1)"
+      "owns": "Provenance envelope shared primitive (ADR-0004 \u00a71)"
     },
     "explainability": {
       "mayDependOn": [
@@ -301,17 +309,20 @@
         "authz",
         "provenance"
       ],
-      "owns": "Append-only audit record and sink contract (ADR-0005 §6); records the ruleVersion in force"
+      "owns": "Append-only audit record and sink contract (ADR-0005 \u00a76); records the ruleVersion in force"
     },
     "persistence": {
       "mayDependOn": [
         "time"
       ],
-      "owns": "Unit of work, repository and migration contracts (ADR-0001 §Decision 3)"
+      "owns": "Unit of work, repository and migration contracts (ADR-0001 \u00a7Decision 3)"
     },
     "config": {
-      "mayDependOn": [],
-      "owns": "Typed, externalised configuration access (REQ-SEC-008)"
+      "mayDependOn": [
+        "secrets"
+      ],
+      "owns": "Typed, externalised configuration access (REQ-SEC-008)",
+      "why": "ADR-0010 \u00a74, ADR-0033 \u00a72. Configuration is read once at the composition root. It depends on platform/secrets so a credential is an opaque handle from the moment it is read, rather than a string that becomes one later \u2014 the window between the two is where a config object gets logged."
     },
     "observability": {
       "mayDependOn": [
@@ -319,13 +330,33 @@
         "authz"
       ],
       "owns": "OpenTelemetry-shaped traces, metrics and structured logs, with a redaction guard (Phase 5; ADR-0009 remains Proposed and no OTel package is imported)"
+    },
+    "bytes": {
+      "mayDependOn": [],
+      "why": "ADR-0036 \u00a72. Content fingerprints, base64, DEFLATE inflation and the single audited float-parsing boundary. Node builtins are confined to platform (ARCH-006) and G-FLOAT bans numeric coercion above it, so the one place a byte becomes a number is here, where it can be bounded and tested."
+    },
+    "net": {
+      "mayDependOn": [
+        "time"
+      ],
+      "why": "ADR-0032 \u00a74, ADR-0033 \u00a71. The only outbound HTTP in the product: bounded by timeout, response size and redirect policy, with no dependency. Provider SDKs would put an unreviewed dependency tree in the process that holds the credential."
+    },
+    "secrets": {
+      "mayDependOn": [],
+      "why": "REQ-SEC-008, ADR-0033 \u00a72. A secret is held as an opaque handle whose toString, toJSON and inspect all render a redaction. A value that cannot be serialised cannot be logged by accident."
+    },
+    "parse": {
+      "mayDependOn": [
+        "bytes"
+      ],
+      "why": "ADR-0036 \u00a72. First-party bounded readers for XLSX, CSV and PDF. In platform because ARCH-006 confines Node builtins and G-FLOAT confines numeric coercion; written rather than installed because this code runs in the process that holds the API credential (ADR-0032 \u00a74)."
     }
   },
   "sourceGates": [
     {
       "id": "G-CLOCK",
       "description": "Domain and application code must take time from the injected Clock, never ambient system time.",
-      "authority": "ADR-0003 §5, TEST_STRATEGY.md §5",
+      "authority": "ADR-0003 \u00a75, TEST_STRATEGY.md \u00a75",
       "appliesTo": [
         "src/contexts",
         "src/app",
@@ -339,7 +370,7 @@
     {
       "id": "G-FLOAT",
       "description": "No float coercion in domain, application or presentation code. Money is decimal-safe by construction, and a component that parses a number is a component that has started computing one.",
-      "authority": "ADR-0002 §Verification",
+      "authority": "ADR-0002 \u00a7Verification",
       "appliesTo": [
         "src/contexts",
         "src/app",
@@ -361,7 +392,7 @@
     {
       "id": "G-EXEC",
       "description": "No dynamic code execution or process spawning anywhere in the product source. eval, the Function constructor, child_process and vm turn a data-injection bug into remote code execution, and nothing in this product needs any of them.",
-      "authority": "SECURITY_MODEL.md §7 (injection), docs/THREAT_MODEL.md T-API-2",
+      "authority": "SECURITY_MODEL.md \u00a77 (injection), docs/THREAT_MODEL.md T-API-2",
       "appliesTo": [
         "src"
       ],
@@ -370,7 +401,7 @@
     },
     {
       "id": "G-COLOUR",
-      "description": "No ad-hoc colour literals; colour comes from design tokens. The single exempt file is the palette itself — the one place a brand hex value is allowed to exist (BRAND_DESIGN_SYSTEM.md §1).",
+      "description": "No ad-hoc colour literals; colour comes from design tokens. The single exempt file is the palette itself \u2014 the one place a brand hex value is allowed to exist (BRAND_DESIGN_SYSTEM.md \u00a71).",
       "authority": "REQ-UX-001, BRAND_DESIGN_SYSTEM.md",
       "appliesTo": [
         "src/presentation"
@@ -383,7 +414,7 @@
     {
       "id": "G-DEMO",
       "description": "Presentation modules must carry the DEMO - SYNTHETIC DATA marker constant, never a hand-typed string. A marker someone can typo is a marker someone can omit.",
-      "authority": "REQ-UX-005, global invariant 11, BRAND_DESIGN_SYSTEM.md §6",
+      "authority": "REQ-UX-005, global invariant 11, BRAND_DESIGN_SYSTEM.md \u00a76",
       "appliesTo": [
         "src/presentation"
       ],
@@ -392,8 +423,8 @@
     },
     {
       "id": "G-BROWSER",
-      "description": "Browser APIs belong to the presentation layer alone. Domain, application and platform code must never reach for the DOM, web storage or the navigator — the DOM lib is enabled repository-wide so React can be typed, and this gate is what stops that convenience becoming a coupling. The pattern targets browser *members* rather than the bare identifier `window`, which is a legitimate domain term here (a rate-limit window, a trajectory window) and must stay usable.",
-      "authority": "ADR-0001 §Decision 5, ADR-0017, SECURITY_MODEL.md §2 B1",
+      "description": "Browser APIs belong to the presentation layer alone. Domain, application and platform code must never reach for the DOM, web storage or the navigator \u2014 the DOM lib is enabled repository-wide so React can be typed, and this gate is what stops that convenience becoming a coupling. The pattern targets browser *members* rather than the bare identifier `window`, which is a legitimate domain term here (a rate-limit window, a trajectory window) and must stay usable.",
+      "authority": "ADR-0001 \u00a7Decision 5, ADR-0017, SECURITY_MODEL.md \u00a72 B1",
       "appliesTo": [
         "src/contexts",
         "src/app",

@@ -22,8 +22,12 @@ const codesFor = (file: string, spec: string): string[] =>
   evaluateImport(file, spec).map((v: { code: string }) => v.code);
 
 describe('the declared architecture is internally consistent', () => {
-  it('declares all nineteen bounded contexts from ADR-0001 §Decision 2', () => {
-    expect(Object.keys(manifest.contexts)).toHaveLength(19);
+  it('declares the nineteen contexts of ADR-0001 plus the evidence plane ADR-0036 added', () => {
+    // Nineteen from ADR-0001 §Decision 2, plus `knowledge` (Phase 13). A count assertion is worth
+    // keeping precisely because adding a bounded context should be a decision someone had to make
+    // twice: once in the manifest, once here.
+    expect(Object.keys(manifest.contexts)).toHaveLength(20);
+    expect(Object.keys(manifest.contexts)).toContain('knowledge');
   });
 
   it('contains no tier inversion in its own allow-lists', () => {

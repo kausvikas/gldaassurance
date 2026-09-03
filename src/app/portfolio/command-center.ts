@@ -293,6 +293,36 @@ export interface FilterDefinitionDto {
   readonly options: readonly FilterOptionDto[];
 }
 
+/**
+ * The four governed components a portfolio aggregate is built from, per project.
+ *
+ * **This exists so that a *filtered* portfolio figure is computed by the same formula as the
+ * unfiltered one.** `MET-PORT-002` is `(Σ MET-FIN-010 − Σ MET-FIN-008) / Σ MET-FIN-010` — the
+ * catalogue states it as "weighted, never a mean of project margins". A caller that only had the
+ * per-project percentages could not reproduce it for a subset: weighting those percentages by
+ * contract value gives a different number wherever forecast revenue differs from contract value,
+ * which is wherever a change request has been executed. That defect was found in the browser runtime
+ * at Phase 12 and fixed there by emitting these same four components; the Assistant needs them for
+ * the same reason and gets them the same way, so there is one business-truth path rather than two.
+ *
+ * Emitted as a **separate top-level field**, not folded into `ExecutiveRowDto`, because these are
+ * `COMMERCIAL_CONFIDENTIAL` and `ranked` is `DELIVERY_SENSITIVE`. Nesting them would have widened
+ * what a delivery-only caller receives, silently, through a field classified for a different
+ * audience (DR-046). Separated, the classification is exact and a caller without the commercial
+ * grant simply does not receive the array.
+ *
+ * Quantity strings, never numbers: the recipient reconstructs `Money` and sums decimally.
+ */
+export interface ProjectContributionDto {
+  readonly projectId: string;
+  /** MET-FIN-002 */ readonly contractValue: string;
+  /** MET-FIN-010 */ readonly forecastRevenue: string;
+  /** MET-FIN-008 */ readonly estimateAtCompletion: string;
+  /** MET-FIN-019 */ readonly gmValueAtRisk: string;
+  /** Sold margin value, so as-sold portfolio margin is aggregable on the same basis. */
+  readonly soldGmValue: string;
+}
+
 export interface CommandCenterView {
   readonly asOf: Instant;
   readonly week: WeekId;
@@ -319,6 +349,8 @@ export interface CommandCenterView {
   readonly kpis: readonly KpiDto[];
   readonly greenAtRisk: GreenAtRiskPanelDto;
   readonly ranked: readonly ExecutiveRowDto[];
+  /** Governed aggregation components. COMMERCIAL_CONFIDENTIAL; see `ProjectContributionDto`. */
+  readonly contributions: readonly ProjectContributionDto[];
   readonly insufficientEvidence: readonly { readonly projectId: string; readonly reason: string }[];
   readonly bubbles: readonly BubbleDto[];
   readonly whatChanged: readonly NarrativeDto[];
@@ -932,6 +964,25 @@ export function buildCommandCenter(input: CommandCenterInput): CommandCenterView
     excludedFromPopulation,
     priorPeriodLabel: priorLabel,
     kpis, greenAtRisk, ranked,
+    /*
+     * Emitted in ranked order so a consumer that filters and a consumer that reads the table are
+     * looking at the same population in the same sequence. Sourced from the same
+     * `assessment.economics` the KPIs were built from, so a filtered aggregate and the unfiltered
+     * KPI cannot disagree about what a project contributed.
+     */
+    contributions: ranked.flatMap((r) => {
+      const p = byId.get(r.projectId);
+      if (p === undefined) return [];
+      const e = p.assessment.economics;
+      return [{
+        projectId: r.projectId,
+        contractValue: e.contractualRevenue.toQuantity(),
+        forecastRevenue: e.forecastRevenue.toQuantity(),
+        estimateAtCompletion: e.estimateAtCompletion.toQuantity(),
+        gmValueAtRisk: e.gmValueAtRisk.toQuantity(),
+        soldGmValue: e.soldGmValue.toQuantity(),
+      }];
+    }),
     insufficientEvidence: ranking.insufficientEvidence.map((u) => ({
       projectId: u.projectId, reason: u.reason,
     })),

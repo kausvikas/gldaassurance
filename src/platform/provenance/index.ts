@@ -115,3 +115,51 @@ export function valueReference(
 ): ValueReference {
   return { kind: 'value-reference', metricId, entityType, entityId, asOf };
 }
+
+// ---------------------------------------------------------------------------
+// Source authority and data context (ADR-0035 §3-§5).
+// ---------------------------------------------------------------------------
+
+/**
+ * How much a source's assertion about a *particular canonical concept* counts.
+ *
+ * Declared here, in platform, rather than in `integration` or `knowledge`, because both of those are
+ * tier-0 contexts that may not import each other — and because authority is a provenance property.
+ * "Where did this come from" and "how much does it count" are the same question asked twice, and
+ * splitting them across two definitions is how a registry and a retriever end up disagreeing about
+ * what `SUPPLEMENTAL` means.
+ *
+ * Ordered, highest first. A value is governed by the highest-authority source that supplied it; a
+ * lower-authority disagreement is disclosed, never merged and never averaged.
+ */
+export type SourceAuthorityClass =
+  | 'AUTHORITATIVE'
+  | 'GOVERNED_REFERENCE'
+  | 'SUPPLEMENTAL'
+  | 'EVIDENCE_ONLY'
+  | 'UNVERIFIED';
+
+export const AUTHORITY_ORDER: readonly SourceAuthorityClass[] = [
+  'AUTHORITATIVE', 'GOVERNED_REFERENCE', 'SUPPLEMENTAL', 'EVIDENCE_ONLY', 'UNVERIFIED',
+];
+
+/** True when `a` is strictly more authoritative than `b`. Equal authority is not a winner. */
+export function outranks(a: SourceAuthorityClass, b: SourceAuthorityClass): boolean {
+  return AUTHORITY_ORDER.indexOf(a) < AUTHORITY_ORDER.indexOf(b);
+}
+
+/**
+ * Which plane a record sits in (ADR-0035 §5).
+ *
+ * `CANONICAL` is the only context governed calculations read. Everything a user uploads enters at
+ * `SANDBOX`, and the POC implements no code path that promotes anything past `APPROVED` — so the
+ * frozen executive portfolio is safe by construction rather than by policy.
+ */
+export type DataContext = 'CANONICAL' | 'APPROVED' | 'VALIDATED' | 'SANDBOX';
+
+export const PROMOTION_ORDER: readonly DataContext[] = ['SANDBOX', 'VALIDATED', 'APPROVED', 'CANONICAL'];
+
+/** True when a record in `ctx` may be read as governed business truth. Only one value qualifies. */
+export function isGoverned(ctx: DataContext): boolean {
+  return ctx === 'CANONICAL';
+}

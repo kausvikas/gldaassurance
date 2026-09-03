@@ -1,6 +1,6 @@
 # ADR-0010 — Deployment, environments and configuration
 
-- **Status:** Proposed
+- **Status:** **Accepted** — 2026-09-03 for §2–§9 (promoted from Proposed by ADR-0032). §1 four environments remains aspirational: the POC runs `dev` locally and a static `prod`.
 - **Date proposed:** 2026-08-29
 - **Approver:** *pending — surfaced in the Phase 1 report*
 - **Phase:** 1
