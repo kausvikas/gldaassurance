@@ -10,6 +10,7 @@
  */
 import { generatePortfolio } from '../generator/index.js';
 import { commandCenterProject, buildCommandCenterFor } from '../assessment/command-center-adapter.js';
+import { executiveText } from './gl-shell.js';
 
 export interface ExecutiveFact {
   readonly id: string;
@@ -33,8 +34,21 @@ export interface ExecutiveFact {
   readonly forecastGmPct: number;
   readonly scopeExposure: number;
   readonly scopeExposureDisplay: string;
+  /*
+   * The two executive Green findings, built from authoritative Reported RAG, System RAG and the
+   * governed 30/60-day outlooks — not from MET-HLTH-033.
+   *
+   * MET-HLTH-033 is `reportedGreen && (systemDisagreesNow || materialDeterioration)`. Its second
+   * arm admits projects that are reported Green, assessed Green and merely deteriorating, which is
+   * not a management/system discrepancy at all — labelling those "evidence disagrees" tells a
+   * Chief Delivery Officer the delivery line is misreporting when the system agrees with it. The
+   * metric keeps its historical semantics and is preserved below; the executive category is a
+   * presentation grouping over facts the engines already decided, and recalculates nothing.
+   */
   readonly reportedGreenRisk: boolean;
   readonly emergingRisk: boolean;
+  /** MET-HLTH-033 as the engine computed it, retained for provenance and never used as category A. */
+  readonly legacyReportedGreenRisk: boolean;
   readonly action: string;
   readonly why: string;
   readonly timeToAct: string;
@@ -119,11 +133,17 @@ export function executiveFacts(): {
       forecastGmPct,
       scopeExposure,
       scopeExposureDisplay: String(row['uncommercialisedExposure']),
-      reportedGreenRisk: row['isReportedGreenRisk'] === true,
-      emergingRisk: row['isSystemGreenAtRisk'] === true,
-      action: String(row['executiveAction']),
-      why: String(row['rankNarrative'] ?? row['outranksBecause'] ?? ''),
-      timeToAct: String(row['timeCriticality']),
+      // A — current management/system discrepancy: reported Green, assessed worse.
+      reportedGreenRisk: String(row['reportedRag']) === 'GREEN'
+        && String(row['systemAssessedRag']) !== 'GREEN',
+      // B — forward early warning: assessed Green today, governed outlook turns inside 60 days.
+      emergingRisk: String(row['systemAssessedRag']) === 'GREEN'
+        && (String(row['outlook30']) !== 'GREEN' || String(row['outlook60']) !== 'GREEN'),
+      legacyReportedGreenRisk: row['isReportedGreenRisk'] === true,
+      // Translated once, here, so the surface and the client runtime read the same words.
+      action: executiveText(String(row['executiveAction'])),
+      why: executiveText(String(row['rankNarrative'] ?? row['outranksBecause'] ?? '')),
+      timeToAct: executiveText(String(row['timeCriticality'])),
       rank: Number(row['rank'] ?? 0),
       evidence: String(row['dataConfidence'] ?? 'not stated'),
       drivers: driversFor(row, base),

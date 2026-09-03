@@ -153,6 +153,119 @@ export const GL_RUNTIME = `
     host.innerHTML = html || '<li class="gl-empty">No project in this view changes band within 60 days on the governed outlook.</li>';
   }
 
+
+  /* Projects: the full executive reading of every project in the selection. */
+  function allRows(rowsIn) {
+    var tb = document.getElementById('gl-all-body');
+    if (!tb) return;
+    var pick = rowsIn.slice().sort(function (a, b) { return a.rank - b.rank; });
+    var html = '';
+    for (var i = 0; i < pick.length; i++) {
+      var f = pick[i];
+      html += '<tr>'
+        + '<td class="gl-sticky"><div class="gl-pname"><a href="/projects/' + f.id + '">' + esc(f.name) + '</a></div>'
+        + '<div class="gl-pmeta">' + esc(f.customer) + ' · ' + esc(f.region) + '</div></td>'
+        + '<td><span class="gl-rag gl-rag--' + f.reported + '">' + f.reported + '</span></td>'
+        + '<td><span class="gl-rag gl-rag--' + f.system + '">' + f.system + '</span></td>'
+        + '<td>' + esc(performance(f)) + '</td>'
+        + '<td>' + esc(word(f.trajectory)) + '</td>'
+        + '<td><span class="gl-rag gl-rag--' + f.outlook30 + '">' + f.outlook30 + '</span></td>'
+        + '<td><span class="gl-rag gl-rag--' + f.outlook60 + '">' + f.outlook60 + '</span></td>'
+        + '<td class="num">' + pct(f.forecastGmPct) + '</td>'
+        + '<td class="num">' + money(f.gmAtRisk) + '</td>'
+        + '<td>' + esc(f.action) + '</td>'
+        + '</tr>';
+    }
+    tb.innerHTML = html || '<tr><td colspan="10" class="gl-empty">No project matches this view. Clear a filter to widen it.</td></tr>';
+  }
+
+  /* Performance against commitment, stated in words from governed drivers. */
+  function performance(f) {
+    if (f.drivers.indexOf('burn-ahead-of-progress') >= 0 && f.drivers.indexOf('behind-plan') >= 0) return 'Behind, and overspending';
+    if (f.drivers.indexOf('burn-ahead-of-progress') >= 0) return 'Cost ahead of progress';
+    if (f.drivers.indexOf('behind-plan') >= 0) return 'Behind plan';
+    if (f.drivers.indexOf('margin-erosion') >= 0) return 'Margin eroding';
+    return 'On commitment';
+  }
+
+  /* Forward risk: the same population banded at each governed horizon. */
+  function horizon(prefix, rowsIn, key) {
+    var bands = ['GREEN', 'AMBER', 'RED'], vals = [], total = rowsIn.length;
+    for (var i = 0; i < bands.length; i++) {
+      var v = 0;
+      for (var j = 0; j < rowsIn.length; j++) if (rowsIn[j][key] === bands[i]) v++;
+      vals.push(v);
+    }
+    var keys = ['g', 'a', 'r'];
+    for (var k = 0; k < 3; k++) {
+      var seg = document.getElementById(prefix + '-' + keys[k]);
+      if (seg) {
+        var share = total === 0 ? 0 : (vals[k] / total) * 100;
+        seg.style.width = share.toFixed(2) + '%';
+        seg.textContent = share >= 12 ? String(vals[k]) : '';
+        seg.setAttribute('aria-label', bands[k] + ': ' + vals[k] + ' projects');
+      }
+      setText(prefix + '-legend-' + keys[k], String(vals[k]));
+    }
+  }
+
+  function emergingRows(rowsIn) {
+    var tb = document.getElementById('gl-emerging-body');
+    if (!tb) return;
+    var pick = rowsIn.filter(function (f) { return f.emergingRisk; }).sort(function (a, b) { return b.gmAtRisk - a.gmAtRisk; });
+    var html = '';
+    for (var i = 0; i < pick.length; i++) {
+      var f = pick[i];
+      html += '<tr><td class="gl-sticky"><div class="gl-pname"><a href="/projects/' + f.id + '">' + esc(f.name) + '</a></div>'
+        + '<div class="gl-pmeta">' + esc(f.customer) + '</div></td>'
+        + '<td><span class="gl-rag gl-rag--' + f.system + '">' + f.system + '</span></td>'
+        + '<td>' + esc(word(f.trajectory)) + '</td>'
+        + '<td><span class="gl-rag gl-rag--' + f.outlook30 + '">' + f.outlook30 + '</span></td>'
+        + '<td><span class="gl-rag gl-rag--' + f.outlook60 + '">' + f.outlook60 + '</span></td>'
+        + '<td class="num">' + money(f.gmAtRisk) + '</td>'
+        + '<td>' + esc(f.timeToAct) + '</td></tr>';
+    }
+    tb.innerHTML = html || '<tr><td colspan="7" class="gl-empty">No project in this view is healthy today with a worsening governed outlook.</td></tr>';
+  }
+
+  function interventionRows(rowsIn) {
+    var tb = document.getElementById('gl-int-body');
+    if (tb) {
+      var pick = rowsIn.filter(function (f) { return f.action.indexOf('Monitor') !== 0; })
+        .sort(function (a, b) { return a.rank - b.rank; });
+      var html = '';
+      for (var i = 0; i < pick.length; i++) {
+        var f = pick[i];
+        html += '<tr><td class="gl-sticky"><div class="gl-pname"><a href="/projects/' + f.id + '">' + esc(f.name) + '</a></div>'
+          + '<div class="gl-pmeta">' + esc(f.customer) + ' · ' + esc(f.region) + '</div></td>'
+          + '<td><span class="gl-rag gl-rag--' + f.system + '">' + f.system + '</span> ' + esc(performance(f)) + '</td>'
+          + '<td class="num">' + money(f.gmAtRisk) + '</td>'
+          + '<td>' + esc(word(f.trajectory)) + '</td>'
+          + '<td>' + esc(f.timeToAct) + '</td>'
+          + '<td class="gl-pmeta" style="max-width:34ch">' + esc(f.why) + '</td>'
+          + '<td>' + esc(f.action) + '</td></tr>';
+      }
+      tb.innerHTML = html || '<tr><td colspan="7" class="gl-empty">No project in this view is awaiting an executive decision. That is a finding, not an empty table.</td></tr>';
+    }
+    var rb = document.getElementById('gl-rec-body');
+    if (rb) {
+      var rec = rowsIn.filter(function (f) { return f.trajectory === 'IMPROVING'; })
+        .sort(function (a, b) { return b.gmAtRisk - a.gmAtRisk; });
+      var h2 = '';
+      for (var k = 0; k < rec.length; k++) {
+        var g = rec[k];
+        h2 += '<tr><td class="gl-sticky"><div class="gl-pname"><a href="/projects/' + g.id + '">' + esc(g.name) + '</a></div>'
+          + '<div class="gl-pmeta">' + esc(g.customer) + '</div></td>'
+          + '<td><span class="gl-rag gl-rag--' + g.system + '">' + g.system + '</span></td>'
+          + '<td>Improving</td>'
+          + '<td><span class="gl-rag gl-rag--' + g.outlook60 + '">' + g.outlook60 + '</span></td>'
+          + '<td class="num">' + money(g.gmAtRisk) + '</td>'
+          + '<td>' + esc(g.action) + '</td></tr>';
+      }
+      rb.innerHTML = h2 || '<tr><td colspan="6" class="gl-empty">No project in this view is improving on the evidence.</td></tr>';
+    }
+  }
+
   function render() {
     var r = selected();
     setText('gl-n', String(r.length));
@@ -174,6 +287,8 @@ export const GL_RUNTIME = `
     bar('gl-count', r, false);
     bar('gl-weight', r, true);
     rows(r); drivers(r); flow(r);
+    allRows(r); emergingRows(r); interventionRows(r);
+    horizon('gl-h0', r, 'system'); horizon('gl-h30', r, 'outlook30'); horizon('gl-h60', r, 'outlook60');
     var chips = [];
     for (var d in state.dims) if (state.dims[d]) chips.push(state.dims[d]);
     if (state.quick) chips.push(document.querySelector('[data-quick="' + state.quick + '"]').textContent.trim());

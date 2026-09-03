@@ -1,21 +1,11 @@
-/**
- * The GlobalLogic visual language, translated for an operating product.
- *
- * Derived from `docs/GLOBALLOGIC_VISUAL_REFERENCE.md` — what globallogic.com actually does at
- * 1440×900, inspected rather than remembered. Three observations drive almost everything here:
- *
- *   - the site has **no sidebar**; navigation is a floating rounded bar on a light-steel ground;
- *   - the site has **no cards**; grouping is done with bands, rules, alignment and space;
- *   - **orange is punctuation**, used as inline emphasis or one call to action, never as fills.
- *
- * The previous build broke all three. Cards were the default primitive, an admin rail ran down the
- * left, and orange was applied to any element that wanted attention. Palette alone was never going
- * to make it feel first-party.
- *
- * Type is a neutral system stack: BRAND_DESIGN_SYSTEM.md §4 forbids embedding a licensed face, and
- * a webfont would be the only external request in an otherwise self-contained build.
- */
-export const GL_CSS = `
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Calder Financial Fleet Telemetry Wave 2 — GlobalLogic Delivery Intelligence</title>
+<style>
 :root{
   --white:#FFFFFF; --steel-05:#F2F3F6; --steel-25:#C8CAD3; --steel-50:#858A9B;
   --steel-75:#484F6B; --steel-100:#181A24;
@@ -158,4 +148,86 @@ footer.gl-foot p{max-width:78ch}
   .gl-flow>div{border-right:0;border-bottom:1px solid var(--rule)}}
 @media (max-width:820px){.gl-navlinks{display:none}.gl-wrap{padding:0 22px}.gl-navwrap{padding:12px 16px 0}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-`;
+</style>
+</head>
+<body>
+<a class="gl-skip" href="#main">Skip to content</a>
+<div class="gl-navwrap">
+  <nav class="gl-nav" aria-label="Primary">
+    <a class="gl-brand" href="/"><b>GlobalLogic</b><span>Delivery Intelligence</span></a>
+    <ul class="gl-navlinks">
+      <li><a href="/">Command Center</a></li>
+      <li><a href="/projects" aria-current="page">Projects</a></li>
+      <li><a href="/forward-risk">Forward Risk</a></li>
+      <li><a href="/interventions">Interventions</a></li>
+      <li><a href="/assistant">Assistant</a></li>
+    </ul>
+    <span class="gl-navmeta">
+      <span>as at 31 Aug 2026</span>
+      <span class="gl-demo">DEMO — SYNTHETIC DATA</span>
+    </span>
+  </nav>
+</div>
+<div class="gl-band gl-band--tint" style="padding:26px 0 0"><div class="gl-wrap">
+    <p class="gl-note" style="font-size:13.5px"><a class="gl-arrow" href="/projects">← All projects</a></p>
+  </div></div>
+<main id="main">
+  <section class="gl-band gl-band--tint"><div class="gl-wrap">
+      <p class="gl-eyebrow">Calder Financial · Financial Services · LATAM</p>
+      <h1 class="gl-lede" style="max-width:26ch">Calder Financial Fleet Telemetry Wave 2</h1>
+      <dl class="gl-figs">
+        <div class="gl-fig"><dt>Reported</dt><dd style="font-size:20px"><span class="gl-rag gl-rag--AMBER">AMBER</span></dd>
+          <div class="gl-vs">delivery management</div></div>
+        <div class="gl-fig"><dt>Assessed</dt><dd style="font-size:20px"><span class="gl-rag gl-rag--GREEN">GREEN</span></dd>
+          <div class="gl-vs">governed evidence</div></div>
+        <div class="gl-fig"><dt>Trajectory</dt><dd style="font-size:20px">Stable</dd>
+          <div class="gl-vs">30-day <span class="gl-rag gl-rag--GREEN">GREEN</span> · 60-day <span class="gl-rag gl-rag--GREEN">GREEN</span></div></div>
+        <div class="gl-fig"><dt>Margin at risk</dt><dd>$397K</dd>
+          <div class="gl-vs">of $9.58M contracted</div></div>
+      </dl></div></section>
+  <section class="gl-band gl-band--white"><div class="gl-wrap">
+      <h2 class="gl-h2">Why it is in this condition</h2>
+      <ul class="gl-list" style="max-width:82ch">
+        <li><span class="v"><b>Status</b><br>Reported AMBER; the evidence assesses GREEN.</span></li>
+        <li><span class="v"><b>Cause</b><br>Margin has eroded -2.2pp against the as-sold position.</span></li>
+        <li><span class="v"><b>Outlook</b><br>GREEN at 30 days, GREEN at 60 days.</span></li>
+        <li><span class="v"><b>Economic impact</b><br>$397K of sold margin at risk; $30K of scope is being delivered without commercial recovery.</span></li>
+        <li><span class="v"><b>Action</b><br>Commercialise the uncontracted scope before the next critical milestone.</span></li>
+      </ul></div></section>
+  <section class="gl-band gl-band--tint"><div class="gl-wrap">
+      <h2 class="gl-h2">Performance against commitment</h2>
+      <p class="gl-note" style="max-width:78ch">Delivery is -6.8pp behind plan while cost is +1.4pp ahead of progress. Money is being spent faster than value is being created — the two together, not either alone, are what makes this a margin problem.</p>
+      <dl class="gl-figs">
+        <div class="gl-fig"><dt>Planned completion</dt><dd>91.9%</dd></div>
+        <div class="gl-fig"><dt>Actual completion</dt><dd>85.1%</dd></div>
+        <div class="gl-fig"><dt>Cost consumed</dt><dd>86.5%</dd></div>
+        <div class="gl-fig"><dt>Scope uncovered</dt><dd>$30K</dd>
+          <div class="gl-vs">delivered without a change request</div></div>
+      </dl></div></section>
+  <section class="gl-band gl-band--white"><div class="gl-wrap">
+      <h2 class="gl-h2">Economics</h2>
+      <dl class="gl-figs">
+        <div class="gl-fig"><dt>Sold margin</dt><dd>25.5%</dd></div>
+        <div class="gl-fig"><dt>Forecast margin</dt><dd>23.3%</dd></div>
+        <div class="gl-fig"><dt>Risk-adjusted</dt><dd>21.2%</dd>
+          <div class="gl-vs">scenario, not accounting</div></div>
+        <div class="gl-fig"><dt>Cost at completion</dt><dd>$7.35M</dd></div>
+      </dl></div></section>
+  <section class="gl-band gl-band--tint"><div class="gl-wrap">
+      <h2 class="gl-h2">What to do, and how far to trust it</h2>
+      <p class="gl-sub" style="max-width:76ch;color:var(--steel-100)">Monitor</p>
+      <p class="gl-note" style="margin-top:16px">No critical contractual exposure; the outlook does not worsen; no time clock is known; GM value at risk $397K; actionability NOT_ASSESSED. Rank confidence LOW. Placed on partial evidence — missing: no time-to-band-change or milestone clock, no intervention assessment.</p>
+      <p class="gl-note" style="margin-top:22px"><b>Evidence.</b> No Green is reported, so this evidence rule does not apply.
+        Data confidence high; forecast confidence
+        low. Time to act: no clock known.</p></div></section>
+  <footer class="gl-foot"><div class="gl-wrap">
+    <p><b>Synthetic demonstration data.</b> This public proof of concept renders representative
+      executive views over a generated portfolio. Production identity, authentication, authorization
+      and enterprise integrations are not enabled in this demonstration, and static access to this
+      page does not exercise them.</p>
+  </div></footer>
+</main>
+
+
+</body>
+</html>

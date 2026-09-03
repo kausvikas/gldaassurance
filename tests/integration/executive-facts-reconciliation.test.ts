@@ -31,8 +31,16 @@ describe('the embedded executive facts are the governed ones', () => {
       expect(f.trajectory, f.id).toBe(String(row!['trajectory']));
       expect(f.outlook30, f.id).toBe(String(row!['outlook30']));
       expect(f.outlook60, f.id).toBe(String(row!['outlook60']));
-      expect(f.emergingRisk, f.id).toBe(row!['isSystemGreenAtRisk'] === true);
-      expect(f.reportedGreenRisk, f.id).toBe(row!['isReportedGreenRisk'] === true);
+      /*
+       * The executive Green categories are built from Reported RAG, System RAG and the governed
+       * outlooks — not from MET-HLTH-033, whose second arm admits projects the system also assesses
+       * Green. The legacy metric is carried unchanged for provenance and asserted separately.
+       */
+      expect(f.reportedGreenRisk, f.id)
+        .toBe(f.reported === 'GREEN' && f.system !== 'GREEN');
+      expect(f.emergingRisk, f.id)
+        .toBe(f.system === 'GREEN' && (f.outlook30 !== 'GREEN' || f.outlook60 !== 'GREEN'));
+      expect(f.legacyReportedGreenRisk, f.id).toBe(row!['isReportedGreenRisk'] === true);
     }
   });
 
@@ -97,21 +105,24 @@ describe('filtered populations reconcile to the governed rows', () => {
    * would double-count exactly these projects, so the Command Center states the intersection rather
    * than leaving a reader to assume the sets are exclusive.
    */
-  it('discloses the overlap between the two Green findings rather than assuming there is none', () => {
+  it('keeps the two executive Green findings disjoint by construction', () => {
     const disagree = facts.filter((f) => f.reportedGreenRisk);
     const emerging = facts.filter((f) => f.emergingRisk);
     expect(disagree.length).toBeGreaterThan(0);
     expect(emerging.length).toBeGreaterThan(0);
 
+    /*
+     * Category A requires the system to disagree today; category B requires it to agree today. A
+     * project cannot satisfy both, so the counts are additive and no overlap disclosure is owed.
+     *
+     * This previously used MET-HLTH-033 for category A and the sets intersected on nine projects —
+     * projects reported Green, assessed Green and merely deteriorating, which the surface was
+     * describing as "evidence disagrees" when the evidence agreed. The metric was never wrong; it
+     * was the wrong metric for this category.
+     */
     const both = disagree.filter((f) => emerging.some((e) => e.id === f.id));
-    // Every project in the intersection must satisfy both governed definitions on its own terms.
-    for (const f of both) {
-      expect(f.reported, f.id).toBe('GREEN');
-      expect(f.system, f.id).toBe('GREEN');
-      expect([f.outlook30, f.outlook60].some((b) => b !== 'GREEN'), f.id).toBe(true);
-    }
-    // The union is what an executive should read as "Green projects requiring attention".
-    const union = new Set([...disagree, ...emerging].map((f) => f.id));
-    expect(union.size).toBe(disagree.length + emerging.length - both.length);
+    expect(both).toEqual([]);
+    for (const f of disagree) expect(f.system, f.id).not.toBe('GREEN');
+    for (const f of emerging) expect(f.system, f.id).toBe('GREEN');
   });
 });
