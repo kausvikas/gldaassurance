@@ -27,6 +27,15 @@ const ROOT = join(HERE, '..', '..');
 const SRC = join(ROOT, 'docs', 'design');
 const OUT = join(ROOT, 'dist', 'executive-poc');
 
+/*
+ * The Command Center is the root executive route.
+ *
+ * index.html used to be a link directory into six design pages — an artefact of a build that
+ * produced surfaces one at a time. An executive landing on a table of contents has learned nothing;
+ * the root route is now the Command Center itself, and the directory is gone.
+ */
+const ROOT_PAGE = 'command-center.html';
+
 const PAGES = [
   ['portfolio-command-center.html', 'Portfolio Command Center', '/portfolio',
     'Where the portfolio stands, and where to intervene first.'],
@@ -117,28 +126,17 @@ ${body}
 </html>
 `;
 
-const cards = PAGES.map(([file, title, route, desc]) => `    <li class="card"><a href="${route}">
-      <span class="card-title">${title}</span>
-      <div class="card-desc">${desc}</div>
-      <div class="card-route">${route}</div>
-    </a></li>`).join('\n');
-
-writeFileSync(join(OUT, 'index.html'), SHELL(
-  'GlobalLogic Delivery Intelligence — Synthetic Executive POC',
-  `  <span class="banner">● Demo — synthetic data</span>
-  <h1>Delivery Intelligence — Synthetic Executive POC</h1>
-  <p class="lede">A controlled proof of concept over a <strong>synthetic 91-project portfolio</strong>.
-  Every figure, customer, project and person on these pages is generated. Nothing here is live
-  customer data, and this is not an enterprise pilot or a production system.</p>
-  <ul class="cards">
-${cards}
-  </ul>
-  <footer>
-    Fixed-bid population 75 of 91 authorised projects. Thresholds, weights and band edges are
-    unvalidated synthetic calibration candidates. The assistant is advisory and read only: it
-    explains governed assessments and cannot change a status, a forecast, a plan or a rule.
-  </footer>`,
-), 'utf8');
+/*
+ * The root route is the Command Center, not a directory of pages.
+ *
+ * index.html was a card grid linking to six design surfaces — an artefact of a build that produced
+ * them one at a time. An executive who lands on a table of contents has learned nothing about their
+ * portfolio, and a landing page whose job is to point elsewhere is the clearest sign a product was
+ * assembled from parts rather than designed. The Command Center answers "where should I focus?" on
+ * arrival, which is the only thing the root route should do.
+ */
+if (!built.has(ROOT_PAGE)) throw new Error(`missing built page: ${ROOT_PAGE} — run "npm run verify" first`);
+cpSync(join(SRC, ROOT_PAGE), join(OUT, 'index.html'));
 
 writeFileSync(join(OUT, 'not-in-poc.html'), SHELL(
   'Not part of this POC — GlobalLogic Delivery Intelligence',

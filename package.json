@@ -14,7 +14,7 @@
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
-    "verify": "npm run typecheck && npm run check:architecture && npm run check:schema && npm run lint && npm run test && npm run data:validate && npm run design:gallery && npm run design:command-center && npm run design:project-health && npm run design:margin && npm run design:forward-risk && npm run design:assistant",
+    "verify": "npm run typecheck && npm run check:architecture && npm run check:schema && npm run lint && npm run test && npm run data:validate && npm run design:gallery && npm run design:command-center && npm run design:project-health && npm run design:margin && npm run design:forward-risk && npm run design:assistant && npm run design:command-center-v2",
     "catalog:generate": "METRIC_CATALOG_UPDATE=1 vitest run tests/integration/metric-catalog.test.ts",
     "check:schema": "node scripts/ci/check-schema-boundaries.mjs",
     "data:generate": "vite-node -c vitest.config.ts scripts/generate-data.ts",
@@ -30,7 +30,8 @@
     "build:dist": "node scripts/deploy/build-dist.mjs",
     "audit:links": "node scripts/deploy/link-audit.mjs",
     "preview": "node scripts/deploy/serve-preview.mjs",
-    "deploy": "npm run build:dist && npm run audit:links && firebase deploy --only hosting"
+    "deploy": "npm run build:dist && npm run audit:links && firebase deploy --only hosting",
+    "design:command-center-v2": "vite-node -c vitest.config.ts scripts/design/build-command-center-v2.tsx"
   },
   "dependencies": {
     "decimal.js": "^10.6.0",

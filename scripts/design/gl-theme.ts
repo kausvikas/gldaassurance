@@ -1,0 +1,160 @@
+/**
+ * The GlobalLogic visual language, translated for an operating product.
+ *
+ * Derived from `docs/GLOBALLOGIC_VISUAL_REFERENCE.md` — what globallogic.com actually does at
+ * 1440×900, inspected rather than remembered. Three observations drive almost everything here:
+ *
+ *   - the site has **no sidebar**; navigation is a floating rounded bar on a light-steel ground;
+ *   - the site has **no cards**; grouping is done with bands, rules, alignment and space;
+ *   - **orange is punctuation**, used as inline emphasis or one call to action, never as fills.
+ *
+ * The previous build broke all three. Cards were the default primitive, an admin rail ran down the
+ * left, and orange was applied to any element that wanted attention. Palette alone was never going
+ * to make it feel first-party.
+ *
+ * Type is a neutral system stack: BRAND_DESIGN_SYSTEM.md §4 forbids embedding a licensed face, and
+ * a webfont would be the only external request in an otherwise self-contained build.
+ */
+export const GL_CSS = `
+:root{
+  --white:#FFFFFF; --steel-05:#F2F3F6; --steel-25:#C8CAD3; --steel-50:#858A9B;
+  --steel-75:#484F6B; --steel-100:#181A24;
+  --orange:#FF5F2D; --orange-deep:#CF3708; --orange-light:#FFCEB9;
+  --blue:#4442E3; --blue-light:#D5D4FF; --blue-deep:#00018B; --cyan:#81CAFF;
+  --green:#2E776A; --green-light:#91C4BB;
+  --rag-red:#B3261E; --rag-red-bg:#FCEBE9;
+  --rag-amber:#8A5A00; --rag-amber-bg:#FBF1DE;
+  --rag-green:#2E776A; --rag-green-bg:#E4F0ED;
+  --rule:#E3E5EB; --rule-strong:#C8CAD3;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --sp:8px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--steel-05);color:var(--steel-100);font-family:var(--font);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums lining-nums}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-0.02em;line-height:1.12;text-wrap:balance}
+p{margin:0}
+a{color:inherit}
+.gl-skip{position:absolute;left:-9999px}
+.gl-skip:focus{left:24px;top:24px;z-index:100;background:var(--white);padding:12px 20px;border-radius:8px}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:4px}
+
+/* ---- floating navigation, as the site does it ---- */
+.gl-navwrap{position:sticky;top:0;z-index:50;padding:16px 40px 0;background:linear-gradient(var(--steel-05) 70%,transparent)}
+.gl-nav{display:flex;align-items:center;gap:32px;background:var(--white);border-radius:14px;
+  padding:14px 22px;box-shadow:0 1px 2px rgba(24,26,36,.06),0 8px 24px rgba(24,26,36,.05)}
+.gl-brand{display:flex;flex-direction:column;line-height:1.1;flex:none}
+.gl-brand b{font-size:17px;font-weight:600;letter-spacing:-0.01em}
+.gl-brand span{font-size:10.5px;color:var(--steel-50);letter-spacing:.04em}
+.gl-navlinks{display:flex;gap:26px;margin:0 auto;list-style:none;padding:0}
+.gl-navlinks a{text-decoration:none;font-size:15px;font-weight:500;color:var(--steel-100);
+  padding:4px 2px;border-bottom:2px solid transparent}
+.gl-navlinks a:hover{border-bottom-color:var(--steel-25)}
+.gl-navlinks a[aria-current="page"]{color:var(--orange)}
+.gl-navmeta{display:flex;align-items:center;gap:14px;flex:none;font-size:12.5px;color:var(--steel-50)}
+.gl-demo{border:1px solid var(--orange);color:var(--orange-deep);border-radius:999px;
+  padding:4px 11px;font-size:10.5px;letter-spacing:.09em;font-weight:600;white-space:nowrap}
+
+/* ---- editorial bands, not cards ---- */
+.gl-band{padding:56px 0}
+.gl-band--white{background:var(--white)}
+.gl-band--tint{background:var(--steel-05)}
+.gl-wrap{max-width:1240px;margin:0 auto;padding:0 40px}
+.gl-eyebrow{font-size:12px;letter-spacing:.11em;text-transform:uppercase;color:var(--steel-50);
+  font-weight:600;margin-bottom:14px}
+.gl-lede{font-size:clamp(28px,3.4vw,44px);font-weight:600;letter-spacing:-0.025em;max-width:22ch}
+.gl-lede em{font-style:normal;color:var(--orange)}
+.gl-sub{margin-top:14px;color:var(--steel-75);max-width:64ch;font-size:16px}
+h2.gl-h2{font-size:26px;margin-bottom:6px}
+.gl-note{color:var(--steel-50);font-size:14px;max-width:70ch}
+.gl-rule{border:0;border-top:1px solid var(--rule);margin:0}
+
+/* ---- figures: aligned columns, no boxes ---- */
+.gl-figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0;
+  border-top:1px solid var(--rule-strong);margin-top:32px}
+.gl-fig{padding:20px 24px 20px 0;border-right:1px solid var(--rule)}
+.gl-fig:last-child{border-right:0}
+.gl-fig dt{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--steel-50);font-weight:600}
+.gl-fig dd{margin:8px 0 0;font-size:30px;font-weight:600;letter-spacing:-0.02em}
+.gl-fig .gl-vs{margin-top:6px;font-size:13.5px;color:var(--steel-50)}
+
+/* ---- RAG: text + shape, never colour alone ---- */
+.gl-rag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+  letter-spacing:.05em;padding:2px 9px;border-radius:4px;white-space:nowrap}
+.gl-rag::before{content:"";width:7px;height:7px;flex:none}
+.gl-rag--GREEN{color:var(--rag-green);background:var(--rag-green-bg)}
+.gl-rag--GREEN::before{background:var(--rag-green);border-radius:50%}
+.gl-rag--AMBER{color:var(--rag-amber);background:var(--rag-amber-bg)}
+.gl-rag--AMBER::before{background:var(--rag-amber);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.gl-rag--RED{color:var(--rag-red);background:var(--rag-red-bg)}
+.gl-rag--RED::before{background:var(--rag-red)}
+
+/* ---- health split: count and economic weight ---- */
+.gl-split{display:grid;grid-template-columns:1fr 1fr;gap:56px;margin-top:28px}
+.gl-meter{margin-top:18px}
+.gl-meter h3{font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--steel-50);margin-bottom:12px}
+.gl-bar{display:flex;height:34px;border-radius:5px;overflow:hidden;background:var(--steel-05)}
+.gl-bar span{display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:var(--white)}
+.gl-bar .g{background:var(--rag-green)} .gl-bar .a{background:#B07A16} .gl-bar .r{background:var(--rag-red)}
+.gl-legend{display:flex;gap:20px;margin-top:10px;font-size:13px;color:var(--steel-75);flex-wrap:wrap}
+
+/* ---- tables: editorial, no vertical rules ---- */
+.gl-tablewrap{overflow-x:auto;margin-top:22px}
+table.gl-t{width:100%;border-collapse:collapse;font-size:14px;min-width:860px}
+table.gl-t th{text-align:left;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--steel-50);font-weight:600;padding:0 16px 10px 0;border-bottom:1px solid var(--rule-strong);white-space:nowrap}
+table.gl-t td{padding:14px 16px 14px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+table.gl-t tbody tr:hover{background:var(--steel-05)}
+table.gl-t .num{text-align:right;padding-right:24px;white-space:nowrap}
+table.gl-t th.num{text-align:right;padding-right:24px}
+.gl-pname{font-weight:600}
+.gl-pname a{text-decoration:none;border-bottom:1px solid var(--steel-25)}
+.gl-pname a:hover{border-bottom-color:var(--orange)}
+.gl-pmeta{color:var(--steel-50);font-size:12.5px;margin-top:3px}
+.gl-sticky{position:sticky;left:0;background:var(--white);z-index:1}
+table.gl-t tbody tr:hover .gl-sticky{background:var(--steel-05)}
+
+/* ---- filters: real controls ---- */
+.gl-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:18px 0}
+.gl-filters label{display:inline-flex;flex-direction:column;gap:5px;font-size:11.5px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--steel-50);font-weight:600}
+.gl-filters select{font:inherit;font-size:14px;color:var(--steel-100);background:var(--white);
+  border:1px solid var(--rule-strong);border-radius:8px;padding:8px 11px;min-width:150px}
+.gl-quick{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:6px}
+.gl-quick button{font:inherit;font-size:13px;background:var(--white);border:1px solid var(--rule-strong);
+  color:var(--steel-75);border-radius:999px;padding:7px 15px;cursor:pointer}
+.gl-quick button:hover{border-color:var(--steel-50)}
+.gl-quick button[aria-pressed="true"]{background:var(--steel-100);color:var(--white);border-color:var(--steel-100)}
+.gl-reset{font:inherit;font-size:13.5px;background:none;border:0;color:var(--orange-deep);
+  cursor:pointer;text-decoration:underline;padding:8px 2px}
+.gl-scope{font-size:13.5px;color:var(--steel-75);padding:6px 0 0}
+.gl-scope b{font-weight:600;color:var(--steel-100)}
+
+/* ---- transitions ---- */
+.gl-flow{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:26px;
+  border-top:1px solid var(--rule-strong)}
+.gl-flow>div{padding:22px 24px 22px 0;border-right:1px solid var(--rule)}
+.gl-flow>div:last-child{border-right:0}
+.gl-flow h3{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--steel-50);margin-bottom:14px}
+.gl-moves{list-style:none;padding:0;margin:18px 0 0;font-size:14px}
+.gl-moves li{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid var(--rule)}
+.gl-moves li:last-child{border-bottom:0}
+.gl-moves .to{color:var(--steel-75)}
+
+/* ---- changes / drivers ---- */
+.gl-list{list-style:none;padding:0;margin:22px 0 0}
+.gl-list li{padding:15px 0;border-bottom:1px solid var(--rule);display:flex;gap:18px;align-items:baseline}
+.gl-list li:last-child{border-bottom:0}
+.gl-list .k{flex:none;min-width:78px;font-weight:600;font-size:22px;letter-spacing:-0.02em}
+.gl-list .v{color:var(--steel-75)}
+.gl-empty{color:var(--steel-50);font-size:14.5px;padding:20px 0;max-width:64ch}
+.gl-arrow{text-decoration:none;font-weight:600;font-size:14.5px;border-bottom:1px solid var(--orange);padding-bottom:2px}
+footer.gl-foot{padding:40px 0 64px;color:var(--steel-50);font-size:13px}
+footer.gl-foot p{max-width:78ch}
+@media (max-width:1100px){.gl-split{grid-template-columns:1fr;gap:34px}.gl-flow{grid-template-columns:1fr}
+  .gl-flow>div{border-right:0;border-bottom:1px solid var(--rule)}}
+@media (max-width:820px){.gl-navlinks{display:none}.gl-wrap{padding:0 22px}.gl-navwrap{padding:12px 16px 0}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+`;
