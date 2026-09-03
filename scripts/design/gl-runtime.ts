@@ -268,7 +268,8 @@ export const GL_RUNTIME = `
           + '<td class="num">' + money(f.gmAtRisk) + '</td>'
           + '<td>' + esc(word(f.trajectory)) + '</td>'
           + '<td>' + esc(f.timeToAct) + '</td>'
-          + '<td class="gl-pmeta" style="max-width:34ch">' + esc(f.why) + '</td>'
+          + '<td class="gl-pmeta" style="max-width:38ch">' + esc(f.whyShort)
+          + '<details><summary>Full ranking rationale</summary><span>' + esc(f.why) + '</span></details></td>'
           + '<td>' + esc(f.action) + '</td></tr>';
       }
       tb.innerHTML = html || '<tr><td colspan="7" class="gl-empty">No project in this view is awaiting an executive decision. That is a finding, not an empty table.</td></tr>';
@@ -293,10 +294,11 @@ export const GL_RUNTIME = `
           + '<td class="num">' + (move === null ? 'no prior period' : signed(move)) + '</td>'
           + '<td class="num">' + money(g.gmAtRisk) + '</td>'
           + '<td>' + (enough
-            ? 'Recovered \u2014 no executive action'
+            ? 'Recovery is holding; no executive intervention is currently required.'
             : (g.adverse.length
-              ? 'Not yet \u2014 ' + esc(g.adverse[0]) + ' is still adverse'
-              : 'Not yet \u2014 the outlook is ' + g.outlook60.toLowerCase() + ' at 60 days'))
+              ? 'Recovery is underway, but ' + esc(g.adverse[0]) + ' is still adverse — leadership attention is still required.'
+              : 'Recovery is underway; the governed outlook is still ' + g.outlook60.toLowerCase()
+                + ' at 60 days, so leadership attention is still required.'))
           + '</td></tr>';
       }
       rb.innerHTML = h2 || '<tr><td colspan="6" class="gl-empty">No project in this view is improving on the evidence.</td></tr>';

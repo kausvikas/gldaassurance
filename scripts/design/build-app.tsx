@@ -132,10 +132,8 @@ const commandCenter = page('Command Center', 'command-center', [
         <b id="gl-scopecount">—</b> projects, worth <b id="gl-scope">—</b>.</p>`),
   band('tint', `
       <h2 class="gl-h2">What changed</h2>
-      <p class="gl-note">Economic movement between the last two governed period ends, from the
-        economics engine re-run at each, and reported-status movement from the dated management
-        declarations. What this does <em>not</em> yet cover is named below rather than left out or
-        filled in — so what "changed" means here is not left to inference.</p>
+      <p class="gl-note">Changes shown from governed financial history and formal reported-status
+        history. What is not yet reconstructable is named in the list rather than left to inference.</p>
       <ul class="gl-list">
         ${whatChanged()}
       </ul>`),
@@ -399,7 +397,7 @@ function projectPage(f: ExecutiveFact): string {
     band('white', `
       <h2 class="gl-h2">Why it is in this condition</h2>
       <ul class="gl-list" style="max-width:82ch">
-        ${([['Status', S.status], ['Cause', S.cause], ['Outlook', S.outlook],
+        ${([['Status', statusLine(S.status, S.cause, f)], ['Cause', S.cause], ['Outlook', S.outlook],
             ['Economic impact', S.economicImpact], ['Action', S.action]] as const)
           .filter(([, body]) => body !== undefined && body !== '')
           .map(([label, body]) => `<li><span class="v"><b>${label}</b><br>${esc(executiveText(body))}</span></li>`)
@@ -434,6 +432,27 @@ function projectPage(f: ExecutiveFact): string {
   ].join('\n');
 
   return shell({ title: f.name, active: 'projects', body, context });
+}
+
+/*
+ * A status line is never just a colour.
+ *
+ * The governed summary can be as terse as "RED." on a project whose narrative offers nothing more.
+ * That is honest and useless: an executive reading a band with no reason has learned only that
+ * something is wrong. Where the assessment carries an explanation, the band is stated with it.
+ * Where it genuinely does not, the line says the evidence is insufficient to isolate a driver
+ * rather than generating prose to fill the space — unknown is better than fabricated explanation.
+ */
+function statusLine(status: string, cause: string, f: ExecutiveFact): string {
+  const bare = status.replace(/[^A-Za-z]/g, '');
+  if (bare.length > 0 && bare.toUpperCase() !== status.replace(/[^A-Za-z]/g, '').toUpperCase()) return status;
+  const isBare = /^(RED|AMBER|GREEN)\.?$/i.test(status.trim());
+  if (!isBare) return status;
+  if (cause.trim() !== '') {
+    return `${status.replace(/\.$/, '')}, on the evidence set out below.`;
+  }
+  return `${status.replace(/\.$/, '')}. The evidence is insufficient to isolate a primary driver; `
+    + `${f.gmAtRiskDisplay} of sold margin is exposed.`;
 }
 
 function word(t: string): string {

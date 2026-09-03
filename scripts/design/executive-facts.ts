@@ -65,7 +65,18 @@ export interface ExecutiveFact {
   /** MET-HLTH-033 as the engine computed it, retained for provenance and never used as category A. */
   readonly legacyReportedGreenRisk: boolean;
   readonly action: string;
+  /** The full governed ranking rationale, kept for progressive disclosure. */
   readonly why: string;
+  /*
+   * The same rationale compressed to condition → consequence → action.
+   *
+   * The queue's job is to answer "why is this here, what is at stake, what should I do" at a
+   * glance. The governed narrative answers all three but runs to three lines of rule mechanics per
+   * row, which is correct and unreadable at scan speed. This is a restatement of the same governed
+   * facts in the order an executive reads them — nothing is added, and the full text stays one
+   * disclosure away.
+   */
+  readonly whyShort: string;
   readonly timeToAct: string;
   readonly rank: number;
   readonly evidence: string;
@@ -258,6 +269,7 @@ export function executiveFacts(): {
       action: executiveText(String(row['executiveAction'])),
       why: executiveText(String(row['rankNarrative'] ?? row['outranksBecause'] ?? '')),
       timeToAct: executiveText(String(row['timeCriticality'])),
+      whyShort: '',
       rank: Number(row['rank'] ?? 0),
       evidence: String(row['dataConfidence'] ?? 'not stated'),
       drivers: driversFor(row, base),
@@ -267,5 +279,30 @@ export function executiveFacts(): {
     } satisfies ExecutiveFact;
   });
 
-  return { facts, view, portfolio };
+  /*
+   * Condition, consequence, action — from the drivers and economics already on the fact.
+   *
+   * Each clause names a governed condition the project actually exhibits; none is invented, and
+   * where nothing material is present the sentence says so rather than filling space.
+   */
+  const compressed = facts.map((f) => {
+    const condition = f.drivers.includes('burn-ahead-of-progress') && f.drivers.includes('behind-plan')
+      ? 'Delivery is behind plan while cost runs ahead of it'
+      : f.drivers.includes('burn-ahead-of-progress') ? 'Cost is running ahead of delivered progress'
+        : f.drivers.includes('behind-plan') ? 'Delivery is behind the planned position'
+          : f.drivers.includes('scope-leakage') ? 'Scope is being delivered without commercial cover'
+            : f.drivers.includes('margin-erosion') ? 'Margin has eroded against the as-sold position'
+              : f.reportedGreenRisk ? 'The reported status is ahead of the evidence'
+                : f.emergingRisk ? 'Healthy today, but the governed outlook turns'
+                  : 'No single governed condition dominates';
+    const consequence = f.gmAtRisk > 0
+      ? `${f.gmAtRiskDisplay} of sold margin is exposed`
+      : 'no margin is currently exposed';
+    const clock = f.timeToAct === 'no clock known'
+      ? 'no irreversible point is dated'
+      : `about ${f.timeToAct} before the next irreversible point`;
+    return { ...f, whyShort: `${condition}; ${consequence}, with ${clock}.` };
+  });
+
+  return { facts: compressed, view, portfolio };
 }
