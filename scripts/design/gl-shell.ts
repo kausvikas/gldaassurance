@@ -49,6 +49,19 @@ const PHRASES: readonly (readonly [RegExp, string])[] = [
   [/CONFIGURATION_ERROR/g, 'assessment unavailable because of a configuration issue'],
   [/RISK_OBJECT_ABSENT/g, 'no applicable risk record'],
   [/REPORTED_OPTIMISTIC/g, 'reported ahead of the evidence'],
+  [/\bNOT_ASSESSED\b/g, 'not assessed'],
+  [/\bKNOWN_ZERO\b/g, 'measured as zero'],
+  [/\bNOT_APPLICABLE\b/g, 'does not apply here'],
+  [/\bUNBOUNDED\b/g, 'no upper bound'],
+  [/\bPROVISIONAL\b/g, 'provisional'],
+  [/\bRAPIDLY_DETERIORATING\b/g, 'deteriorating fast'],
+  [/\bDETERIORATING\b/g, 'deteriorating'],
+  [/\bIMPROVING\b/g, 'improving'],
+  [/\bSTABLE\b/g, 'stable'],
+  // Confidence bands read as sentence case in prose; the band itself is unchanged.
+  [/Rank confidence HIGH/g, 'Rank confidence high'],
+  [/Rank confidence MEDIUM/g, 'Rank confidence medium'],
+  [/Rank confidence LOW/g, 'Rank confidence low'],
 ];
 
 /** Strips identifiers from a narrative bound for an executive surface. */
@@ -116,11 +129,23 @@ ${opts.runtime === undefined ? '' : `<script>${opts.runtime}</script>`}
 
 /** The shared enterprise filter bar. One control set, one vocabulary, every surface. */
 export function filterBar(dims: { id: string; label: string; options: string[] }[]): string {
+  /*
+   * A control's value is a governed enum; its label is English.
+   *
+   * Rendering the option text as the value put RAPIDLY_DETERIORATING in a dropdown an executive is
+   * expected to operate. The value is unchanged — the runtime still matches on the governed string
+   * — only what the reader sees is translated.
+   */
+  const OPTION_LABEL: Readonly<Record<string, string>> = {
+    GREEN: 'Green', AMBER: 'Amber', RED: 'Red',
+    IMPROVING: 'Improving', STABLE: 'Stable',
+    DETERIORATING: 'Deteriorating', RAPIDLY_DETERIORATING: 'Deteriorating fast',
+  };
   const sel = (d: { id: string; label: string; options: string[] }): string => `
         <label>${esc(d.label)}
           <select data-dim="${d.id}">
             <option value="">All</option>
-            ${d.options.map((o) => `<option value="${esc(o)}">${esc(o)}</option>`).join('')}
+            ${d.options.map((o) => `<option value="${esc(o)}">${esc(OPTION_LABEL[o] ?? o)}</option>`).join('')}
           </select>
         </label>`;
   const QUICK: readonly (readonly [string, string])[] = [
