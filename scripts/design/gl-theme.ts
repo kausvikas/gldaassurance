@@ -154,6 +154,9 @@ table.gl-t tbody tr:hover .gl-sticky{background:var(--steel-05)}
 .gl-arrow{text-decoration:none;font-weight:600;font-size:14.5px;border-bottom:1px solid var(--orange);padding-bottom:2px}
 footer.gl-foot{padding:40px 0 64px;color:var(--steel-50);font-size:13px}
 footer.gl-foot p{max-width:78ch}
+/* Keep the primary navigation on one line down to the 1024 target. */
+@media (max-width:1240px){.gl-navlinks{gap:18px}.gl-navlinks a{font-size:14px}
+  .gl-nav{gap:20px;padding:12px 18px}.gl-navmeta{font-size:11.5px;gap:10px}}
 @media (max-width:1100px){.gl-split{grid-template-columns:1fr;gap:34px}.gl-flow{grid-template-columns:1fr}
   .gl-flow>div{border-right:0;border-bottom:1px solid var(--rule)}}
 @media (max-width:820px){.gl-navlinks{display:none}.gl-wrap{padding:0 22px}.gl-navwrap{padding:12px 16px 0}}

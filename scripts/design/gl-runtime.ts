@@ -299,6 +299,29 @@ export const GL_RUNTIME = `
         : 'Showing all <b>' + FACTS.length + '</b> fixed-bid projects in the authorised portfolio.';
     }
     syncUrl();
+    carryContext();
+  }
+
+  /*
+   * The filter context travels with the user.
+   *
+   * Primary navigation is plain links, so moving from Command Center to Projects used to drop the
+   * selection and silently widen the population back to the enterprise — the executive would be
+   * looking at a different set of projects without being told. Each nav link now carries the active
+   * query, and every surface reads it on load, so one filter context holds across the product.
+   *
+   * Project links are deliberately excluded: a project page is about one project, and its "All
+   * projects" link carries the context back.
+   */
+  function carryContext() {
+    var q = window.location.search;
+    var links = document.querySelectorAll('.gl-navlinks a, a[data-carry]');
+    for (var i = 0; i < links.length; i++) {
+      var href = links[i].getAttribute('href') || '';
+      var base = href.split('?')[0];
+      if (base.indexOf('/projects/') === 0) continue;
+      links[i].setAttribute('href', base + q);
+    }
   }
 
   function syncUrl() {

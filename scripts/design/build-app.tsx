@@ -298,7 +298,7 @@ function projectPage(f: ExecutiveFact): string {
   const S = h.summary;
 
   const context = `<div class="gl-band gl-band--tint" style="padding:26px 0 0"><div class="gl-wrap">
-    <p class="gl-note" style="font-size:13.5px"><a class="gl-arrow" href="/projects">← All projects</a></p>
+    <p class="gl-note" style="font-size:13.5px"><a class="gl-arrow" href="/projects" data-carry>← All projects</a></p>
   </div></div>`;
 
   const body = [
