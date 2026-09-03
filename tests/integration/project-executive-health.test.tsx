@@ -646,6 +646,8 @@ describe('the forward outlook is projected from MET-HLTH-011', () => {
 // 12. Determinism and the built artifact
 // ---------------------------------------------------------------------------
 
+const PROJECT_PAGE_ID = viewC.header.projectId;
+
 describe('determinism and the artifact', () => {
   it('produces a byte-identical view for identical inputs (AC-7)', () => {
     expect(JSON.stringify(projectExecutiveHealthFor(portfolio, C))).toBe(JSON.stringify(viewC));
@@ -656,8 +658,22 @@ describe('determinism and the artifact', () => {
     expect(built).toMatch(/DEMO\s*[—-]\s*SYNTHETIC DATA/i);
   });
 
-  it('renders the denial case in the built page, not only the happy path', () => {
-    const built = readFileSync('docs/design/project-executive-health.html', 'utf8');
-    expect(built).toContain('Not available to this role');
+  /*
+   * The published executive route carries the synthetic marker and exactly one application shell.
+   *
+   * This asserted that the built page also contained an authorization *denial* — because the build
+   * script rendered every persona into one document, so a Delivery Manager's refusal screen was
+   * published inside the Chief Delivery Officer's route. That was a design-review artefact, not a
+   * product: an executive scrolled from their own portfolio into another role's error state.
+   *
+   * The denial behaviour itself is unchanged and still governed; it is asserted where a security
+   * behaviour belongs, in the authorization suite under tests/authz, against the gateway rather
+   * than against published HTML.
+   */
+  it('publishes one project per page, with no denial fixture in the executive route', () => {
+    const built = readFileSync('docs/design/projects/' + PROJECT_PAGE_ID + '.html', 'utf8');
+    expect(built).toMatch(/DEMO\s*[—-]\s*SYNTHETIC DATA/i);
+    expect(built).not.toContain('Not available to this role');
+    expect(built.match(/href="\/portfolio"/g) ?? []).toHaveLength(1);
   });
 });

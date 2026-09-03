@@ -192,7 +192,21 @@ const html = `<!doctype html>
 </style>
 </head>
 <body>
-${pages.join('\n<hr class="gl-case-sep">\n')}
+${(() => {
+  /*
+   * One application shell per executive route.
+   *
+   * These scripts rendered every persona into a single document separated by rules — a design
+   * review artefact published as the product. An executive opening the page scrolled through the
+   * same surface three to five times under different roles, including an authorization-denial
+   * fixture belonging to another user. Only the Chief Delivery Officer's view is published here;
+   * the persona and denial cases remain exercised by the authorization tests, which is where a
+   * security behaviour belongs.
+   */
+  const first = pages[0];
+  if (first === undefined) throw new Error('no executive page was rendered');
+  return first;
+})()}
 <!-- ${DEMO_DATA_BANNER} -->
 </body>
 </html>

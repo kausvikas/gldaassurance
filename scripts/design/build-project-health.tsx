@@ -21,7 +21,7 @@
  *
  * Static output, per ADR-0020: there is no transport and no client runtime (DR-044).
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { JSX } from 'react';
@@ -38,7 +38,17 @@ import { generatePortfolio } from '../generator/index.js';
 import { createDemoApi } from '../security/demo-api.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = join(HERE, '..', '..', 'docs', 'design', 'project-executive-health.html');
+/*
+ * One file per project, under docs/design/projects/.
+ *
+ * This script used to render several personas into a single document separated by rules, which is
+ * a design-review artefact rather than a product: /projects served every case stacked on one page,
+ * a request for a specific project could not be honoured, and an authorization-denial fixture was
+ * published inside an executive route. Each project now gets its own page, so Hosting's cleanUrls
+ * resolve /projects/<projectId> to exactly that project.
+ */
+const OUT_DIR = join(HERE, '..', '..', 'docs', 'design', 'projects');
+const OUT_INDEX = join(HERE, '..', '..', 'docs', 'design', 'project-executive-health.html');
 
 const portfolio = generatePortfolio();
 
@@ -49,42 +59,12 @@ function projectFor(scenario: string): string {
   return spec.projectId;
 }
 
-interface Case {
-  readonly username: string;
-  readonly actorId: string;
-  readonly display: string;
-  readonly roleLabel: string;
-  readonly projectId: string;
-  readonly note: string;
-}
-
-const CASES: readonly Case[] = [
-  {
-    username: 'exec.cdo', actorId: 'usr-exec-cdo',
-    display: 'Chief Delivery Officer', roleLabel: 'EXECUTIVE', projectId: projectFor('C'),
-    note: 'Curated scenario C — Reported Green, Evidence Amber. The AC-2 flagship. The reporting has not caught up with the arithmetic, and the page gives a Global Delivery Head the evidence to say so rather than an opinion to argue with.',
-  },
-  {
-    username: 'exec.cdo', actorId: 'usr-exec-cdo',
-    display: 'Chief Delivery Officer', roleLabel: 'EXECUTIVE', projectId: projectFor('B'),
-    note: 'Curated scenario B — the Green-at-Risk archetype. Reported GREEN, rapidly deteriorating. Note that the system now assesses this RED rather than the AMBER the scenario catalog records: see the Phase 8 report on HEALTH-v2 band calibration.',
-  },
-  {
-    username: 'exec.cdo', actorId: 'usr-exec-cdo',
-    display: 'Chief Delivery Officer', roleLabel: 'EXECUTIVE', projectId: projectFor('F'),
-    note: 'Curated scenario F — ETC Optimism. Management’s EAC and the cost performance actually demonstrated do not agree, and the ETC credibility section shows the gap and its size.',
-  },
-  {
-    username: 'exec.cdo', actorId: 'usr-exec-cdo',
-    display: 'Chief Delivery Officer', roleLabel: 'EXECUTIVE', projectId: 'prj-089',
-    note: 'AMBER with an INAPPLICABLE control — included deliberately. Seven of eight Red-forcing controls apply and all seven were evaluated, so the page reads 7/7. The eighth, OVR-NO-CREDIBLE-PLAN, does not apply: the project is five weeks into delivery and a demonstrated velocity needs nine weekly observations, so the comparison it makes has no subject yet. That is not missing evidence and not a finding about delivery. An earlier version of this page called it "evidence not available" and reported 7/8 — both were wrong, and ADR-0026 is why (§12).',
-  },
-  {
-    username: 'dm.mobility', actorId: 'usr-dm-mobility',
-    display: 'Delivery Manager', roleLabel: 'DELIVERY_MANAGER', projectId: projectFor('C'),
-    note: 'A Delivery Manager requesting a project outside their assigned set. The server returns the same generic not-found it returns for a project that does not exist — no capability, scope or reason is disclosed.',
-  },
-];
+/*
+ * The persona and authorization-denial fixtures that used to live here have been removed from the
+ * executive route. A denial is a real behaviour worth demonstrating, but publishing it inside
+ * /projects meant an executive scrolled from their own portfolio into another role's refusal
+ * screen. It belongs in the design gallery, not the product.
+ */
 
 const SCOPE = (label: string): ScopeSelectionViewModel => ({
   label: 'Project',
@@ -105,9 +85,9 @@ const FRESHNESS: FreshnessViewModel = {
 };
 
 function Page(
-  { view, kase, restricted }: {
+  { view, note, restricted }: {
     readonly view: ProjectExecutiveHealthView;
-    readonly kase: Case;
+    readonly note: string | undefined;
     readonly restricted: boolean;
   },
 ): JSX.Element {
@@ -118,70 +98,64 @@ function Page(
       scope={SCOPE(view.header.name)}
       period={PERIOD}
       freshness={FRESHNESS}
-      user={{ name: kase.display, roleLabel: kase.roleLabel }}
-      banner={
+      user={{ name: 'Chief Delivery Officer', roleLabel: 'EXECUTIVE' }}
+      banner={note === undefined ? undefined : (
         <div className="gl-callout">
           <span aria-hidden="true">◈</span>
-          <div className="gl-stack" style={{ gap: 'var(--gl-space-xxs)' }}>
-            <span className="gl-card-title">{`${kase.display} · ${view.header.projectId}`}</span>
-            <p className="gl-body-sm" style={{ margin: 0, maxWidth: '96ch' }}>{kase.note}</p>
-          </div>
+          <p className="gl-body-sm" style={{ margin: 0, maxWidth: '96ch' }}>{note}</p>
         </div>
-      }
+      )}
     >
       <ProjectExecutiveHealth view={view} commercialRestricted={restricted} />
     </AppShell>
   );
 }
 
-function DeniedPage({ kase }: { readonly kase: Case }): JSX.Element {
-  return (
-    <AppShell
-      currentId="projects"
-      pageTitle="Project Executive Health"
-      scope={SCOPE('Assigned projects')}
-      period={PERIOD}
-      freshness={FRESHNESS}
-      user={{ name: kase.display, roleLabel: kase.roleLabel }}
-      banner={
-        <div className="gl-callout">
-          <span aria-hidden="true">◈</span>
-          <p className="gl-body-sm" style={{ margin: 0, maxWidth: '96ch' }}>{kase.note}</p>
-        </div>
-      }
-    >
-      <DegradedState
-        freshness={{
-          state: 'UNAVAILABLE', glyph: '■', label: 'Not available to this role',
-          detail:
-            'The server returned the same generic not-found it returns for a project that does not '
-            + 'exist. No capability, scope or reason is disclosed (SECURITY_MODEL.md §4.5).',
-          degradedSources: [],
-        }}
-      />
-    </AppShell>
-  );
+const api = createDemoApi();
+
+const session = await api.login('exec.cdo');
+if (session === undefined) throw new Error('login failed for exec.cdo');
+const ctx = api.contextFor('usr-exec-cdo', session.sessionId);
+
+/** Every fixed-bid project the Chief Delivery Officer is authorised for. */
+const PROJECT_IDS = portfolio.structure.projects
+  .filter((p) => p.engagementModel === 'FIXED_BID')
+  .map((p) => p.projectId);
+
+const NOTES: Readonly<Record<string, string>> = {
+  [projectFor('C')]: 'Reported Green while the evidence assesses otherwise. The reporting has not caught up with the arithmetic, and this page gives a Global Delivery Head evidence to act on rather than an opinion to argue with.',
+  [projectFor('B')]: 'Reported Green against a deteriorating assessment — the early-warning archetype this product exists to surface.',
+  [projectFor('F')]: 'Management’s estimate at completion and the cost performance actually demonstrated do not agree. The ETC credibility section shows the gap and its size.',
+};
+
+function shell(view: ProjectExecutiveHealthView, restricted: boolean): string {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>${view.header.name} — Delivery Intelligence</title>
+<style>${designSystemCss()}</style>
+</head>
+<body>
+${renderToStaticMarkup(<Page view={view} note={NOTES[view.header.projectId]} restricted={restricted} />)}
+<!-- ${DEMO_DATA_BANNER} -->
+</body>
+</html>
+`;
 }
 
-const api = createDemoApi();
-const pages: string[] = [];
+mkdirSync(OUT_DIR, { recursive: true });
+let written = 0;
+let denied = 0;
+const index: { id: string; name: string }[] = [];
 
-for (const kase of CASES) {
-  const session = await api.login(kase.username);
-  if (session === undefined) throw new Error(`login failed for ${kase.username}`);
-  const ctx = api.contextFor(kase.actorId, session.sessionId);
-
+for (const projectId of PROJECT_IDS) {
   const response = await api.gateway.request(ctx, {
-    view: 'project.executiveHealth', entityId: kase.projectId,
+    view: 'project.executiveHealth', entityId: projectId,
   });
-
-  if (response.status !== 200) {
-    pages.push(renderToStaticMarkup(<DeniedPage kase={kase} />));
-    process.stdout.write(
-      `${kase.username.padEnd(14)} ${kase.projectId} → ${String(response.status)} (denied, rendered as the product would)\n`,
-    );
-    continue;
-  }
+  if (response.status !== 200) { denied += 1; continue; }
 
   const row = (response.body as { data: Record<string, unknown>[] }).data[0] ?? {};
   // The economics block is COMMERCIAL_CONFIDENTIAL. Its ABSENCE is how the UI learns of the
@@ -194,31 +168,19 @@ for (const kase of CASES) {
     scopeCommercial: (row['scopeCommercial'] as ProjectExecutiveHealthView['scopeCommercial'] | undefined) ?? [],
   };
 
-  pages.push(renderToStaticMarkup(<Page view={view} kase={kase} restricted={restricted} />));
-  process.stdout.write(
-    `${kase.username.padEnd(14)} ${kase.projectId} → 200 · ${view.header.name} · `
-    + `${view.statusConflict.reportedRag} reported / ${view.statusConflict.systemAssessedRag} assessed`
-    + `${restricted ? ' · commercial fields ABSENT' : ''}\n`,
-  );
+  writeFileSync(join(OUT_DIR, `${projectId}.html`), shell(view, restricted), 'utf8');
+  index.push({ id: projectId, name: view.header.name });
+  written += 1;
 }
 
-const html = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GlobalLogic Delivery Intelligence — Project Executive Health</title>
-<style>${designSystemCss()}
-.gl-case-sep { border: 0; border-top: 2px solid var(--gl-border-strong); margin: 0; }
-</style>
-</head>
-<body>
-${pages.join('\n<hr class="gl-case-sep">\n')}
-<!-- ${DEMO_DATA_BANNER} -->
-</body>
-</html>
-`;
+// The bare /projects route lands on the highest-priority project rather than a gallery.
+const first = index[0];
+if (first === undefined) throw new Error('no project pages were written');
+writeFileSync(
+  OUT_INDEX,
+  readFileSync(join(OUT_DIR, `${first.id}.html`), 'utf8'),
+  'utf8',
+);
 
-mkdirSync(dirname(OUT), { recursive: true });
-writeFileSync(OUT, html, 'utf8');
-process.stdout.write(`\nproject executive health written: ${OUT}\n${DEMO_DATA_BANNER}\n`);
+process.stdout.write(`project pages written: ${String(written)} (denied ${String(denied)})\n`);
+

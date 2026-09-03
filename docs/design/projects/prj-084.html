@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tholen Energy Systems Payments Gateway Phase 2 — Delivery Intelligence</title>
+<style>/* GlobalLogic Delivery Intelligence — design system. Generated from tokens; do not hand-edit. */
+:root {
+  --gl-surface-app: #F2F3F6;
+  --gl-surface-card: #FFFFFF;
+  --gl-surface-raised: #FFFFFF;
+  --gl-surface-sunken: #F2F3F6;
+  --gl-surface-inverse: #181A24;
+  --gl-surface-selected: #D5D4FF;
+  --gl-text-primary: #181A24;
+  --gl-text-secondary: #484F6B;
+  --gl-text-muted: #858A9B;
+  --gl-text-inverse: #FFFFFF;
+  --gl-text-on-inverse-secondary: #C8CAD3;
+  --gl-border-hairline: #C8CAD3;
+  --gl-border-strong: #484F6B;
+  --gl-border-focus: #4442E3;
+  --gl-action-primary: #FF5F2D;
+  --gl-action-primary-text: #FFFFFF;
+  --gl-analytic: #4442E3;
+  --gl-analytic-fill: #D5D4FF;
+  --gl-status-positive: #2E776A;
+  --gl-status-positive-fill: #91C4BB;
+  --gl-status-caution: #8A5300;
+  --gl-status-caution-fill: #F5C77E;
+  --gl-status-critical: #B3261E;
+  --gl-status-critical-fill: #F4B4B0;
+  --gl-status-neutral: #858A9B;
+  --gl-status-neutral-fill: #C8CAD3;
+  --gl-viz-primary: #4442E3;
+  --gl-viz-primary-fill: #D5D4FF;
+  --gl-viz-baseline: #858A9B;
+  --gl-viz-grid: #C8CAD3;
+  --gl-viz-emphasis: #FF5F2D;
+  --gl-viz-positive: #2E776A;
+  --gl-viz-negative: #B3261E;
+  --gl-space-xxs: 4px;
+  --gl-space-xs: 8px;
+  --gl-space-sm: 12px;
+  --gl-space-md: 16px;
+  --gl-space-lg: 24px;
+  --gl-space-xl: 32px;
+  --gl-space-xxl: 48px;
+  --gl-space-xxxl: 64px;
+  --gl-radius-control: 4px;
+  --gl-radius-card: 8px;
+  --gl-radius-pill: 999px;
+  --gl-elevation-flat: none;
+  --gl-elevation-raised: 0 1px 2px rgba(24, 26, 36, 0.10);
+  --gl-elevation-overlay: 0 8px 24px rgba(24, 26, 36, 0.10);
+  --gl-font-stack: "Helvetica Neue", Helvetica, Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  --gl-numeric-features: "tnum" 1, "lnum" 1;
+  --gl-grid-gutter: 24px;
+  --gl-grid-max: 1440px;
+  --gl-sidebar-width: 248px;
+  --gl-topbar-height: 56px;
+  --gl-motion-state: 150ms;
+  --gl-motion-surface: 250ms;
+  --gl-motion-easing: cubic-bezier(0.2, 0, 0.2, 1);
+  --gl-type-display-size: 44px;
+  --gl-type-display-weight: 600;
+  --gl-type-display-lh: 1.05;
+  --gl-type-display-track: -0.02em;
+  --gl-type-h1-size: 28px;
+  --gl-type-h1-weight: 600;
+  --gl-type-h1-lh: 1.2;
+  --gl-type-h1-track: -0.01em;
+  --gl-type-h2-size: 22px;
+  --gl-type-h2-weight: 600;
+  --gl-type-h2-lh: 1.25;
+  --gl-type-h2-track: -0.01em;
+  --gl-type-h3-size: 17px;
+  --gl-type-h3-weight: 600;
+  --gl-type-h3-lh: 1.3;
+  --gl-type-h3-track: 0;
+  --gl-type-body-size: 15px;
+  --gl-type-body-weight: 400;
+  --gl-type-body-lh: 1.5;
+  --gl-type-body-track: 0;
+  --gl-type-bodySm-size: 13px;
+  --gl-type-bodySm-weight: 400;
+  --gl-type-bodySm-lh: 1.45;
+  --gl-type-bodySm-track: 0;
+  --gl-type-caption-size: 12px;
+  --gl-type-caption-weight: 400;
+  --gl-type-caption-lh: 1.4;
+  --gl-type-caption-track: 0.01em;
+}
+
+.gl-theme-dark {
+  --gl-surface-app: #181A24;
+  --gl-surface-card: #20222E;
+  --gl-surface-raised: #282B39;
+  --gl-surface-sunken: #181A24;
+  --gl-surface-inverse: #FFFFFF;
+  --gl-surface-selected: #484F6B;
+  --gl-text-primary: #FFFFFF;
+  --gl-text-secondary: #C8CAD3;
+  --gl-text-muted: #858A9B;
+  --gl-text-inverse: #181A24;
+  --gl-text-on-inverse-secondary: #484F6B;
+  --gl-border-hairline: #484F6B;
+  --gl-border-strong: #858A9B;
+  --gl-border-focus: #D5D4FF;
+  --gl-action-primary: #FF5F2D;
+  --gl-action-primary-text: #181A24;
+  --gl-analytic: #D5D4FF;
+  --gl-analytic-fill: #484F6B;
+  --gl-status-positive: #91C4BB;
+  --gl-status-positive-fill: #2E776A;
+  --gl-status-caution: #F0B860;
+  --gl-status-caution-fill: #8A5300;
+  --gl-status-critical: #F2B8B5;
+  --gl-status-critical-fill: #B3261E;
+  --gl-status-neutral: #858A9B;
+  --gl-status-neutral-fill: #484F6B;
+  --gl-viz-primary: #D5D4FF;
+  --gl-viz-primary-fill: #484F6B;
+  --gl-viz-baseline: #858A9B;
+  --gl-viz-grid: #484F6B;
+  --gl-viz-emphasis: #FF5F2D;
+  --gl-viz-positive: #91C4BB;
+  --gl-viz-negative: #F2B8B5;
+}
+
+/* --- reset ------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: var(--gl-font-stack);
+  font-size: var(--gl-type-body-size);
+  line-height: var(--gl-type-body-lh);
+  color: var(--gl-text-primary);
+  background: var(--gl-surface-app);
+  -webkit-font-smoothing: antialiased;
+}
+img, svg { display: block; max-width: 100%; }
+button, input, select { font: inherit; color: inherit; }
+
+/* --- typography -------------------------------------------------------- */
+.gl-display, .gl-h1, .gl-h2, .gl-h3 { margin: 0; color: var(--gl-text-primary); }
+.gl-display {
+  font-size: var(--gl-type-display-size); font-weight: var(--gl-type-display-weight);
+  line-height: var(--gl-type-display-lh); letter-spacing: var(--gl-type-display-track);
+  font-variant-numeric: tabular-nums lining-nums; font-feature-settings: var(--gl-numeric-features);
+}
+.gl-h1 { font-size: var(--gl-type-h1-size); font-weight: var(--gl-type-h1-weight); line-height: var(--gl-type-h1-lh); letter-spacing: var(--gl-type-h1-track); }
+.gl-h2 { font-size: var(--gl-type-h2-size); font-weight: var(--gl-type-h2-weight); line-height: var(--gl-type-h2-lh); letter-spacing: var(--gl-type-h2-track); }
+.gl-h3 { font-size: var(--gl-type-h3-size); font-weight: var(--gl-type-h3-weight); line-height: var(--gl-type-h3-lh); }
+.gl-body { font-size: var(--gl-type-body-size); }
+.gl-body-sm { font-size: var(--gl-type-bodySm-size); line-height: var(--gl-type-bodySm-lh); }
+
+/* Caption is 12px — normal-size text under WCAG, so it takes text-secondary (8.06 on white),
+   never text-muted (3.44). BRAND_DESIGN_SYSTEM.md §2.1 rule 4. */
+.gl-caption {
+  font-size: var(--gl-type-caption-size); line-height: var(--gl-type-caption-lh);
+  letter-spacing: var(--gl-type-caption-track); color: var(--gl-text-secondary);
+}
+.gl-eyebrow {
+  font-size: var(--gl-type-caption-size); font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--gl-text-secondary);
+}
+/* text-muted is legal only at large sizes (§2.1 rule 4); this is the only class that applies it. */
+.gl-muted-lg { color: var(--gl-text-muted); font-size: var(--gl-type-h2-size); }
+
+.gl-numeric {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: var(--gl-numeric-features);
+  font-weight: 500;
+}
+
+/* --- app shell --------------------------------------------------------- */
+.gl-app { display: grid; grid-template-columns: var(--gl-sidebar-width) minmax(0, 1fr); min-height: 100vh; }
+
+.gl-sidebar {
+  background: var(--gl-surface-app);
+  border-right: 1px solid var(--gl-border-hairline);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+
+/* The restrained geometric motif. Header context only, 4% ink, behind a solid wordmark —
+   BRAND_DESIGN_SYSTEM.md permits a grid motif where it does not reduce readability. */
+.gl-brand {
+  padding: var(--gl-space-lg) var(--gl-space-md) var(--gl-space-md);
+  border-bottom: 1px solid var(--gl-border-hairline);
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--gl-text-primary) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--gl-text-primary) 4%, transparent) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.gl-brand-mark { font-size: var(--gl-type-h3-size); font-weight: 600; letter-spacing: -0.01em; color: var(--gl-text-primary); }
+.gl-brand-product { font-size: var(--gl-type-caption-size); color: var(--gl-text-secondary); margin-top: 2px; }
+.gl-brand-rule { width: 28px; height: 2px; background: var(--gl-action-primary); margin-top: var(--gl-space-sm); border-radius: var(--gl-radius-pill); }
+
+.gl-nav { padding: var(--gl-space-md) var(--gl-space-xs); flex: 1; }
+.gl-nav-group + .gl-nav-group { margin-top: var(--gl-space-lg); }
+.gl-nav-group-label { padding: 0 var(--gl-space-xs) var(--gl-space-xs); }
+.gl-nav-list { list-style: none; margin: 0; padding: 0; }
+.gl-nav-item {
+  display: flex; align-items: center; gap: var(--gl-space-xs);
+  padding: var(--gl-space-xs) var(--gl-space-sm);
+  min-height: 32px; border-radius: var(--gl-radius-control);
+  color: var(--gl-text-secondary); text-decoration: none;
+  font-size: var(--gl-type-bodySm-size);
+  border-left: 3px solid transparent;
+  transition: background var(--gl-motion-state) var(--gl-motion-easing), color var(--gl-motion-state) var(--gl-motion-easing);
+}
+.gl-nav-item:hover { background: color-mix(in srgb, var(--gl-text-primary) 6%, transparent); color: var(--gl-text-primary); }
+.gl-nav-item[aria-current="page"] {
+  background: color-mix(in srgb, var(--gl-text-primary) 10%, transparent);
+  color: var(--gl-text-primary); font-weight: 600;
+  border-left-color: var(--gl-action-primary);
+}
+.gl-nav-item[aria-disabled="true"] { color: var(--gl-text-muted); cursor: not-allowed; }
+.gl-nav-icon { width: 16px; text-align: center; flex: none; opacity: 0.9; }
+.gl-nav-tail { margin-left: auto; }
+
+.gl-sidebar-foot { padding: var(--gl-space-md); border-top: 1px solid var(--gl-border-hairline); }
+
+/* --- top bar ----------------------------------------------------------- */
+.gl-main { display: flex; flex-direction: column; min-width: 0; }
+.gl-topbar {
+  height: var(--gl-topbar-height); flex: none;
+  display: flex; align-items: center; gap: var(--gl-space-md);
+  padding: 0 var(--gl-space-lg);
+  background: var(--gl-surface-card);
+  border-bottom: 1px solid var(--gl-border-hairline);
+  position: sticky; top: 0; z-index: 10;
+}
+.gl-topbar-spacer { margin-left: auto; }
+.gl-content { padding: var(--gl-space-lg); max-width: var(--gl-grid-max); width: 100%; }
+
+/* --- 12-column grid ---------------------------------------------------- */
+.gl-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gl-grid-gutter); }
+.gl-col-1 { grid-column: span 1; min-width: 0; }
+.gl-col-2 { grid-column: span 2; min-width: 0; }
+.gl-col-3 { grid-column: span 3; min-width: 0; }
+.gl-col-4 { grid-column: span 4; min-width: 0; }
+.gl-col-5 { grid-column: span 5; min-width: 0; }
+.gl-col-6 { grid-column: span 6; min-width: 0; }
+.gl-col-7 { grid-column: span 7; min-width: 0; }
+.gl-col-8 { grid-column: span 8; min-width: 0; }
+.gl-col-9 { grid-column: span 9; min-width: 0; }
+.gl-col-10 { grid-column: span 10; min-width: 0; }
+.gl-col-11 { grid-column: span 11; min-width: 0; }
+.gl-col-12 { grid-column: span 12; min-width: 0; }
+.gl-stack { display: flex; flex-direction: column; gap: var(--gl-space-md); }
+.gl-row { display: flex; align-items: center; gap: var(--gl-space-xs); flex-wrap: wrap; }
+.gl-row-tight { display: flex; align-items: center; gap: var(--gl-space-xxs); }
+
+/* --- surfaces ---------------------------------------------------------- */
+.gl-card {
+  background: var(--gl-surface-card);
+  border: 1px solid var(--gl-border-hairline);
+  border-radius: var(--gl-radius-card);
+  box-shadow: var(--gl-elevation-raised);
+}
+.gl-card-pad { padding: var(--gl-space-md) var(--gl-space-lg); }
+.gl-card-head {
+  display: flex; align-items: baseline; gap: var(--gl-space-xs);
+  padding: var(--gl-space-sm) var(--gl-space-lg);
+  border-bottom: 1px solid var(--gl-border-hairline);
+}
+.gl-card-title { font-size: var(--gl-type-h3-size); font-weight: 600; }
+
+/* --- chips and badges --------------------------------------------------- */
+.gl-chip {
+  display: inline-flex; align-items: center; gap: var(--gl-space-xxs);
+  padding: 3px var(--gl-space-xs); min-height: 24px;
+  border-radius: var(--gl-radius-pill);
+  font-size: var(--gl-type-caption-size); font-weight: 600;
+  border: 1px solid transparent; white-space: nowrap;
+}
+.gl-chip-glyph { font-size: 10px; line-height: 1; }
+
+/* Status chips. Fill is the status colour at 18%, so a fill can never drift off its own hue. */
+.gl-status-positive { color: var(--gl-status-positive); background: color-mix(in srgb, var(--gl-status-positive-fill) 40%, transparent); border-color: color-mix(in srgb, var(--gl-status-positive) 30%, transparent); }
+.gl-status-caution  { color: var(--gl-status-caution);  background: color-mix(in srgb, var(--gl-status-caution-fill) 40%, transparent);  border-color: color-mix(in srgb, var(--gl-status-caution) 30%, transparent); }
+.gl-status-critical { color: var(--gl-status-critical); background: color-mix(in srgb, var(--gl-status-critical-fill) 40%, transparent); border-color: color-mix(in srgb, var(--gl-status-critical) 30%, transparent); }
+.gl-status-neutral  { color: var(--gl-status-neutral);  background: color-mix(in srgb, var(--gl-status-neutral-fill) 40%, transparent);  border-color: color-mix(in srgb, var(--gl-status-neutral) 40%, transparent); }
+
+.gl-chip-neutral { color: var(--gl-text-secondary); background: var(--gl-surface-sunken); border-color: var(--gl-border-hairline); }
+.gl-chip-analytic { color: var(--gl-analytic); background: color-mix(in srgb, var(--gl-analytic-fill) 45%, transparent); border-color: color-mix(in srgb, var(--gl-analytic) 25%, transparent); }
+.gl-chip-planned { color: var(--gl-text-secondary); background: transparent; border-color: var(--gl-border-hairline); font-weight: 400; }
+
+/* The demo marker. §6: unmissable, never dismissible, orange on white/dark only — never on the
+   app background, where orange measures 2.73 (§2.1 rule 1). Hence the white chip surface. */
+.gl-demo-badge {
+  display: inline-flex; align-items: center; gap: var(--gl-space-xxs);
+  padding: var(--gl-space-xxs) var(--gl-space-xs); min-height: 24px;
+  background: var(--gl-surface-card);
+  border: 1px solid var(--gl-action-primary);
+  border-radius: var(--gl-radius-control);
+  font-size: var(--gl-type-caption-size); font-weight: 700; letter-spacing: 0.04em;
+  color: var(--gl-text-primary); white-space: nowrap;
+}
+.gl-demo-badge-dot { width: 8px; height: 8px; border-radius: var(--gl-radius-pill); background: var(--gl-action-primary); flex: none; }
+
+/* --- KPI --------------------------------------------------------------- */
+.gl-kpi { display: flex; flex-direction: column; gap: var(--gl-space-xxs); }
+.gl-kpi-value { font-size: var(--gl-type-display-size); font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; font-variant-numeric: tabular-nums lining-nums; }
+.gl-kpi-value-sm { font-size: var(--gl-type-h1-size); }
+.gl-kpi-foot { display: flex; align-items: center; gap: var(--gl-space-xs); flex-wrap: wrap; }
+.gl-delta-positive { color: var(--gl-viz-positive); font-weight: 600; }
+.gl-delta-negative { color: var(--gl-viz-negative); font-weight: 600; }
+.gl-delta-flat { color: var(--gl-text-secondary); font-weight: 600; }
+
+/* --- provenance (§3.3) -------------------------------------------------- */
+/* L1 observed: no decoration. Facts look like facts. */
+.gl-prov-fact { color: var(--gl-text-primary); }
+/* L2 derived: dotted underline, and the affordance is real — focusable, with a popover. */
+.gl-prov-computed {
+  color: var(--gl-text-primary);
+  border-bottom: 1px dotted var(--gl-border-strong);
+  cursor: help;
+}
+/* L3 inferred: contained, blue-bordered, explicitly chipped. Containment stops an inference
+   reading as a fact — the single most important rule in §3.3. */
+.gl-prov-inferred {
+  border: 1px solid color-mix(in srgb, var(--gl-analytic) 45%, transparent);
+  background: color-mix(in srgb, var(--gl-analytic-fill) 30%, transparent);
+  border-radius: var(--gl-radius-card);
+  padding: var(--gl-space-sm) var(--gl-space-md);
+}
+.gl-restricted { color: var(--gl-text-secondary); background: var(--gl-surface-sunken); border: 1px dashed var(--gl-border-hairline); }
+
+/* --- evidence drawer / popover ------------------------------------------ */
+.gl-evidence { border: 0; padding: 0; margin: 0; }
+.gl-evidence > summary {
+  list-style: none; cursor: pointer; display: inline-flex; align-items: center;
+  gap: var(--gl-space-xxs); border-radius: var(--gl-radius-control);
+}
+.gl-evidence > summary::-webkit-details-marker { display: none; }
+.gl-evidence-panel {
+  margin-top: var(--gl-space-xs);
+  background: var(--gl-surface-raised);
+  border: 1px solid var(--gl-border-hairline);
+  border-radius: var(--gl-radius-card);
+  box-shadow: var(--gl-elevation-overlay);
+  padding: var(--gl-space-md);
+  max-width: 420px;
+}
+.gl-evidence-row { display: flex; justify-content: space-between; gap: var(--gl-space-md); padding: var(--gl-space-xxs) 0; }
+.gl-evidence-row + .gl-evidence-row { border-top: 1px solid var(--gl-border-hairline); }
+
+/* --- callouts and action cards ------------------------------------------ */
+.gl-callout {
+  display: flex; gap: var(--gl-space-sm);
+  border: 1px solid var(--gl-border-hairline);
+  border-left: 3px solid var(--gl-analytic);
+  border-radius: var(--gl-radius-card);
+  background: var(--gl-surface-card);
+  padding: var(--gl-space-sm) var(--gl-space-md);
+}
+.gl-callout-critical { border-left-color: var(--gl-status-critical); }
+.gl-callout-caution { border-left-color: var(--gl-status-caution); }
+.gl-callout-positive { border-left-color: var(--gl-status-positive); }
+
+.gl-action-card { display: flex; flex-direction: column; gap: var(--gl-space-sm); }
+.gl-action-meta { display: flex; gap: var(--gl-space-md); flex-wrap: wrap; }
+
+/* --- buttons ------------------------------------------------------------ */
+.gl-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--gl-space-xxs);
+  min-height: 32px; padding: 0 var(--gl-space-sm);
+  border-radius: var(--gl-radius-control);
+  border: 1px solid var(--gl-border-hairline);
+  background: var(--gl-surface-card); color: var(--gl-text-primary);
+  font-size: var(--gl-type-bodySm-size); font-weight: 600; cursor: pointer;
+  transition: background var(--gl-motion-state) var(--gl-motion-easing);
+}
+.gl-btn:hover { background: var(--gl-surface-sunken); }
+/* The one orange control in a view (§3.2, §8 prohibition 6). Orange on white is legal at 3.03 for
+   graphics; the label is white on orange, which is the pairing that carries the text contrast. */
+.gl-btn-primary { background: var(--gl-action-primary); border-color: var(--gl-action-primary); color: var(--gl-action-primary-text); }
+.gl-btn-primary:hover { background: color-mix(in srgb, var(--gl-action-primary) 88%, var(--gl-text-primary)); }
+.gl-btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* --- selectors ---------------------------------------------------------- */
+.gl-select {
+  display: inline-flex; align-items: center; gap: var(--gl-space-xxs);
+  min-height: 32px; padding: 0 var(--gl-space-xs);
+  border: 1px solid var(--gl-border-hairline); border-radius: var(--gl-radius-control);
+  background: var(--gl-surface-card); font-size: var(--gl-type-bodySm-size);
+}
+.gl-select-label { color: var(--gl-text-secondary); }
+.gl-select-value { font-weight: 600; }
+
+/* --- data table --------------------------------------------------------- */
+.gl-table-wrap { overflow-x: auto; }
+.gl-table { width: 100%; border-collapse: collapse; font-size: var(--gl-type-bodySm-size); }
+.gl-table caption { text-align: left; padding: 0 0 var(--gl-space-xs); color: var(--gl-text-secondary); font-size: var(--gl-type-caption-size); }
+.gl-table th, .gl-table td { padding: var(--gl-space-xs) var(--gl-space-sm); text-align: left; border-bottom: 1px solid var(--gl-border-hairline); }
+.gl-table thead th {
+  position: sticky; top: 0; background: var(--gl-surface-card);
+  font-size: var(--gl-type-caption-size); font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--gl-text-secondary);
+  border-bottom: 1px solid var(--gl-border-strong); white-space: nowrap;
+}
+/* DR-079 - the identity column stays put while the table scrolls sideways.
+   The executive table carries 21 columns and scrolls horizontally by design. Phase 12A found the
+   project name scrolled away with everything else, leaving 75 anonymous rows of RED for a reader
+   inspecting trajectory or outlook. Sticky first cell, opaque background so scrolled content passes
+   behind it, hairline edge so it reads as an anchor. The header cell pins in both directions.
+   (No backticks in this comment: the stylesheet is a template literal and one closes it.) */
+.gl-table-pinned tbody th:first-child,
+.gl-table-pinned tbody td:first-child {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--gl-surface-card);
+  border-right: 1px solid var(--gl-border-hairline);
+}
+.gl-table-pinned thead th:first-child {
+  position: sticky; left: 0; top: 0; z-index: 2;
+  background: var(--gl-surface-card);
+  border-right: 1px solid var(--gl-border-hairline);
+}
+.gl-table-pinned tbody tr:hover th:first-child,
+.gl-table-pinned tbody tr:hover td:first-child { background: var(--gl-surface-sunken); }
+.gl-table td.gl-num, .gl-table th.gl-num { text-align: right; font-variant-numeric: tabular-nums lining-nums; }
+.gl-table tbody tr:hover { background: var(--gl-surface-sunken); }
+.gl-table-compact th, .gl-table-compact td { padding: var(--gl-space-xxs) var(--gl-space-xs); }
+.gl-sort-glyph { color: var(--gl-text-secondary); margin-left: var(--gl-space-xxs); }
+
+/* --- bars, meters, charts ------------------------------------------------ */
+.gl-bar-track { background: var(--gl-surface-sunken); border-radius: var(--gl-radius-pill); height: 8px; overflow: hidden; border: 1px solid var(--gl-border-hairline); }
+.gl-bar-fill { height: 100%; background: var(--gl-viz-primary); }
+.gl-bar-fill-baseline { background: var(--gl-viz-baseline); }
+.gl-bar-marker { width: 2px; background: var(--gl-viz-emphasis); }
+
+.gl-chart { display: block; width: 100%; height: auto; }
+.gl-chart-grid { stroke: var(--gl-viz-grid); stroke-width: 1; }
+.gl-chart-axis { stroke: var(--gl-border-strong); stroke-width: 1; }
+.gl-chart-series { fill: none; stroke: var(--gl-viz-primary); stroke-width: 2; }
+/* Forecast is dashed AND labelled — a projection that looks like an actual is a provenance failure. */
+.gl-chart-forecast { fill: none; stroke: var(--gl-viz-primary); stroke-width: 2; stroke-dasharray: 4 3; opacity: 0.75; }
+.gl-chart-baseline { fill: none; stroke: var(--gl-viz-baseline); stroke-width: 1.5; stroke-dasharray: 2 3; }
+.gl-chart-band { fill: var(--gl-viz-primary-fill); opacity: 0.45; }
+.gl-chart-emphasis { fill: var(--gl-viz-emphasis); }
+.gl-chart-positive { fill: var(--gl-viz-positive); }
+.gl-chart-negative { fill: var(--gl-viz-negative); }
+.gl-chart-neutral { fill: var(--gl-viz-baseline); }
+.gl-chart-label { fill: var(--gl-text-secondary); font-size: 11px; font-family: var(--gl-font-stack); }
+.gl-chart-connector { stroke: var(--gl-border-strong); stroke-width: 1; stroke-dasharray: 2 2; }
+.gl-bubble { stroke: var(--gl-surface-card); stroke-width: 1.5; }
+
+/* --- states ------------------------------------------------------------- */
+.gl-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--gl-space-xs); text-align: center;
+  padding: var(--gl-space-xl) var(--gl-space-lg);
+  color: var(--gl-text-secondary);
+}
+.gl-state-glyph { font-size: var(--gl-type-h1-size); line-height: 1; }
+.gl-skeleton {
+  background: color-mix(in srgb, var(--gl-text-primary) 8%, transparent);
+  border-radius: var(--gl-radius-control); height: 12px;
+}
+.gl-skeleton-lg { height: 32px; }
+.gl-degraded-strip {
+  display: flex; align-items: center; gap: var(--gl-space-xs);
+  padding: var(--gl-space-xs) var(--gl-space-md);
+  border: 1px solid color-mix(in srgb, var(--gl-status-caution) 35%, transparent);
+  background: color-mix(in srgb, var(--gl-status-caution-fill) 30%, transparent);
+  border-radius: var(--gl-radius-card);
+  color: var(--gl-status-caution);
+}
+
+/* --- accessibility ------------------------------------------------------ */
+.gl-visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.gl-skip-link {
+  position: absolute; left: var(--gl-space-xs); top: -40px; z-index: 100;
+  background: var(--gl-surface-card); color: var(--gl-text-primary);
+  padding: var(--gl-space-xs) var(--gl-space-sm); border-radius: var(--gl-radius-control);
+  border: 1px solid var(--gl-border-strong);
+  transition: top var(--gl-motion-state) var(--gl-motion-easing);
+}
+.gl-skip-link:focus { top: var(--gl-space-xs); }
+
+/* Focus is visible on every focusable thing, at 2px with an offset so it clears adjacent fills. */
+:where(a, button, summary, [tabindex], input, select, th[aria-sort]):focus-visible {
+  outline: 2px solid var(--gl-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--gl-radius-control);
+}
+
+/* Every interactive target is at least 24x24 (WCAG 2.2 target size, BRAND §7). */
+:where(a.gl-nav-item, button.gl-btn, summary, .gl-select) { min-height: 24px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; }
+}
+
+@media (prefers-contrast: more) {
+  .gl-card { border-color: var(--gl-border-strong); }
+  .gl-table th, .gl-table td { border-bottom-color: var(--gl-border-strong); }
+}
+
+/* --- responsive ---------------------------------------------------------
+   Optimised for 1440x900; 1920 gains gutter, not columns. Below 1200 the 12-column
+   layout collapses to 6 and then to 1, and the sidebar becomes a top strip — the
+   executive surfaces are desktop instruments, and a tablet gets a legible reduction
+   rather than a pretend phone app. Content never scrolls horizontally at 200% zoom. */
+@media (max-width: 1200px) {
+  .gl-col-1 { grid-column: span 6; }
+  .gl-col-2 { grid-column: span 6; }
+  .gl-col-3 { grid-column: span 6; }
+  .gl-col-4 { grid-column: span 12; }
+  .gl-col-5 { grid-column: span 12; }
+  .gl-col-6 { grid-column: span 12; }
+  .gl-col-7 { grid-column: span 12; }
+  .gl-col-8 { grid-column: span 12; }
+  .gl-col-9 { grid-column: span 12; }
+  .gl-col-10 { grid-column: span 12; }
+  .gl-col-11 { grid-column: span 12; }
+  .gl-col-12 { grid-column: span 12; }
+}
+
+@media (max-width: 900px) {
+  .gl-app { grid-template-columns: minmax(0, 1fr); }
+  .gl-sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--gl-border-hairline); }
+  .gl-nav-list { display: flex; flex-wrap: wrap; gap: var(--gl-space-xxs); }
+  .gl-nav-item { border-left: 0; border-bottom: 3px solid transparent; }
+  .gl-nav-item[aria-current="page"] { border-left: 0; border-bottom-color: var(--gl-action-primary); }
+  .gl-col-1, .gl-col-2, .gl-col-3, .gl-col-4, .gl-col-5, .gl-col-6, .gl-col-7, .gl-col-8, .gl-col-9, .gl-col-10, .gl-col-11, .gl-col-12 { grid-column: span 12; }
+  .gl-content { padding: var(--gl-space-md); }
+}
+
+@media print {
+  .gl-sidebar, .gl-topbar-actions { display: none; }
+  .gl-card { box-shadow: none; break-inside: avoid; }
+  .gl-demo-badge { border-width: 2px; }
+}
+</style>
+</head>
+<body>
+<div class="gl-app"><a class="gl-skip-link" href="#gl-content">Skip to content</a><aside class="gl-sidebar gl-theme-dark"><div class="gl-brand"><div class="gl-brand-mark">GlobalLogic</div><div class="gl-brand-product">Delivery Intelligence</div><div class="gl-brand-rule" aria-hidden="true"></div></div><nav class="gl-nav" aria-label="Primary"><div class="gl-nav-group"><div class="gl-nav-group-label gl-eyebrow">Portfolio</div><ul class="gl-nav-list"><li><a class="gl-nav-item" href="/portfolio"><span class="gl-nav-icon" aria-hidden="true">▦</span><span>Portfolio</span></a></li><li><a class="gl-nav-item" href="/green-at-risk"><span class="gl-nav-icon" aria-hidden="true">◆</span><span>Green-at-Risk</span></a></li><li><a class="gl-nav-item" href="/projects" aria-current="page"><span class="gl-nav-icon" aria-hidden="true">▤</span><span>Projects</span></a></li></ul></div><div class="gl-nav-group"><div class="gl-nav-group-label gl-eyebrow">Economics &amp; risk</div><ul class="gl-nav-list"><li><a class="gl-nav-item" href="/financial"><span class="gl-nav-icon" aria-hidden="true">◫</span><span>Financial Intelligence</span></a></li><li><a class="gl-nav-item" href="/early-warnings"><span class="gl-nav-icon" aria-hidden="true">◬</span><span>Early Warnings</span></a></li><li><a class="gl-nav-item" href="/recovery"><span class="gl-nav-icon" aria-hidden="true">◷</span><span>Recovery</span></a></li></ul></div><div class="gl-nav-group"><div class="gl-nav-group-label gl-eyebrow">Governance</div><ul class="gl-nav-list"><li><a class="gl-nav-item" href="/assurance"><span class="gl-nav-icon" aria-hidden="true">◎</span><span>Assurance</span></a></li><li><a class="gl-nav-item" href="/data-quality"><span class="gl-nav-icon" aria-hidden="true">◍</span><span>Data Quality</span></a></li><li><a class="gl-nav-item" href="/rules"><span class="gl-nav-icon" aria-hidden="true">⚙</span><span>Rules &amp; Models</span></a></li><li><a class="gl-nav-item" href="/assistant"><span class="gl-nav-icon" aria-hidden="true">◇</span><span>Assistant</span></a></li></ul></div><div class="gl-nav-group"><div class="gl-nav-group-label gl-eyebrow">Planned</div><ul class="gl-nav-list"><li><a class="gl-nav-item" aria-disabled="true" tabindex="-1"><span class="gl-nav-icon" aria-hidden="true">◰</span><span>Benchmarks</span><span class="gl-chip gl-chip-planned gl-nav-tail">Planned</span></a></li><li><a class="gl-nav-item" aria-disabled="true" tabindex="-1"><span class="gl-nav-icon" aria-hidden="true">◱</span><span>Deal Intelligence</span><span class="gl-chip gl-chip-planned gl-nav-tail">Planned</span></a></li><li><a class="gl-nav-item" aria-disabled="true" tabindex="-1"><span class="gl-nav-icon" aria-hidden="true">◲</span><span>Administration</span><span class="gl-chip gl-chip-planned gl-nav-tail">Planned</span></a></li></ul></div></nav><div class="gl-sidebar-foot"><span class="gl-demo-badge gl-theme-dark" role="note" aria-label="DEMO — SYNTHETIC DATA. This environment contains no real client, employee or financial data."><span class="gl-demo-badge-dot" aria-hidden="true"></span><span aria-hidden="true">DEMO — SYNTHETIC DATA</span></span></div></aside><div class="gl-main"><header class="gl-topbar"><label class="gl-select" aria-label="Project"><span class="gl-select-label gl-caption">Scope:</span><span class="gl-select-value gl-body-sm">Tholen Energy Systems Payments Gateway Phase 2</span><span aria-hidden="true" class="gl-caption">▾</span><span class="gl-visually-hidden">1 authorised scopes available</span></label><div class="gl-row-tight"><label class="gl-select" aria-label="Reporting period"><span class="gl-select-label gl-caption">Period:</span><span class="gl-select-value gl-body-sm">Aug 2026</span><span aria-hidden="true" class="gl-caption">▾</span></label><span class="gl-caption">as at 31 Aug 2026</span></div><span class="gl-topbar-spacer"></span><span class="gl-topbar-actions gl-row"><span class="gl-row-tight"><span class="gl-chip gl-status-positive"><span class="gl-chip-glyph" aria-hidden="true">●</span><span>Data current</span></span><span class="gl-caption">Finance 3d · Delivery 3d · Contract 1d</span></span><span class="gl-demo-badge" role="note" aria-label="DEMO — SYNTHETIC DATA. This environment contains no real client, employee or financial data."><span class="gl-demo-badge-dot" aria-hidden="true"></span><span aria-hidden="true">DEMO — SYNTHETIC DATA</span></span><span class="gl-row-tight"><span class="gl-body-sm" style="font-weight:600">Chief Delivery Officer</span><span class="gl-chip gl-chip-neutral">EXECUTIVE</span></span></span></header><main class="gl-content" id="gl-content" tabindex="-1"><div class="gl-stack" style="gap:var(--gl-space-lg)"><div class="gl-row" style="justify-content:space-between"><h1 class="gl-h1">Project Executive Health</h1></div><div class="gl-stack" style="gap:var(--gl-space-lg)"><section class="gl-card gl-card-pad gl-stack" aria-label="Project identification"><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline;flex-wrap:wrap"><span class="gl-h2">Tholen Energy Systems Payments Gateway Phase 2</span><span class="gl-caption">Client 004</span><span class="gl-caption" style="margin-left:auto">DEMO — SYNTHETIC DATA</span></div><dl class="gl-row" style="gap:var(--gl-space-md);flex-wrap:wrap;margin:0"><div class="gl-stack" style="gap:2px"><dt class="gl-caption">Industry</dt><dd class="gl-numeric" style="margin:0;font-weight:500">Industrial &amp; Energy</dd></div><div class="gl-stack" style="gap:2px"><dt class="gl-caption">Region</dt><dd class="gl-numeric" style="margin:0;font-weight:500">Europe</dd></div><div class="gl-stack" style="gap:2px"><dt class="gl-caption">Delivery leader</dt><dd class="gl-numeric" style="margin:0;font-weight:500">Leader pf-bu-emea</dd></div><div class="gl-stack" style="gap:2px"><dt class="gl-caption">DA owner</dt><dd class="gl-numeric" style="margin:0;font-weight:500">DA bu-emea</dd></div><div class="gl-stack" style="gap:2px"><dt class="gl-caption">Contract type</dt><dd class="gl-numeric" style="margin:0;font-weight:500">FIXED_BID</dd></div><div class="gl-stack" style="gap:2px"><dt class="gl-caption">TCV</dt><dd class="gl-numeric" style="margin:0;font-weight:500">$890K</dd></div><div class="gl-stack" style="gap:2px"><dt class="gl-caption">Start</dt><dd class="gl-numeric" style="margin:0;font-weight:500">2024-12-09</dd></div><div class="gl-stack" style="gap:2px"><dt class="gl-caption">Committed end</dt><dd class="gl-numeric" style="margin:0;font-weight:500">2026-10-12</dd></div></dl></section><section aria-label="Primary outputs"><div class="gl-grid"><div class="gl-col-2"><div class="gl-card gl-card-pad gl-stack" style="gap:var(--gl-space-xxs);height:100%"><span class="gl-caption">Overall health</span><span class="gl-chip gl-status-caution"><span class="gl-chip-glyph" aria-hidden="true">▲</span><span>AMBER</span></span><span class="gl-caption"><span>Composite 57.4 of 100, 4 of 4 dimensions scored</span></span><details class="gl-evidence"><summary class="gl-chip gl-chip-neutral"><span class="gl-chip-glyph" aria-hidden="true">▸</span><span>Show evidence</span></summary><div class="gl-evidence-panel"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div><div class="gl-card-title">System-Assessed RAG</div><div class="gl-caption">MET-HLTH-011 · rule HEALTH-v2 · computed 31 Aug 2026</div></div><div><div class="gl-evidence-row"><span class="gl-body-sm">Composite score</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">57.4</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Band from the weighted model alone</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>AMBER</div></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Hard overrides fired</span><span class="gl-body-sm gl-numeric">none</span></div><div class="gl-evidence-row"><span class="gl-body-sm">Which mechanism decided this band</span><span class="gl-body-sm gl-numeric">The weighted composite, banded against the HEALTH-v2 thresholds. No override changed it.</span></div><div class="gl-evidence-row"><span class="gl-body-sm">Health model</span><span class="gl-body-sm gl-numeric">HEALTH-v2</span></div><div class="gl-evidence-row"><span class="gl-body-sm">Reported RAG</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-fact" title="Observed fact">RED</span></span></div></div><div class="gl-caption">Sources: health</div></div></div></details></div></div><div class="gl-col-2"><div class="gl-card gl-card-pad gl-stack" style="gap:var(--gl-space-xxs);height:100%"><span class="gl-caption">Trajectory</span><span class="gl-row-tight"><span class="gl-chip gl-status-critical"><span class="gl-chip-glyph" aria-hidden="true">▼</span><span>deteriorating</span></span><span class="gl-caption">per signal policy</span></span><span class="gl-caption"><span>2 signals moving materially adversely</span></span><details class="gl-evidence"><summary class="gl-chip gl-chip-neutral"><span class="gl-chip-glyph" aria-hidden="true">▸</span><span>Show evidence</span></summary><div class="gl-evidence-panel"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div><div class="gl-card-title">Trajectory</div><div class="gl-caption">MET-FCST-001 · rule HEALTH-v2 · computed 31 Aug 2026</div></div><div><div class="gl-evidence-row"><span class="gl-body-sm">State</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>DETERIORATING</div></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Adverse confluence</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">2</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Signals evaluated</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">6</span></span></div></div><div class="gl-caption">Sources: forecast</div></div></div></details></div></div><div class="gl-col-2"><div class="gl-card gl-card-pad gl-stack" style="gap:var(--gl-space-xxs);height:100%"><span class="gl-caption">30-day outlook</span><span class="gl-chip gl-status-caution"><span class="gl-chip-glyph" aria-hidden="true">▲</span><span>AMBER</span></span><span class="gl-caption"><span>projected band at 30 days</span></span><details class="gl-evidence"><summary class="gl-chip gl-chip-neutral"><span class="gl-chip-glyph" aria-hidden="true">▸</span><span>Show evidence</span></summary><div class="gl-evidence-panel"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div><div class="gl-card-title">30-day outlook</div><div class="gl-caption">MET-FCST-020 · rule HEALTH-v2 · computed 31 Aug 2026</div></div><div><div class="gl-evidence-row"><span class="gl-body-sm">Projected band</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>AMBER</div></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Current band</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>AMBER</div></span></div></div><div class="gl-caption">Sources: forecast</div></div></div></details></div></div><div class="gl-col-2"><div class="gl-card gl-card-pad gl-stack" style="gap:var(--gl-space-xxs);height:100%"><span class="gl-caption">60-day outlook</span><span class="gl-chip gl-status-critical"><span class="gl-chip-glyph" aria-hidden="true">■</span><span>RED</span></span><span class="gl-caption"><span>projected band at 60 days</span></span><details class="gl-evidence"><summary class="gl-chip gl-chip-neutral"><span class="gl-chip-glyph" aria-hidden="true">▸</span><span>Show evidence</span></summary><div class="gl-evidence-panel"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div><div class="gl-card-title">60-day outlook</div><div class="gl-caption">MET-FCST-021 · rule HEALTH-v2 · computed 31 Aug 2026</div></div><div><div class="gl-evidence-row"><span class="gl-body-sm">Projected band</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>RED</div></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Current band</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>AMBER</div></span></div></div><div class="gl-caption">Sources: forecast</div></div></div></details></div></div><div class="gl-col-2"><div class="gl-card gl-card-pad gl-stack" style="gap:var(--gl-space-xxs);height:100%"><span class="gl-caption">Forecast confidence</span><span class="gl-chip gl-chip-neutral" title="score 39.4 of 100"><span class="gl-chip-glyph" aria-hidden="true">◆</span><span>LOW confidence</span><span class="gl-visually-hidden"> — score 39.4 of 100</span></span><span class="gl-caption"><span>score 39.4 of 100</span></span><details class="gl-evidence"><summary class="gl-chip gl-chip-neutral"><span class="gl-chip-glyph" aria-hidden="true">▸</span><span>Show evidence</span></summary><div class="gl-evidence-panel"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div><div class="gl-card-title">Forecast confidence</div><div class="gl-caption">MET-DQ-007 · rule HEALTH-v2 · computed 31 Aug 2026</div></div><div><div class="gl-evidence-row"><span class="gl-body-sm">Band</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">LOW</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Score</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">39.4</span></span></div></div><div class="gl-caption">Sources: data-quality</div></div></div></details></div></div><div class="gl-col-2"><div class="gl-card gl-card-pad gl-stack" style="gap:var(--gl-space-xxs);height:100%"><span class="gl-caption">Executive intervention</span><span class="gl-h2">REQUIRED</span><span class="gl-caption"><span>the assessment, the forward outlook or a status conflict warrants an executive decision</span></span><details class="gl-evidence"><summary class="gl-chip gl-chip-neutral"><span class="gl-chip-glyph" aria-hidden="true">▸</span><span>Show evidence</span></summary><div class="gl-evidence-panel"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div><div class="gl-card-title">Executive intervention</div><div class="gl-caption">MET-HLTH-011 · rule HEALTH-v2 · computed 31 Aug 2026</div></div><div><div class="gl-evidence-row"><span class="gl-body-sm">System-Assessed RAG</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>AMBER</div></span></div><div class="gl-evidence-row"><span class="gl-body-sm">System Green-at-Risk</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>no</div></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Reported Green Risk</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>no</div></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Status conflict</span><span class="gl-body-sm gl-numeric">REPORTED_PESSIMISTIC</span></div></div><div class="gl-caption">Sources: health, forecast</div></div></div></details></div></div></div></section><section class="gl-card gl-card-pad gl-stack" aria-label="Status divergence"><div class="gl-row" style="justify-content:space-between"><span class="gl-eyebrow">Status divergence</span><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">⇄</span><span>Reported ≠ Assessed</span></span></div><div class="gl-row" style="gap:var(--gl-space-lg)"><div class="gl-stack" style="gap:var(--gl-space-xxs)"><span class="gl-caption">Reported by delivery management</span><span class="gl-chip gl-status-critical"><span class="gl-chip-glyph" aria-hidden="true">■</span><span>RED</span></span></div><span aria-hidden="true" class="gl-caption">vs</span><div class="gl-stack" style="gap:var(--gl-space-xxs)"><span class="gl-caption">System-assessed</span><span class="gl-chip gl-status-caution"><span class="gl-chip-glyph" aria-hidden="true">▲</span><span>AMBER</span></span></div></div><p class="gl-body-sm" style="margin:0">Reported RED while the evidence supports AMBER. The team is reporting more conservatively than the evidence requires, which is worth understanding before it is corrected.</p><details class="gl-evidence"><summary class="gl-chip gl-chip-neutral"><span class="gl-chip-glyph" aria-hidden="true">▸</span><span>Show the divergence evidence</span></summary><div class="gl-evidence-panel"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div><div class="gl-card-title">Status conflict</div><div class="gl-caption">MET-HLTH-030 · rule HEALTH-v2 · computed 31 Aug 2026</div></div><div><div class="gl-evidence-row"><span class="gl-body-sm">Reported RAG (MET-HLTH-012)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-fact" title="Observed fact">RED</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">System-Assessed RAG (MET-HLTH-011)</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>AMBER</div></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Effective RAG (MET-HLTH-013)</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>AMBER</div></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Override applied</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-fact" title="Observed fact">no</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Divergence (MET-HLTH-030)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">-1</span></span></div></div><div class="gl-caption">Sources: health</div></div></div></details></section><section class="gl-card" aria-labelledby="panel-what-the-reported-status-does-not-account-for"><header class="gl-card-head"><span class="gl-card-title" id="panel-what-the-reported-status-does-not-account-for">What the reported status does not account for</span></header><div class="gl-card-pad"><ul class="gl-stack" style="gap:var(--gl-space-xxs);margin:0;padding-left:1.2em"><li class="gl-body-sm">ELV-MARGIN-EROSION</li></ul></div></section><section class="gl-stack" aria-label="Executive summary" style="gap:var(--gl-space-xs)"><div class="gl-callout"><span aria-hidden="true" style="line-height:1.4">◈</span><div class="gl-stack" style="gap:var(--gl-space-xxs)"><div class="gl-row" style="gap:var(--gl-space-xs)"><span class="gl-card-title">STATUS</span><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div><p class="gl-body-sm" style="margin:0"><span>Reported RED; the evidence assesses AMBER and the trajectory is deteriorating.</span></p></div></div><div class="gl-callout gl-callout-caution"><span aria-hidden="true" style="line-height:1.4">▲</span><div class="gl-stack" style="gap:var(--gl-space-xxs)"><div class="gl-row" style="gap:var(--gl-space-xs)"><span class="gl-card-title">CAUSE</span></div><p class="gl-body-sm" style="margin:0"><span>Burn is +5.0pp ahead of progress; margin has eroded -12.2pp against the as-sold position.</span></p></div></div><div class="gl-callout gl-callout-caution"><span aria-hidden="true" style="line-height:1.4">▲</span><div class="gl-stack" style="gap:var(--gl-space-xxs)"><div class="gl-row" style="gap:var(--gl-space-xs)"><span class="gl-card-title">OUTLOOK</span><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div><p class="gl-body-sm" style="margin:0"><span>AMBER at 30 days, RED at 60 days.</span></p></div></div><div class="gl-callout gl-callout-critical"><span aria-hidden="true" style="line-height:1.4">■</span><div class="gl-stack" style="gap:var(--gl-space-xxs)"><div class="gl-row" style="gap:var(--gl-space-xs)"><span class="gl-card-title">ECONOMIC IMPACT</span></div><p class="gl-body-sm" style="margin:0"><span>$121K of sold margin at risk; $78K of scope is being delivered without commercial recovery.</span></p></div></div><div class="gl-callout"><span aria-hidden="true" style="line-height:1.4">◈</span><div class="gl-stack" style="gap:var(--gl-space-xxs)"><div class="gl-row" style="gap:var(--gl-space-xs)"><span class="gl-card-title">ACTION</span><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div><p class="gl-body-sm" style="margin:0"><span>Commercialise the uncontracted scope before the next critical milestone.</span></p></div></div><details class="gl-evidence"><summary class="gl-chip gl-chip-neutral"><span class="gl-chip-glyph" aria-hidden="true">▸</span><span>Show evidence</span></summary><div class="gl-evidence-panel"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div><div class="gl-card-title">Executive summary</div><div class="gl-caption">MET-HLTH-011 · rule HEALTH-v2 · computed 31 Aug 2026</div></div><div><div class="gl-evidence-row"><span class="gl-body-sm">Generated from</span><span class="gl-body-sm gl-numeric">the assessment, by fixed rules — no language model</span></div><div class="gl-evidence-row"><span class="gl-body-sm">System-Assessed RAG</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>AMBER</div></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Trajectory</span><span class="gl-body-sm gl-numeric"><div class="gl-prov-inferred"><div class="gl-row" style="justify-content:space-between;margin-bottom:var(--gl-space-xxs)"><span class="gl-chip gl-chip-analytic"><span class="gl-chip-glyph" aria-hidden="true">◈</span><span>Inferred</span></span></div>DETERIORATING</div></span></div><div class="gl-evidence-row"><span class="gl-body-sm">GM value at risk</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">$121K</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Causes identified</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">2</span></span></div></div><div class="gl-caption">Sources: health, forecast, financial</div></div></div></details></section><section class="gl-card" aria-labelledby="panel-health-dimensions"><header class="gl-card-head"><span class="gl-card-title" id="panel-health-dimensions">Health dimensions</span></header><div class="gl-card-pad"><div class="gl-stack" style="gap:var(--gl-space-sm)"><div class="gl-row" style="gap:var(--gl-space-lg);flex-wrap:wrap"><div class="gl-stack" style="gap:2px"><span class="gl-caption">Assessment status</span><span class="gl-numeric" style="font-weight:600">COMPLETE</span></div><div class="gl-stack" style="gap:2px"><span class="gl-caption">Dimension coverage</span><span class="gl-numeric" style="font-weight:600">100% · 100% of 100% declared weight</span></div></div><p class="gl-body-sm" style="margin:0;max-width:96ch"><span>All four executive dimensions scored, and every materially applicable input was either measured, a governed known-zero, or a risk that does not exist on this project. The composite rests on 100% of the model&#x27;s declared weight.</span></p><div class="gl-stack" style="gap:var(--gl-space-xs)"><div class="gl-caption"><span>4 of 4 dimensions scored. A dimension carried by fewer than half its inputs is not reported, and says why.</span></div><div class="gl-table-wrap"><table class="gl-table gl-table-compact"><caption class="gl-visually-hidden">The four HEALTH-v2 executive dimensions (ADR-0015 D-1)</caption><thead><tr><th scope="col" style="width:26%">Dimension</th><th scope="col">Metric</th><th scope="col" class="gl-num">Weight</th><th scope="col" class="gl-num">Score<span class="gl-visually-hidden"> — 0–100, or the stated reason there is none</span></th><th scope="col" class="gl-num">Contribution<span class="gl-visually-hidden"> — Points this dimension put into the composite</span></th><th scope="col">Inputs</th></tr></thead><tbody><tr><th scope="row" style="font-weight:500"><span>Financial Health</span></th><td><span>MET-HLTH-021</span></td><td class="gl-num"><span>40%</span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>31.9</span></span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>12.8</span></span></td><td><span>forecast gm percent 0.0649 · margin erosion pp -0.1222 · burn gap 0.0504 · contingency burn gap 0.0822</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Delivery Health</span></th><td><span>MET-HLTH-022</span></td><td class="gl-num"><span>25%</span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>82.4</span></span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>20.6</span></span></td><td><span>progress variance -0.0755 · required velocity ratio 0.3086 · milestones at risk 0.0000 · dependency ageing days not supplied</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Scope &amp; Commercial Health</span></th><td><span>MET-HLTH-023</span></td><td class="gl-num"><span>20%</span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>70.0</span></span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>14.0</span></span></td><td><span>uncompensated scope ratio 0.0000 · pending cr age days 392.0000 · unsecured upside ratio 0.0087</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Product &amp; Quality Health</span></th><td><span>MET-HLTH-024</span></td><td class="gl-num"><span>15%</span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>66.7</span></span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>10.0</span></span></td><td><span>rework ratio 0.1449 · acceptance blockers 0.0000 · escaped defect rate 0.1860 · defect backlog trend 0.0595</span></td></tr></tbody></table></div></div></div></div></section><section class="gl-card" aria-labelledby="panel-commitment-comparison"><header class="gl-card-head"><span class="gl-card-title" id="panel-commitment-comparison">Commitment comparison</span></header><div class="gl-card-pad"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div class="gl-caption"><span>Three baselines side by side. A gap between the first two is commercial change; a gap between the last two is delivery risk.</span></div><div class="gl-table-wrap"><table class="gl-table gl-table-compact"><caption class="gl-visually-hidden">What we sold, what the contract now says, and what we now expect</caption><thead><tr><th scope="col" style="width:30%">Commitment</th><th scope="col" class="gl-num">Original sold<span class="gl-visually-hidden"> — The as-sold baseline, immutable once written (ADR-0003 §1)</span></th><th scope="col" class="gl-num">Current contract<span class="gl-visually-hidden"> — The as-sold baseline plus every executed change</span></th><th scope="col" class="gl-num">Current / forecast<span class="gl-visually-hidden"> — What the evidence now says will happen</span></th><th scope="col" class="gl-num">Variance</th></tr></thead><tbody><tr><th scope="row" style="font-weight:500"><span>Gross margin %</span></th><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>18.7%</span></span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>no registered metric</span></span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>6.5%</span></span></td><td class="gl-num"><span>−12.2pp</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Cost at completion (EAC)</span></th><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>$717K</span></span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>$723K</span></span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>$832K</span></span></td><td class="gl-num"><span>+$115K</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Contract value</span></th><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>$882K</span></span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>$890K</span></span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>$890K</span></span></td><td class="gl-num"><span>+$8K</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Physical completion (planned vs actual)</span></th><td class="gl-num"><span class="gl-prov-fact" title="Observed fact"><span>—</span></span></td><td class="gl-num"><span class="gl-prov-fact" title="Observed fact"><span>98.9%</span></span></td><td class="gl-num"><span class="gl-prov-fact" title="Observed fact"><span>91.3%</span></span></td><td class="gl-num"><span>-7.6pp</span></td></tr><tr><th scope="row" style="font-weight:500"><span>End date</span></th><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>2026-10-12</span></span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>2026-10-12</span></span></td><td class="gl-num"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule"><span>25 days late</span></span></td><td class="gl-num"><span>25 days late</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Next critical milestone</span></th><td class="gl-num"><span class="gl-prov-fact" title="Observed fact"><span>2026-07-20</span></span></td><td class="gl-num"><span class="gl-prov-fact" title="Observed fact"><span>2026-07-20</span></span></td><td class="gl-num"><span class="gl-prov-fact" title="Observed fact"><span>2026-07-20</span></span></td><td class="gl-num"><span>on baseline</span></td></tr></tbody></table></div></div></div></section><section class="gl-card" aria-labelledby="panel-financial-position"><header class="gl-card-head"><span class="gl-card-title" id="panel-financial-position">Financial position</span></header><div class="gl-card-pad"><div class="gl-grid"><div class="gl-col-3"><div class="gl-stack" style="gap:2px"><span class="gl-caption">Actual cost to date</span><span class="gl-numeric" style="font-weight:600">$696K</span><span class="gl-caption">MET-FIN-005</span></div></div><div class="gl-col-3"><div class="gl-stack" style="gap:2px"><span class="gl-caption">Bottom-up ETC</span><span class="gl-numeric" style="font-weight:600">$136K</span><span class="gl-caption">MET-FIN-007</span></div></div><div class="gl-col-3"><div class="gl-stack" style="gap:2px"><span class="gl-caption">EAC</span><span class="gl-numeric" style="font-weight:600">$832K</span><span class="gl-caption">MET-FIN-008</span></div></div><div class="gl-col-3"><div class="gl-stack" style="gap:2px"><span class="gl-caption">Sold GM %</span><span class="gl-numeric" style="font-weight:600">18.7%</span><span class="gl-caption">MET-FIN-012</span></div></div><div class="gl-col-3"><div class="gl-stack" style="gap:2px"><span class="gl-caption">Forecast GM %</span><span class="gl-numeric" style="font-weight:600">6.5%</span><span class="gl-caption">MET-FIN-014</span></div></div><div class="gl-col-3"><div class="gl-stack" style="gap:2px"><span class="gl-caption">Risk-adjusted GM %</span><span class="gl-numeric" style="font-weight:600">4.9%</span><span class="gl-caption">MET-FIN-033</span></div></div><div class="gl-col-3"><div class="gl-stack" style="gap:2px"><span class="gl-caption">GM erosion</span><span class="gl-numeric" style="font-weight:600">$107K · -12.2pp</span><span class="gl-caption">MET-FIN-025</span></div></div><div class="gl-col-3"><div class="gl-stack" style="gap:2px"><span class="gl-caption">GM value at risk</span><span class="gl-numeric" style="font-weight:600">$121K</span><span class="gl-caption">MET-FIN-019</span></div></div></div></div></section><section class="gl-card" aria-labelledby="panel-progress-and-burn"><header class="gl-card-head"><span class="gl-card-title" id="panel-progress-and-burn">Progress and burn</span></header><div class="gl-card-pad"><div class="gl-stack" style="gap:var(--gl-space-sm)"><div class="gl-stack" role="group" aria-label="Planned completion, actual completion and cost consumed. Planned 98.9%, actual 91.3%, cost consumed 96.4%."><div class="gl-stack" style="gap:var(--gl-space-xxs)"><div class="gl-row" style="justify-content:space-between"><span class="gl-body-sm">Planned physical completion</span><span class="gl-row-tight"><span class="gl-body-sm gl-numeric">98.9%</span><span class="gl-caption">plan 98.9%</span></span></div><div class="gl-bar-track" style="position:relative"><div class="gl-bar-fill" style="width:100%"></div><div class="gl-bar-marker" aria-hidden="true" style="position:absolute;top:0;bottom:0;left:100%"></div></div></div><div class="gl-stack" style="gap:var(--gl-space-xxs)"><div class="gl-row" style="justify-content:space-between"><span class="gl-body-sm">Actual physical completion</span><span class="gl-row-tight"><span class="gl-body-sm gl-numeric">91.3%</span><span class="gl-caption">plan 98.9%</span></span></div><div class="gl-bar-track" style="position:relative"><div class="gl-bar-fill" style="width:92.32%"></div><div class="gl-bar-marker" aria-hidden="true" style="position:absolute;top:0;bottom:0;left:100%"></div></div></div><div class="gl-stack" style="gap:var(--gl-space-xxs)"><div class="gl-row" style="justify-content:space-between"><span class="gl-body-sm">Cost consumed</span><span class="gl-row-tight"><span class="gl-body-sm gl-numeric">96.4%</span><span class="gl-caption">plan 91.3%</span></span></div><div class="gl-bar-track" style="position:relative"><div class="gl-bar-fill" style="width:97.47%"></div><div class="gl-bar-marker" aria-hidden="true" style="position:absolute;top:0;bottom:0;left:92.32%"></div></div></div><p class="gl-caption" style="margin:0">Planned 98.9%, actual 91.3%, cost consumed 96.4%.</p></div><p class="gl-body-sm" style="margin:0;max-width:96ch"><span>Delivery is -7.6pp behind plan while cost is +5.0pp ahead of progress. Money is being spent faster than value is being created — the two together, not either alone, are what makes this a margin problem.</span></p><div class="gl-row" style="gap:var(--gl-space-md)"><span class="gl-body-sm">Progress variance <strong class="gl-numeric">-7.6pp</strong></span><span class="gl-body-sm">Burn gap <strong class="gl-numeric">+5.0pp</strong></span></div><details class="gl-evidence"><summary class="gl-chip gl-chip-neutral"><span class="gl-chip-glyph" aria-hidden="true">▸</span><span>Show evidence</span></summary><div class="gl-evidence-panel"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div><div class="gl-card-title">Progress and burn</div><div class="gl-caption">MET-FIN-027 · rule HEALTH-v2 · computed 31 Aug 2026</div></div><div><div class="gl-evidence-row"><span class="gl-body-sm">Planned physical completion</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-fact" title="Observed fact">98.9%</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Actual physical completion</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-fact" title="Observed fact">91.3%</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Cost consumed</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">96.4%</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Progress variance (MET-DEL-015)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">-7.6pp</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Burn gap (MET-FIN-027)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">+5.0pp</span></span></div></div><div class="gl-caption">Sources: delivery, financial</div></div></div></details></div></div></section><section class="gl-card" aria-labelledby="panel-etc-credibility"><header class="gl-card-head"><span class="gl-card-title" id="panel-etc-credibility">ETC credibility</span></header><div class="gl-card-pad"><div class="gl-stack" style="gap:var(--gl-space-sm)"><div class="gl-row" style="gap:var(--gl-space-lg);flex-wrap:wrap"><div class="gl-stack" style="gap:2px"><span class="gl-caption">Management EAC (MET-FIN-008)</span><span class="gl-numeric" style="font-weight:600">$832K</span></div><div class="gl-stack" style="gap:2px"><span class="gl-caption">Performance-implied EAC (MET-FIN-029)</span><span class="gl-numeric" style="font-weight:600">$763K</span></div><div class="gl-stack" style="gap:2px"><span class="gl-caption">Optimism gap (MET-FIN-030)</span><span class="gl-numeric" style="font-weight:600">$0</span></div></div><p class="gl-body-sm" style="margin:0;max-width:96ch"><span>Management&#x27;s EAC is $832K. Extrapolating the cost performance actually demonstrated gives $763K. The gap is $0 — the amount the forecast assumes will be recovered by performing better than the project has performed so far.</span></p><details class="gl-evidence"><summary class="gl-chip gl-chip-neutral"><span class="gl-chip-glyph" aria-hidden="true">▸</span><span>Show evidence</span></summary><div class="gl-evidence-panel"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div><div class="gl-card-title">ETC credibility</div><div class="gl-caption">MET-FIN-030 · rule HEALTH-v2 · computed 31 Aug 2026</div></div><div><div class="gl-evidence-row"><span class="gl-body-sm">Management EAC (MET-FIN-008)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">$832K</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Performance-implied EAC (MET-FIN-029)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">$763K</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Cost performance index (MET-DEL-004)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">94.773%</span></span></div></div><div class="gl-caption">Sources: financial</div></div></div></details></div></div></section><section class="gl-card" aria-labelledby="panel-milestones"><header class="gl-card-head"><span class="gl-card-title" id="panel-milestones">Milestones</span></header><div class="gl-card-pad"><div class="gl-stack" style="gap:var(--gl-space-sm)"><div class="gl-row" style="gap:var(--gl-space-lg);flex-wrap:wrap"><div class="gl-stack" style="gap:2px"><span class="gl-caption">Last critical milestone</span><span class="gl-body-sm">Milestone 5 — baseline 2026-02-02, actual 2026-03-25 (51 days late)</span></div><div class="gl-stack" style="gap:2px"><span class="gl-caption">Next critical milestone</span><span class="gl-body-sm">Milestone 7 — baseline 2026-07-20, forecast 2026-07-20 (on baseline)</span></div><div class="gl-stack" style="gap:2px"><span class="gl-caption">Hit rate</span><span class="gl-numeric" style="font-weight:600">0.0%</span></div><div class="gl-stack" style="gap:2px"><span class="gl-caption">Total slippage · at risk</span><span class="gl-numeric" style="font-weight:600">0 days · 0</span></div></div><div class="gl-stack" style="gap:var(--gl-space-xs)"><div class="gl-caption"><span>7 milestones recorded</span></div><div class="gl-table-wrap"><table class="gl-table gl-table-compact"><caption class="gl-visually-hidden">Milestones — a payment-gating milestone turns schedule slip into a cash event</caption><thead><tr><th scope="col" style="width:30%">Milestone</th><th scope="col" class="gl-num">Baseline</th><th scope="col" class="gl-num">Forecast</th><th scope="col" class="gl-num">Actual</th><th scope="col" class="gl-num">Slip</th><th scope="col">Payment-gating</th><th scope="col">State</th></tr></thead><tbody><tr><th scope="row" style="font-weight:500"><span>Milestone 1</span></th><td class="gl-num"><span>2025-03-03</span></td><td class="gl-num"><span>2025-03-03</span></td><td class="gl-num"><span>2025-03-29</span></td><td class="gl-num"><span>26 days late</span></td><td><span>yes</span></td><td><span>delivered late</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Milestone 2</span></th><td class="gl-num"><span>2025-05-26</span></td><td class="gl-num"><span>2025-05-26</span></td><td class="gl-num"><span>2025-06-25</span></td><td class="gl-num"><span>30 days late</span></td><td><span>no</span></td><td><span>delivered late</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Milestone 3</span></th><td class="gl-num"><span>2025-08-18</span></td><td class="gl-num"><span>2025-08-18</span></td><td class="gl-num"><span>2025-09-11</span></td><td class="gl-num"><span>24 days late</span></td><td><span>yes</span></td><td><span>delivered late</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Milestone 4</span></th><td class="gl-num"><span>2025-11-10</span></td><td class="gl-num"><span>2025-11-10</span></td><td class="gl-num"><span>2025-12-07</span></td><td class="gl-num"><span>27 days late</span></td><td><span>no</span></td><td><span>delivered late</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Milestone 5</span></th><td class="gl-num"><span>2026-02-02</span></td><td class="gl-num"><span>2026-02-02</span></td><td class="gl-num"><span>2026-03-25</span></td><td class="gl-num"><span>51 days late</span></td><td><span>yes</span></td><td><span>delivered late</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Milestone 6</span></th><td class="gl-num"><span>2026-04-27</span></td><td class="gl-num"><span>2026-04-27</span></td><td class="gl-num"><span>2026-05-20</span></td><td class="gl-num"><span>23 days late</span></td><td><span>no</span></td><td><span>delivered late</span></td></tr><tr><th scope="row" style="font-weight:500"><span>Milestone 7</span></th><td class="gl-num"><span>2026-07-20</span></td><td class="gl-num"><span>2026-07-20</span></td><td class="gl-num"><span>—</span></td><td class="gl-num"><span>on baseline</span></td><td><span>yes</span></td><td><span>on track</span></td></tr></tbody></table></div></div><details class="gl-evidence"><summary class="gl-chip gl-chip-neutral"><span class="gl-chip-glyph" aria-hidden="true">▸</span><span>Show evidence</span></summary><div class="gl-evidence-panel"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div><div class="gl-card-title">Milestones</div><div class="gl-caption">MET-DEL-009 · rule HEALTH-v2 · computed 31 Aug 2026</div></div><div><div class="gl-evidence-row"><span class="gl-body-sm">Total slippage (MET-DEL-009)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">0 days</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Milestones at risk (MET-DEL-010)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">0</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Milestones recorded</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-fact" title="Observed fact">7</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Delivered</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-fact" title="Observed fact">6</span></span></div></div><div class="gl-caption">Sources: delivery</div></div></div></details></div></div></section><div class="gl-grid"><div class="gl-col-6"><section class="gl-card" aria-labelledby="panel-scope-and-commercial"><header class="gl-card-head"><span class="gl-card-title" id="panel-scope-and-commercial">Scope and commercial</span></header><div class="gl-card-pad"><dl class="gl-stack" style="gap:var(--gl-space-xs);margin:0"><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Executed change requests</dt><dd class="gl-numeric" style="margin:0;font-weight:500">4 · $8K</dd><dd class="gl-caption" style="margin:0;margin-left:auto">contract:ExecutedChange</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Pending change requests</dt><dd class="gl-numeric" style="margin:0;font-weight:500">4 · $8K</dd><dd class="gl-caption" style="margin:0;margin-left:auto">contract:PendingChange</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Unsecured upside</dt><dd class="gl-numeric" style="margin:0;font-weight:500">$8K</dd><dd class="gl-caption" style="margin:0;margin-left:auto">MET-FIN-011</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Expected pending CR recovery</dt><dd class="gl-numeric" style="margin:0;font-weight:500">$5K</dd><dd class="gl-caption" style="margin:0;margin-left:auto">MET-COM-010</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Uncommercialised exposure</dt><dd class="gl-numeric" style="margin:0;font-weight:500">$78K</dd><dd class="gl-caption" style="margin:0;margin-left:auto">MET-COM-009</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Scope delivered without a change request</dt><dd class="gl-numeric" style="margin:0;font-weight:500">40 items</dd><dd class="gl-caption" style="margin:0;margin-left:auto">delivery:ScopeItem</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Scope change ratio</dt><dd class="gl-numeric" style="margin:0;font-weight:500"><span class="gl-caption">Not shown on this page. This measure is owned by another domain and is reported on the Margin &amp; Driver Intelligence surface, where its evidence sits. (Governance: CONFLICT C-21, ADR-0022 D-2.)</span></dd><dd class="gl-caption" style="margin:0;margin-left:auto">MET-COM-008</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Pending CR ageing</dt><dd class="gl-numeric" style="margin:0;font-weight:500"><span class="gl-caption">Not shown on this page. This measure is owned by another domain and is reported on the Margin &amp; Driver Intelligence surface, where its evidence sits. (Governance: CONFLICT C-21, ADR-0022 D-2.)</span></dd><dd class="gl-caption" style="margin:0;margin-left:auto">MET-COM-007</dd></div></dl></div></section></div><div class="gl-col-6"><section class="gl-card" aria-labelledby="panel-quality-and-product"><header class="gl-card-head"><span class="gl-card-title" id="panel-quality-and-product">Quality and product</span></header><div class="gl-card-pad"><dl class="gl-stack" style="gap:var(--gl-space-xs);margin:0"><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Open defects</dt><dd class="gl-numeric" style="margin:0;font-weight:500">50 (21 minor, 10 major, 12 trivial, 7 critical)</dd><dd class="gl-caption" style="margin:0;margin-left:auto">MET-QUA-001</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Acceptance blockers</dt><dd class="gl-numeric" style="margin:0;font-weight:500">0</dd><dd class="gl-caption" style="margin:0;margin-left:auto">MET-QUA-010</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Accepted deliverables</dt><dd class="gl-numeric" style="margin:0;font-weight:500">0 of 0 · not computable</dd><dd class="gl-caption" style="margin:0;margin-left:auto">quality:AcceptanceItem</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Rework ratio</dt><dd class="gl-numeric" style="margin:0;font-weight:500"><span class="gl-caption">Not shown on this page. This measure is owned by another domain and is reported on the Margin &amp; Driver Intelligence surface, where its evidence sits. (Governance: CONFLICT C-21, ADR-0022 D-2.)</span></dd><dd class="gl-caption" style="margin:0;margin-left:auto">MET-QUA-006</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Escaped defect rate</dt><dd class="gl-numeric" style="margin:0;font-weight:500"><span class="gl-caption">Not shown on this page. This measure is owned by another domain and is reported on the Margin &amp; Driver Intelligence surface, where its evidence sits. (Governance: CONFLICT C-21, ADR-0022 D-2.)</span></dd><dd class="gl-caption" style="margin:0;margin-left:auto">MET-QUA-003</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Defect backlog trend</dt><dd class="gl-numeric" style="margin:0;font-weight:500"><span class="gl-caption">Not shown on this page. This measure is owned by another domain and is reported on the Margin &amp; Driver Intelligence surface, where its evidence sits. (Governance: CONFLICT C-21, ADR-0022 D-2.)</span></dd><dd class="gl-caption" style="margin:0;margin-left:auto">MET-QUA-009</dd></div><div class="gl-row" style="gap:var(--gl-space-sm);align-items:baseline"><dt class="gl-body-sm" style="min-width:22ch">Excess rework cost</dt><dd class="gl-numeric" style="margin:0;font-weight:500"><span class="gl-caption">Not shown on this page. This measure is owned by another domain and is reported on the Margin &amp; Driver Intelligence surface, where its evidence sits. (Governance: CONFLICT C-21, ADR-0022 D-2.)</span></dd><dd class="gl-caption" style="margin:0;margin-left:auto">MET-QUA-012</dd></div></dl></div></section></div></div><section class="gl-card" aria-labelledby="panel-data-and-assurance-confidence"><header class="gl-card-head"><span class="gl-card-title" id="panel-data-and-assurance-confidence">Data and assurance confidence</span></header><div class="gl-card-pad"><div class="gl-stack" style="gap:var(--gl-space-sm)"><div class="gl-row" style="gap:var(--gl-space-lg);flex-wrap:wrap"><div class="gl-stack" style="gap:2px"><span class="gl-caption">Data confidence (MET-DQ-005)</span><span class="gl-chip gl-chip-neutral" title="score 100.0 of 100"><span class="gl-chip-glyph" aria-hidden="true">◆</span><span>HIGH confidence</span><span class="gl-visually-hidden"> — score 100.0 of 100</span></span></div><div class="gl-stack" style="gap:2px"><span class="gl-caption">Forecast confidence (MET-DQ-007)</span><span class="gl-chip gl-chip-neutral" title="score 39.4 of 100"><span class="gl-chip-glyph" aria-hidden="true">◆</span><span>LOW confidence</span><span class="gl-visually-hidden"> — score 39.4 of 100</span></span></div></div><div class="gl-row" style="gap:var(--gl-space-md);flex-wrap:wrap"><span class="gl-body-sm">financial <strong class="gl-numeric">0 days</strong></span><span class="gl-body-sm">delivery <strong class="gl-numeric">0 days</strong></span><span class="gl-body-sm">commercial <strong class="gl-numeric">184 days</strong></span><span class="gl-body-sm">quality <strong class="gl-numeric">0 days</strong></span><span class="gl-body-sm">risk <strong class="gl-numeric">9 days</strong></span></div><p class="gl-body-sm" style="margin:0;max-width:96ch"><strong>Independent review:</strong> peer review by usr-da-reviewer on 2026-04-12: QUALIFIED — Reported position broadly supported, with findings raised against the forecast basis.</p><div class="gl-callout gl-callout-positive"><span aria-hidden="true" style="line-height:1.4">●</span><div class="gl-stack" style="gap:var(--gl-space-xxs)"><div class="gl-row" style="gap:var(--gl-space-xs)"><span class="gl-card-title">No Green is reported, so this evidence rule does not apply</span></div><p class="gl-body-sm" style="margin:0"><span>No Green claim is being made, so the evidence rule does not bind here.</span></p></div></div><details class="gl-evidence"><summary class="gl-chip gl-chip-neutral"><span class="gl-chip-glyph" aria-hidden="true">▸</span><span>Show evidence</span></summary><div class="gl-evidence-panel"><div class="gl-stack" style="gap:var(--gl-space-xs)"><div><div class="gl-card-title">Data and assurance confidence</div><div class="gl-caption">MET-DQ-005 · rule HEALTH-v2 · computed 31 Aug 2026</div></div><div><div class="gl-evidence-row"><span class="gl-body-sm">Data confidence band (MET-DQ-005)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">HIGH</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Arithmetic band before the ceiling</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">HIGH</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Completeness (MET-DQ-001)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">1.0</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Freshness, worst domain (MET-DQ-002)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">3 days</span></span></div><div class="gl-evidence-row"><span class="gl-body-sm">Forecast confidence (MET-DQ-007)</span><span class="gl-body-sm gl-numeric"><span class="gl-prov-computed" title="Derived metric — computed from facts by a versioned rule">LOW</span></span></div></div><div class="gl-caption">Sources: data-quality</div></div></div></details></div></div></section></div></div></main></div></div>
+<!-- DEMO — SYNTHETIC DATA -->
+</body>
+</html>

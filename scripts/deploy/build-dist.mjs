@@ -51,6 +51,19 @@ for (const [file] of PAGES) {
   cpSync(join(SRC, file), join(OUT, file));
 }
 
+/*
+ * Per-project pages, one file per project.
+ *
+ * /projects/<projectId> must resolve to that project. Hosting's cleanUrls maps the path onto
+ * projects/<projectId>.html, so the routing is a real file lookup rather than a rewrite that
+ * discards the path segment and serves whatever the shared page happened to contain.
+ */
+const PROJECT_SRC = join(SRC, 'projects');
+const projectPages = readdirSync(PROJECT_SRC).filter((f) => f.endsWith('.html'));
+if (projectPages.length === 0) throw new Error('no per-project pages built — run "npm run verify" first');
+mkdirSync(join(OUT, 'projects'), { recursive: true });
+for (const file of projectPages) cpSync(join(PROJECT_SRC, file), join(OUT, 'projects', file));
+
 const SHELL = (title, body) => `<!doctype html>
 <html lang="en">
 <head>
