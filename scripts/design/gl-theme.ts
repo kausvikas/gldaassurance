@@ -148,6 +148,10 @@ table.gl-t tbody tr:hover .gl-sticky{background:var(--steel-05)}
 .gl-list{list-style:none;padding:0;margin:22px 0 0}
 .gl-list li{padding:15px 0;border-bottom:1px solid var(--rule);display:flex;gap:18px;align-items:baseline}
 .gl-list li:last-child{border-bottom:0}
+/* A driver is selectable: it reads as text until it is chosen, then it holds. */
+.gl-driver{font:inherit;background:none;border:0;padding:0;text-align:left;cursor:pointer;color:inherit}
+.gl-driver:hover b{border-bottom:1px solid var(--orange)}
+.gl-driver[aria-pressed="true"] b{color:var(--orange-deep);border-bottom:2px solid var(--orange)}
 .gl-list .k{flex:none;min-width:78px;font-weight:600;font-size:22px;letter-spacing:-0.02em}
 .gl-list .v{color:var(--steel-75)}
 .gl-empty{color:var(--steel-50);font-size:14.5px;padding:20px 0;max-width:64ch}

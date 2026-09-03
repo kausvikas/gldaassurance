@@ -26,7 +26,22 @@ export const GL_RUNTIME = `
     scope:      function (f) { return f.drivers.indexOf('scope-leakage') >= 0; }
   };
 
-  var state = { dims: {}, quick: null };
+  /*
+   * The driver selection is a filter over authoritative driver facts, not a new classification.
+   * Each project already carries the governed drivers it exhibits; selecting one narrows to the
+   * projects that carry it. The browser groups and counts - it never decides that a project has a
+   * driver.
+   */
+  var state = { dims: {}, quick: null, driver: null };
+
+  var DRIVER_LABEL = { 'margin-erosion': 'Margin erosion against as-sold',
+    'scope-leakage': 'Scope delivered without commercial cover',
+    'burn-ahead-of-progress': 'Cost outrunning delivered progress',
+    'behind-plan': 'Behind planned completion',
+    'reporting-divergence': 'Reported status ahead of the evidence',
+    'emerging-risk': 'Healthy today, weaker outlook' };
+
+  function signed(n) { return (n < 0 ? '\u2212' : '+') + money(Math.abs(n)).replace('$', '$'); }
 
   function money(n) {
     var s = n < 0 ? '\\u2212' : '', a = Math.abs(n);
@@ -42,6 +57,7 @@ export const GL_RUNTIME = `
       if (want && f[d] !== want) return false;
     }
     if (state.quick && !QUICK[state.quick](f)) return false;
+    if (state.driver && f.drivers.indexOf(state.driver) < 0) return false;
     return true;
   }
   function selected() { return FACTS.filter(matches); }
@@ -105,12 +121,7 @@ export const GL_RUNTIME = `
   }
 
   function drivers(rowsIn) {
-    var names = { 'margin-erosion': 'Margin erosion against as-sold',
-      'scope-leakage': 'Scope delivered without commercial cover',
-      'burn-ahead-of-progress': 'Cost outrunning delivered progress',
-      'behind-plan': 'Behind planned completion',
-      'reporting-divergence': 'Reported status ahead of the evidence',
-      'emerging-risk': 'Healthy today, weaker outlook' };
+    var names = DRIVER_LABEL;
     var agg = {};
     for (var i = 0; i < rowsIn.length; i++) {
       var ds = rowsIn[i].drivers;
@@ -125,10 +136,25 @@ export const GL_RUNTIME = `
     if (!host) return;
     var html = '';
     for (var k = 0; k < keys.length; k++) {
-      html += '<li><span class="k">' + money(agg[keys[k]].v) + '</span>'
-        + '<span class="v"><b>' + esc(names[keys[k]]) + '</b> \\u00b7 ' + agg[keys[k]].n + ' projects</span></li>';
+      var key = keys[k], on = state.driver === key;
+      html += '<li><span class="k">' + money(agg[key].v) + '</span>'
+        + '<span class="v"><button type="button" class="gl-driver" data-driver="' + key + '"'
+        + ' aria-pressed="' + (on ? 'true' : 'false') + '">'
+        + '<b>' + esc(names[key]) + '</b> · ' + agg[key].n + ' projects</button>'
+        + (on ? ' <a class="gl-arrow" href="/projects' + window.location.search + '">see these projects →</a>' : '')
+        + '</span></li>';
     }
     host.innerHTML = html || '<li class="gl-empty">No governed driver is present across this selection.</li>';
+    var dbtns = host.querySelectorAll('[data-driver]');
+    for (var b = 0; b < dbtns.length; b++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          var d = btn.getAttribute('data-driver');
+          state.driver = state.driver === d ? null : d;
+          render();
+        });
+      })(dbtns[b]);
+    }
   }
 
   function flow(rowsIn) {
@@ -254,13 +280,21 @@ export const GL_RUNTIME = `
       var h2 = '';
       for (var k = 0; k < rec.length; k++) {
         var g = rec[k];
+        var move = (g.forecastGmNow !== null && g.priorForecastGm !== null)
+          ? g.forecastGmNow - g.priorForecastGm : null;
+        var enough = g.system === 'GREEN' && g.outlook60 === 'GREEN';
         h2 += '<tr><td class="gl-sticky"><div class="gl-pname"><a href="/projects/' + g.id + '">' + esc(g.name) + '</a></div>'
           + '<div class="gl-pmeta">' + esc(g.customer) + '</div></td>'
-          + '<td><span class="gl-rag gl-rag--' + g.system + '">' + g.system + '</span></td>'
-          + '<td>Improving</td>'
-          + '<td><span class="gl-rag gl-rag--' + g.outlook60 + '">' + g.outlook60 + '</span></td>'
+          + '<td><span class="gl-rag gl-rag--' + g.system + '">' + g.system + '</span>'
+          + ' <span class="to">\u2192</span> <span class="gl-rag gl-rag--' + g.outlook60 + '">' + g.outlook60 + '</span></td>'
+          + '<td class="gl-pmeta" style="max-width:36ch">' + (g.improving.length
+            ? esc(g.improving.slice(0, 3).join('; '))
+            : 'no individual signal is improving; the state rests on none being adverse') + '</td>'
+          + '<td class="num">' + (move === null ? 'no prior period' : signed(move)) + '</td>'
           + '<td class="num">' + money(g.gmAtRisk) + '</td>'
-          + '<td>' + esc(g.action) + '</td></tr>';
+          + '<td>' + (enough
+            ? 'Recovered \u2014 monitor'
+            : 'Not yet \u2014 ' + esc(g.action)) + '</td></tr>';
       }
       rb.innerHTML = h2 || '<tr><td colspan="6" class="gl-empty">No project in this view is improving on the evidence.</td></tr>';
     }
@@ -294,7 +328,11 @@ export const GL_RUNTIME = `
       STABLE: 'Stable', DETERIORATING: 'Deteriorating', RAPIDLY_DETERIORATING: 'Deteriorating fast' };
     var chips = [];
     for (var d in state.dims) if (state.dims[d]) chips.push(LABEL[state.dims[d]] || state.dims[d]);
-    if (state.quick) chips.push(document.querySelector('[data-quick="' + state.quick + '"]').textContent.trim());
+    if (state.quick) {
+      var qb = document.querySelector('[data-quick="' + state.quick + '"]');
+      if (qb) chips.push(qb.textContent.trim());
+    }
+    if (state.driver) chips.push(DRIVER_LABEL[state.driver] || state.driver);
     var scope = document.getElementById('gl-scopeline');
     if (scope) {
       scope.innerHTML = chips.length
@@ -331,6 +369,7 @@ export const GL_RUNTIME = `
     var q = [];
     for (var d in state.dims) if (state.dims[d]) q.push(d + '=' + encodeURIComponent(state.dims[d]));
     if (state.quick) q.push('view=' + state.quick);
+    if (state.driver) q.push('driver=' + state.driver);
     var url = window.location.pathname + (q.length ? '?' + q.join('&') : '');
     window.history.replaceState(null, '', url);
   }
@@ -343,6 +382,8 @@ export const GL_RUNTIME = `
     }
     var view = p.get('view');
     if (view && QUICK[view]) state.quick = view;
+    var dv = p.get('driver');
+    if (dv) state.driver = dv;
   }
 
   readUrl();
@@ -373,7 +414,7 @@ export const GL_RUNTIME = `
   }
   var reset = document.getElementById('gl-reset');
   if (reset) reset.addEventListener('click', function () {
-    state = { dims: {}, quick: null };
+    state = { dims: {}, quick: null, driver: null };
     for (var i = 0; i < selects.length; i++) selects[i].value = '';
     for (var m = 0; m < quicks.length; m++) quicks[m].setAttribute('aria-pressed', 'false');
     render();

@@ -278,12 +278,14 @@ const interventions = page('Interventions', 'interventions', [
       </tr></thead><tbody id="gl-int-body"></tbody></table></div>`),
   band('tint', `
       <h2 class="gl-h2">Recovery</h2>
-      <p class="gl-note">Projects improving across successive observations. A system that only finds
-        deterioration is incomplete — recovery is evidence too, and it tells leadership which
-        interventions are working.</p>
+      <p class="gl-note">Projects improving across successive observations. What improved is named
+        from the governed trajectory signals, not summarised into a score — a system that only finds
+        deterioration is incomplete, and a recovery an executive cannot inspect is only a label.
+        Margin movement is the change between the last two governed period ends.</p>
       <div class="gl-tablewrap"><table class="gl-t"><thead><tr>
-        <th class="gl-sticky">Project</th><th>Assessed</th><th>Trajectory</th><th>60-day</th>
-        <th class="num">Margin at risk</th><th>Executive action</th>
+        <th class="gl-sticky">Project</th><th>Today → 60-day</th><th>What improved</th>
+        <th class="num">Margin movement</th><th class="num">Exposure remaining</th>
+        <th>Is recovery sufficient?</th>
       </tr></thead><tbody id="gl-rec-body"></tbody></table></div>`),
 ].join('\n'));
 

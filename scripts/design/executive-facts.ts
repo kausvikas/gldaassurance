@@ -65,6 +65,16 @@ export interface ExecutiveFact {
    * history — the movement is `null` and the surface says so for that item rather than inventing a
    * comparison or disabling the whole capability.
    */
+  /*
+   * Which governed signals are moving which way, in business language.
+   *
+   * A trajectory of IMPROVING is a conclusion; on its own it tells an executive nothing about what
+   * got better or whether it is enough. These name the signals behind it — read from the same
+   * trajectory evaluation that produced the state, never re-derived — so recovery can be shown as
+   * evidence rather than as a label.
+   */
+  readonly improving: readonly string[];
+  readonly adverse: readonly string[];
   readonly priorForecastGm: number | null;
   readonly priorEac: number | null;
   readonly forecastGmNow: number | null;
@@ -99,6 +109,35 @@ function driversFor(row: Record<string, unknown>, f: { soldGmPct: number; foreca
   if (row['isReportedGreenRisk'] === true) out.push('reporting-divergence');
   if (row['isSystemGreenAtRisk'] === true) out.push('emerging-risk');
   return out;
+}
+
+/** Signal names an executive can read, keyed to the governed signal identifiers. */
+const SIGNAL_NAME: Readonly<Record<string, string>> = {
+  DELIVERY_VELOCITY: 'delivery pace against the plan',
+  EAC_REVISION_TREND: 'the forecast cost to complete',
+  QUALITY_REWORK_TREND: 'rework against the priced allowance',
+  CONTINGENCY_CONSUMPTION: 'the rate contingency is being drawn',
+  MILESTONE_HIT_RATE: 'milestones landing on their baseline',
+  SCOPE_EXPOSURE_TREND: 'scope arriving without commercial cover',
+};
+
+/** Splits the governed trajectory signals into what is getting better and what is still adverse. */
+function signalsOf(assessed: ReturnType<typeof commandCenterProject>): {
+  improving: string[]; adverse: string[];
+} {
+  const trends = (assessed.assessment as { trajectory?: { trends?: readonly {
+    signalId: string; adverseSlope: unknown; materiallyAdverse: boolean;
+  }[] } }).trajectory?.trends ?? [];
+  const improving: string[] = [];
+  const adverse: string[] = [];
+  for (const t of trends) {
+    const name = SIGNAL_NAME[t.signalId];
+    if (name === undefined) continue;
+    if (t.materiallyAdverse) { adverse.push(name); continue; }
+    const slope = Number(String(t.adverseSlope ?? '0'));
+    if (Number.isFinite(slope) && slope > 0) improving.push(name);
+  }
+  return { improving, adverse };
 }
 
 /** The last two governed period ends, where the project has them. */
@@ -186,6 +225,7 @@ export function executiveFacts(): {
       rank: Number(row['rank'] ?? 0),
       evidence: String(row['dataConfidence'] ?? 'not stated'),
       drivers: driversFor(row, base),
+      ...signalsOf(assessed),
       ...trendOf(portfolio, id),
     } satisfies ExecutiveFact;
   });
