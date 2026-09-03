@@ -6,11 +6,29 @@
  * primary navigation disappeared once you left the landing page, and Interventions did not resolve.
  * Every one of those defects is a test below.
  */
+import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 const DIST = join(process.cwd(), 'dist', 'executive-poc');
+
+/*
+ * The suite builds the distribution it verifies.
+ *
+ * These assertions are about the *published* artefact — one shell per page, no legacy markers, the
+ * navigation matrix, the vocabulary audit — so they have to read `dist/`, which is build output and
+ * correctly gitignored. Reading it without producing it made the suite pass on a machine that
+ * happened to have built recently and fail on a fresh checkout, which is exactly what it did in CI:
+ * every assertion here failed with ENOENT while the same tests passed locally.
+ *
+ * The build is a file copy over pages committed under `docs/design/app`, so it is cheap and needs
+ * nothing beyond the checkout. Building here makes the suite self-sufficient and keeps it honest
+ * about what it checks.
+ */
+beforeAll(() => {
+  execFileSync('node', ['scripts/deploy/build-dist.mjs'], { stdio: 'pipe' });
+}, 60_000);
 const ROUTES = [
   { file: 'index.html', label: 'Command Center', href: '/' },
   { file: 'projects.html', label: 'Projects', href: '/projects' },
@@ -20,9 +38,22 @@ const ROUTES = [
 ];
 
 const read = (f: string): string => readFileSync(join(DIST, f), 'utf8');
-const projectFiles = existsSync(join(DIST, 'projects'))
+
+/** Every published page: the five primary routes plus one file per project. */
+const all = (): string[] => [
+  ...ROUTES.map((r) => r.file),
+  ...projectFiles().map((f) => join('projects', f)),
+];
+/*
+ * Resolved lazily, after the build.
+ *
+ * Computing this at module load read `dist/` before `beforeAll` had produced it, so on a fresh
+ * checkout the list was empty and the assertions that walk it silently checked nothing — the
+ * failure mode a test suite can least afford.
+ */
+const projectFiles = (): string[] => (existsSync(join(DIST, 'projects'))
   ? readdirSync(join(DIST, 'projects')).filter((f) => f.endsWith('.html'))
-  : [];
+  : []);
 
 describe('every primary route is generated', () => {
   for (const r of ROUTES) {
@@ -31,21 +62,19 @@ describe('every primary route is generated', () => {
     });
   }
   it('generates a page for every project', () => {
-    expect(projectFiles.length).toBeGreaterThan(0);
+    expect(projectFiles().length).toBeGreaterThan(0);
   });
 });
 
 describe('one canonical shell, on every route', () => {
-  const all = [...ROUTES.map((r) => r.file), ...projectFiles.map((f) => join('projects', f))];
-
   it('renders exactly one application shell per page', () => {
-    for (const f of all) {
+    for (const f of all()) {
       expect((read(f).match(/class="gl-nav"/g) ?? []).length, f).toBe(1);
     }
   });
 
   it('never publishes the retired admin-sidebar shell', () => {
-    for (const f of all) {
+    for (const f of all()) {
       const html = read(f);
       for (const marker of ['gl-shell-sidebar', 'gl-sidebar', 'class="gl-app-shell"']) {
         expect(html.includes(marker), `${f} contains ${marker}`).toBe(false);
@@ -54,7 +83,7 @@ describe('one canonical shell, on every route', () => {
   });
 
   it('keeps the full primary navigation present on every route', () => {
-    for (const f of all) {
+    for (const f of all()) {
       const html = read(f);
       for (const r of ROUTES) {
         expect(html.includes(`href="${r.href}"`), `${f} is missing a link to ${r.href}`).toBe(true);
@@ -64,7 +93,7 @@ describe('one canonical shell, on every route', () => {
   });
 
   it('marks exactly one active navigation item, and never by colour alone', () => {
-    for (const f of all) {
+    for (const f of all()) {
       const html = read(f);
       // Matched with the closing bracket so the CSS selector a[aria-current="page"] is not counted.
       expect((html.match(/aria-current="page">/g) ?? []).length, f).toBe(1);
@@ -94,23 +123,23 @@ describe('the 5 x 5 navigation matrix resolves', () => {
 describe('project routes', () => {
   it('resolves one project per page, each to its own project', () => {
     const titles = new Set<string>();
-    for (const f of projectFiles) {
+    for (const f of projectFiles()) {
       const html = readFileSync(join(DIST, 'projects', f), 'utf8');
       const title = /<title>([^<]*)<\/title>/.exec(html)?.[1] ?? '';
       expect(title, f).not.toBe('');
       titles.add(title);
     }
     // Distinct pages, not one page served under many names.
-    expect(titles.size).toBeGreaterThan(projectFiles.length * 0.9);
+    expect(titles.size).toBeGreaterThan(projectFiles().length * 0.9);
   });
 
   it('keeps Projects as the active product area inside a project', () => {
-    const html = readFileSync(join(DIST, 'projects', projectFiles[0] as string), 'utf8');
+    const html = readFileSync(join(DIST, 'projects', projectFiles()[0] as string), 'utf8');
     expect(html).toMatch(/href="\/projects"[^>]*aria-current="page"/);
   });
 
   it('offers a route back to the originating population', () => {
-    const html = readFileSync(join(DIST, 'projects', projectFiles[0] as string), 'utf8');
+    const html = readFileSync(join(DIST, 'projects', projectFiles()[0] as string), 'utf8');
     expect(html).toContain('All projects');
   });
 
@@ -130,7 +159,7 @@ describe('no engineering vocabulary reaches an executive surface', () => {
 
   it('publishes none of the prohibited identifiers', () => {
     const offenders: string[] = [];
-    for (const f of [...ROUTES.map((r) => r.file), ...projectFiles.map((p) => join('projects', p))]) {
+    for (const f of all()) {
       const html = read(f);
       for (const b of BANNED) if (html.includes(b)) offenders.push(`${f}: ${b}`);
     }
