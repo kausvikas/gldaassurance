@@ -33,6 +33,20 @@ export interface ExecutiveFact {
   readonly gmAtRiskDisplay: string;
   readonly soldGmPct: number;
   readonly forecastGmPct: number;
+  /*
+   * The components portfolio margin is actually built from.
+   *
+   * MET-PORT-002 is (Σ MET-FIN-010 − Σ MET-FIN-008) / Σ MET-FIN-010 — aggregate forecast revenue
+   * less aggregate cost at completion, over aggregate forecast revenue. The catalogue states the
+   * point directly: "weighted, never a mean of project margins". Summing these four figures and
+   * dividing reproduces the governed formula exactly; weighting the per-project percentages by
+   * contract value does not, and produces a different number wherever forecast revenue differs from
+   * contract value — which is wherever a change request has been executed.
+   */
+  readonly soldRevenue: number;
+  readonly budgetedCost: number;
+  readonly forecastRevenue: number;
+  readonly eac: number;
   readonly scopeExposure: number;
   readonly scopeExposureDisplay: string;
   /*
@@ -227,6 +241,10 @@ export function executiveFacts(): {
       gmAtRiskDisplay: String(row['gmValueAtRisk']),
       soldGmPct,
       forecastGmPct,
+      soldRevenue: num(e.contractualRevenue),
+      budgetedCost: num(e.contractualRevenue) - num(e.soldGmValue),
+      forecastRevenue: num(e.forecastRevenue),
+      eac: num(e.estimateAtCompletion),
       scopeExposure,
       scopeExposureDisplay: String(row['uncommercialisedExposure']),
       // A — current management/system discrepancy: reported Green, assessed worse.

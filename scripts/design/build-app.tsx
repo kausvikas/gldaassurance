@@ -45,14 +45,18 @@ const commandCenter = page('Command Center', 'command-center', [
       <h1 class="gl-lede">Where the portfolio stands, and <em>where to intervene first</em>.</h1>
       <p class="gl-sub">Every figure below is the governed assessment over the projects you are
         authorised for. Filters change the population, not the arithmetic.</p>
+      <p class="gl-note" style="margin-top:10px;max-width:74ch">Portfolio margin is calculated from
+        aggregate forecast revenue and aggregate cost at completion — not as an average of project
+        margins, which would let small projects move a portfolio figure. Margin at risk is the sum of
+        each project's exposure; it does not net off risks that share a root cause.</p>
       ${filterBar(DIMS)}
       <dl class="gl-figs">
         <div class="gl-fig"><dt>Contract value</dt><dd id="gl-tcv">—</dd>
           <div class="gl-vs"><span id="gl-n">—</span> projects</div></div>
         <div class="gl-fig"><dt>Forecast margin</dt><dd id="gl-fcst">—</dd>
-          <div class="gl-vs">against <span id="gl-sold">—</span> sold</div></div>
+          <div class="gl-vs">against <span id="gl-sold">—</span> sold · portfolio aggregate</div></div>
         <div class="gl-fig"><dt>Margin at risk</dt><dd id="gl-var">—</dd>
-          <div class="gl-vs">gross margin exposed</div></div>
+          <div class="gl-vs">sum of project exposure</div></div>
         <div class="gl-fig"><dt>Needs intervention</dt><dd id="gl-act">—</dd>
           <div class="gl-vs">projects awaiting a decision</div></div>
       </dl>`),

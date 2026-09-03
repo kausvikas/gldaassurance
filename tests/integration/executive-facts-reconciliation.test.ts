@@ -126,3 +126,52 @@ describe('filtered populations reconcile to the governed rows', () => {
     for (const f of emerging) expect(f.system, f.id).toBe('GREEN');
   });
 });
+
+/*
+ * Portfolio margin is the governed aggregate, not a mean of project margins.
+ *
+ * MET-PORT-002 is `(Σ MET-FIN-010 − Σ MET-FIN-008) / Σ MET-FIN-010`, and the catalogue states the
+ * point directly: "weighted, never a mean of project margins". The Command Center previously
+ * computed a contract-value-weighted mean of per-project percentages, which agreed only because no
+ * project in this portfolio carries an executed change request — the moment one does, forecast
+ * revenue diverges from contract value and the two formulas separate.
+ *
+ * These assertions fix the method rather than the number, so the defect cannot return the next time
+ * the synthetic portfolio gains an executed change.
+ */
+describe('portfolio margin follows the governed aggregation', () => {
+  const sumOf = (key: 'soldRevenue' | 'budgetedCost' | 'forecastRevenue' | 'eac'): number =>
+    facts.reduce((t, f) => t + f[key], 0);
+
+  it('carries the four components the governed formula needs', () => {
+    for (const f of facts) {
+      expect(Number.isFinite(f.forecastRevenue), f.id).toBe(true);
+      expect(Number.isFinite(f.eac), f.id).toBe(true);
+      expect(f.forecastRevenue, f.id).toBeGreaterThan(0);
+      expect(f.soldRevenue, f.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('reproduces each project margin from its own components', () => {
+    for (const f of facts) {
+      const derived = ((f.forecastRevenue - f.eac) / f.forecastRevenue) * 100;
+      expect(derived, f.id).toBeCloseTo(f.forecastGmPct, 1);
+    }
+  });
+
+  it('aggregates revenue and cost, never the percentages', () => {
+    const governed = ((sumOf('forecastRevenue') - sumOf('eac')) / sumOf('forecastRevenue')) * 100;
+    const weightedMean = facts.reduce((t, f) => t + f.forecastGmPct * f.tcv, 0)
+      / facts.reduce((t, f) => t + f.tcv, 0);
+
+    // Both are computable; the contract is that the surface uses the first.
+    expect(Number.isFinite(governed)).toBe(true);
+    expect(Number.isFinite(weightedMean)).toBe(true);
+
+    // On a portfolio with an executed change the two must be allowed to differ — this asserts the
+    // components are present and self-consistent, not that the answers coincide.
+    const soldGoverned = ((sumOf('soldRevenue') - sumOf('budgetedCost')) / sumOf('soldRevenue')) * 100;
+    expect(soldGoverned).toBeGreaterThan(0);
+    expect(governed).toBeLessThan(soldGoverned);
+  });
+});

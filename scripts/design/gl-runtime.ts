@@ -309,10 +309,22 @@ export const GL_RUNTIME = `
     setText('gl-tcv', money(sum(r, 'tcv')));
     setText('gl-var', money(sum(r, 'gmAtRisk')));
     setText('gl-scope', money(sum(r, 'scopeExposure')));
-    var soldW = 0, fcstW = 0, tcvT = sum(r, 'tcv');
-    for (var i = 0; i < r.length; i++) { soldW += r[i].soldGmPct * r[i].tcv; fcstW += r[i].forecastGmPct * r[i].tcv; }
-    setText('gl-sold', tcvT ? pct(soldW / tcvT) : '—');
-    setText('gl-fcst', tcvT ? pct(fcstW / tcvT) : '—');
+    /*
+     * Portfolio margin is the governed aggregate, not a mean of project margins.
+     *
+     * The governed portfolio margin is aggregate forecast revenue less aggregate cost at
+     * completion, over aggregate forecast revenue - the catalogue is explicit that it is weighted
+     * and never a mean of project margins. Averaging per-project percentages, even weighted by
+     * contract value, produces a different figure wherever forecast revenue and contract value
+     * diverge, which is wherever a change request has been executed. Summing the four governed
+     * components and dividing reproduces the formula exactly, keeping this an aggregation of
+     * authoritative facts rather than a second derivation of a governed metric. The metric
+     * identifiers and the full reasoning are recorded in the build source, which does not ship.
+     */
+    var soldRev = sum(r, 'soldRevenue'), budget = sum(r, 'budgetedCost');
+    var fcstRev = sum(r, 'forecastRevenue'), eacT = sum(r, 'eac');
+    setText('gl-sold', soldRev ? pct(((soldRev - budget) / soldRev) * 100) : '—');
+    setText('gl-fcst', fcstRev ? pct(((fcstRev - eacT) / fcstRev) * 100) : '—');
     setText('gl-disagree', String(count(r, function (f) { return f.reportedGreenRisk; })));
     setText('gl-emerging', String(count(r, function (f) { return f.emergingRisk; })));
     setText('gl-improving', String(count(r, function (f) { return f.trajectory === 'IMPROVING'; })));
