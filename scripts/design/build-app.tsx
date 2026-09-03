@@ -128,9 +128,10 @@ const commandCenter = page('Command Center', 'command-center', [
         <b id="gl-scopecount">—</b> projects, worth <b id="gl-scope">—</b>.</p>`),
   band('tint', `
       <h2 class="gl-h2">What changed</h2>
-      <p class="gl-note">Movement between the last two governed period ends, from the economics
-        engine re-run at each. Items the available history cannot support are named as unavailable
-        rather than left out or filled in.</p>
+      <p class="gl-note">Economic movement between the last two governed period ends, from the
+        economics engine re-run at each, and reported-status movement from the dated management
+        declarations. What this does <em>not</em> yet cover is named below rather than left out or
+        filled in — so what "changed" means here is not left to inference.</p>
       <ul class="gl-list">
         ${whatChanged()}
       </ul>`),
@@ -160,6 +161,9 @@ function whatChanged(): string {
     `<li><span class="k" style="color:var(--steel-50);font-size:15px">—</span>` +
     `<span class="v"><b>${esc(label)}</b> · ${esc(why)}</span></li>`;
 
+  const ORDER: Readonly<Record<string, number>> = { GREEN: 0, AMBER: 1, RED: 2 };
+  const worse = (from: string, to: string): boolean => (ORDER[to] ?? 0) > (ORDER[from] ?? 0);
+
   if (withHistory.length === 0) {
     return unavailable('No governed prior period',
       'The economics engine has not been re-run at an earlier period end for any project in scope.');
@@ -170,6 +174,7 @@ function whatChanged(): string {
   const rose = withHistory.filter((f) => (f.forecastGmNow as number) > (f.priorForecastGm as number));
   const eacUp = withHistory.filter((f) =>
     f.priorEac !== null && f.eacNow !== null && (f.eacNow - f.priorEac) > Math.abs(f.priorEac) * 0.005);
+  const reportedMoves = facts.filter((f) => f.priorReported !== null && f.priorReported !== f.reported);
   const intoLoss = withHistory.filter((f) =>
     (f.priorForecastGm as number) >= 0 && (f.forecastGmNow as number) < 0);
   const outOfLoss = withHistory.filter((f) =>
@@ -192,8 +197,13 @@ function whatChanged(): string {
       ? item('0', 'Contract-loss conditions created or cleared', 'no project crossed zero forecast margin')
       : item(`${String(intoLoss.length)}/${String(outOfLoss.length)}`, 'Contract-loss conditions created / cleared',
         'projects crossing zero forecast margin in each direction'),
-    unavailable('Health band movement, milestone risk and acceptance changes',
-      'these need a full prior-period assessment, not only the economics series; the engines are not re-run at an earlier as-of in this build'),
+    reportedMoves.length === 0
+      ? item('0', 'Reported status changes', 'no project changed its reported band this cycle')
+      : item(String(reportedMoves.length), 'Reported status changes',
+        `${String(reportedMoves.filter((f) => worse(f.priorReported as string, f.reported)).length)} downgraded, ` +
+        `${String(reportedMoves.filter((f) => !worse(f.priorReported as string, f.reported)).length)} upgraded by delivery management`),
+    unavailable('System health band, milestone risk and acceptance movement',
+      'the portfolio stores no per-period system band, milestone forecast snapshot or acceptance state, so these cannot be reconstructed without re-running the engines at an earlier as-of — which this build does not do'),
   ];
   return rows.join('\n        ');
 }

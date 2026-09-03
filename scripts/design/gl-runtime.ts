@@ -293,8 +293,11 @@ export const GL_RUNTIME = `
           + '<td class="num">' + (move === null ? 'no prior period' : signed(move)) + '</td>'
           + '<td class="num">' + money(g.gmAtRisk) + '</td>'
           + '<td>' + (enough
-            ? 'Recovered \u2014 monitor'
-            : 'Not yet \u2014 ' + esc(g.action)) + '</td></tr>';
+            ? 'Recovered \u2014 no executive action'
+            : (g.adverse.length
+              ? 'Not yet \u2014 ' + esc(g.adverse[0]) + ' is still adverse'
+              : 'Not yet \u2014 the outlook is ' + g.outlook60.toLowerCase() + ' at 60 days'))
+          + '</td></tr>';
       }
       rb.innerHTML = h2 || '<tr><td colspan="6" class="gl-empty">No project in this view is improving on the evidence.</td></tr>';
     }

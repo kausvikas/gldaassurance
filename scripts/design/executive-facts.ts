@@ -75,6 +75,8 @@ export interface ExecutiveFact {
    */
   readonly improving: readonly string[];
   readonly adverse: readonly string[];
+  /** The band delivery management reported at the previous reporting cycle, where one exists. */
+  readonly priorReported: string | null;
   readonly priorForecastGm: number | null;
   readonly priorEac: number | null;
   readonly forecastGmNow: number | null;
@@ -138,6 +140,22 @@ function signalsOf(assessed: ReturnType<typeof commandCenterProject>): {
     if (Number.isFinite(slope) && slope > 0) improving.push(name);
   }
   return { improving, adverse };
+}
+
+/**
+ * The previous reported status, from the status-report history.
+ *
+ * Reported RAG is a dated management declaration and the portfolio holds every one of them, so a
+ * prior-period comparison here is a real lookup rather than a reconstruction. System RAG has no
+ * equivalent: health is assessed at the current as-of and no per-period band is stored, which is
+ * why "What Changed" reports management movement and says so, rather than implying it covers both.
+ */
+function priorReportedOf(p: ReturnType<typeof generatePortfolio>, projectId: string): string | null {
+  const reports = p.facts.statusReports
+    .filter((r) => r.projectId === projectId)
+    .sort((a, b) => a.reportedOn.localeCompare(b.reportedOn));
+  if (reports.length < 2) return null;
+  return reports[reports.length - 2]?.reportedRag ?? null;
 }
 
 /** The last two governed period ends, where the project has them. */
@@ -225,6 +243,7 @@ export function executiveFacts(): {
       rank: Number(row['rank'] ?? 0),
       evidence: String(row['dataConfidence'] ?? 'not stated'),
       drivers: driversFor(row, base),
+      priorReported: priorReportedOf(portfolio, id),
       ...signalsOf(assessed),
       ...trendOf(portfolio, id),
     } satisfies ExecutiveFact;
