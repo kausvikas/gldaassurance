@@ -289,8 +289,11 @@ export const GL_RUNTIME = `
     rows(r); drivers(r); flow(r);
     allRows(r); emergingRows(r); interventionRows(r);
     horizon('gl-h0', r, 'system'); horizon('gl-h30', r, 'outlook30'); horizon('gl-h60', r, 'outlook60');
+    // The chip reads as English; the value behind it stays the governed enum.
+    var LABEL = { GREEN: 'Green', AMBER: 'Amber', RED: 'Red', IMPROVING: 'Improving',
+      STABLE: 'Stable', DETERIORATING: 'Deteriorating', RAPIDLY_DETERIORATING: 'Deteriorating fast' };
     var chips = [];
-    for (var d in state.dims) if (state.dims[d]) chips.push(state.dims[d]);
+    for (var d in state.dims) if (state.dims[d]) chips.push(LABEL[state.dims[d]] || state.dims[d]);
     if (state.quick) chips.push(document.querySelector('[data-quick="' + state.quick + '"]').textContent.trim());
     var scope = document.getElementById('gl-scopeline');
     if (scope) {

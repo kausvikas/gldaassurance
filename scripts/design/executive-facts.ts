@@ -11,6 +11,7 @@
 import { generatePortfolio } from '../generator/index.js';
 import { commandCenterProject, buildCommandCenterFor } from '../assessment/command-center-adapter.js';
 import { executiveText } from './gl-shell.js';
+import { marginTrendFor } from '../assessment/margin-adapter.js';
 
 export interface ExecutiveFact {
   readonly id: string;
@@ -55,6 +56,19 @@ export interface ExecutiveFact {
   readonly rank: number;
   readonly evidence: string;
   readonly drivers: readonly string[];
+  /*
+   * The governed prior period, where the economics engine has been re-run at an earlier period end.
+   *
+   * This is history, not a client-side derivation: `marginTrendFor` recomputes forecast margin,
+   * risk-adjusted margin and cost at completion at each period end from the same engine that
+   * produced today's figures. Where a project has no earlier period — too new, or too little
+   * history — the movement is `null` and the surface says so for that item rather than inventing a
+   * comparison or disabling the whole capability.
+   */
+  readonly priorForecastGm: number | null;
+  readonly priorEac: number | null;
+  readonly forecastGmNow: number | null;
+  readonly eacNow: number | null;
 }
 
 const num = (m: { toDto(): { amount: string } } | null | undefined): number =>
@@ -85,6 +99,31 @@ function driversFor(row: Record<string, unknown>, f: { soldGmPct: number; foreca
   if (row['isReportedGreenRisk'] === true) out.push('reporting-divergence');
   if (row['isSystemGreenAtRisk'] === true) out.push('emerging-risk');
   return out;
+}
+
+/** The last two governed period ends, where the project has them. */
+function trendOf(p: ReturnType<typeof generatePortfolio>, projectId: string): {
+  priorForecastGm: number | null; priorEac: number | null;
+  forecastGmNow: number | null; eacNow: number | null;
+} {
+  let series: readonly { forecastGm: { toDto(): { amount: string } }; estimateAtCompletion: { toDto(): { amount: string } } }[];
+  try {
+    series = marginTrendFor(p, projectId) as never;
+  } catch {
+    return { priorForecastGm: null, priorEac: null, forecastGmNow: null, eacNow: null };
+  }
+  if (series.length < 2) return { priorForecastGm: null, priorEac: null, forecastGmNow: null, eacNow: null };
+  const prior = series[series.length - 2];
+  const now = series[series.length - 1];
+  if (prior === undefined || now === undefined) {
+    return { priorForecastGm: null, priorEac: null, forecastGmNow: null, eacNow: null };
+  }
+  return {
+    priorForecastGm: Number(prior.forecastGm.toDto().amount),
+    priorEac: Number(prior.estimateAtCompletion.toDto().amount),
+    forecastGmNow: Number(now.forecastGm.toDto().amount),
+    eacNow: Number(now.estimateAtCompletion.toDto().amount),
+  };
 }
 
 export function executiveFacts(): {
@@ -147,6 +186,7 @@ export function executiveFacts(): {
       rank: Number(row['rank'] ?? 0),
       evidence: String(row['dataConfidence'] ?? 'not stated'),
       drivers: driversFor(row, base),
+      ...trendOf(portfolio, id),
     } satisfies ExecutiveFact;
   });
 

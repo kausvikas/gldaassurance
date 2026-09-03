@@ -128,10 +128,75 @@ const commandCenter = page('Command Center', 'command-center', [
         <b id="gl-scopecount">—</b> projects, worth <b id="gl-scope">—</b>.</p>`),
   band('tint', `
       <h2 class="gl-h2">What changed</h2>
+      <p class="gl-note">Movement between the last two governed period ends, from the economics
+        engine re-run at each. Items the available history cannot support are named as unavailable
+        rather than left out or filled in.</p>
       <ul class="gl-list">
-        ${v.whatChanged.map((c) => `<li><span class="v"><b>${esc(executiveText(c.headline))}</b><br>${esc(executiveText(c.body))}</span></li>`).join('\n        ')}
+        ${whatChanged()}
       </ul>`),
 ].join('\n'));
+
+
+/*
+ * Material movement between the last two governed period ends.
+ *
+ * Every figure is a difference between two runs of the same engine, never a client-side derivation
+ * and never a comparison invented where history does not reach. "No prior period is loaded" was an
+ * honest message about a comparison the surface had not been built to make; it is not an acceptable
+ * answer for a product whose second executive question is "what changed since my last review".
+ */
+function whatChanged(): string {
+  const withHistory = facts.filter((f) => f.priorForecastGm !== null && f.forecastGmNow !== null);
+  const money = (n: number): string => {
+    const sign = n < 0 ? '\u2212' : '+';
+    const a = Math.abs(n);
+    if (a >= 1_000_000) return `${sign}$${(a / 1_000_000).toFixed(2)}M`;
+    if (a >= 1_000) return `${sign}$${Math.round(a / 1_000).toLocaleString('en-GB')}K`;
+    return `${sign}$${Math.round(a).toLocaleString('en-GB')}`;
+  };
+  const item = (k: string, label: string, detail: string): string =>
+    `<li><span class="k">${esc(k)}</span><span class="v"><b>${esc(label)}</b> · ${esc(detail)}</span></li>`;
+  const unavailable = (label: string, why: string): string =>
+    `<li><span class="k" style="color:var(--steel-50);font-size:15px">—</span>` +
+    `<span class="v"><b>${esc(label)}</b> · ${esc(why)}</span></li>`;
+
+  if (withHistory.length === 0) {
+    return unavailable('No governed prior period',
+      'The economics engine has not been re-run at an earlier period end for any project in scope.');
+  }
+
+  const gmDelta = withHistory.reduce((t, f) => t + ((f.forecastGmNow as number) - (f.priorForecastGm as number)), 0);
+  const fell = withHistory.filter((f) => (f.forecastGmNow as number) < (f.priorForecastGm as number));
+  const rose = withHistory.filter((f) => (f.forecastGmNow as number) > (f.priorForecastGm as number));
+  const eacUp = withHistory.filter((f) =>
+    f.priorEac !== null && f.eacNow !== null && (f.eacNow - f.priorEac) > Math.abs(f.priorEac) * 0.005);
+  const intoLoss = withHistory.filter((f) =>
+    (f.priorForecastGm as number) >= 0 && (f.forecastGmNow as number) < 0);
+  const outOfLoss = withHistory.filter((f) =>
+    (f.priorForecastGm as number) < 0 && (f.forecastGmNow as number) >= 0);
+
+  const rows = [
+    item(money(gmDelta), 'Forecast margin movement',
+      `across ${String(withHistory.length)} projects with a governed prior period`),
+    item(String(fell.length), 'Projects whose forecast margin fell',
+      fell.length === 0 ? 'none in this period' : `largest: ${esc(fell.sort((a, b) =>
+        ((a.forecastGmNow as number) - (a.priorForecastGm as number))
+        - ((b.forecastGmNow as number) - (b.priorForecastGm as number)))[0]?.name ?? '')}`),
+    item(String(rose.length), 'Projects whose forecast margin improved',
+      rose.length === 0 ? 'none in this period' : `largest: ${esc(rose.sort((a, b) =>
+        ((b.forecastGmNow as number) - (b.priorForecastGm as number))
+        - ((a.forecastGmNow as number) - (a.priorForecastGm as number)))[0]?.name ?? '')}`),
+    item(String(eacUp.length), 'Material cost-at-completion revisions',
+      'estimate raised by more than half a point of the prior figure'),
+    intoLoss.length === 0 && outOfLoss.length === 0
+      ? item('0', 'Contract-loss conditions created or cleared', 'no project crossed zero forecast margin')
+      : item(`${String(intoLoss.length)}/${String(outOfLoss.length)}`, 'Contract-loss conditions created / cleared',
+        'projects crossing zero forecast margin in each direction'),
+    unavailable('Health band movement, milestone risk and acceptance changes',
+      'these need a full prior-period assessment, not only the economics series; the engines are not re-run at an earlier as-of in this build'),
+  ];
+  return rows.join('\n        ');
+}
 
 // ---------------------------------------------------------------- projects ----
 const projects = page('Projects', 'projects', [
