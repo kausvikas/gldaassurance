@@ -109,7 +109,10 @@ describe('early-warning detection', () => {
       expect(s.expectedState).toMatch(/fires|no threshold/);
       expect(s.trend.length).toBeGreaterThan(0);
       expect(s.ruleVersion).toMatch(/EARLY_WARNING-v1/);
-      expect(s.evidenceAsOf).toMatch(/^\d{4}-\d{2}-\d{2}/);
+      // Executive-facing, so a readable date rather than an ISO stamp. The instant is still exact
+      // and still reaches Evidence; what changed is that the surface no longer prints
+      // "2026-08-31T00:00:00.000Z" at a Chief Delivery Officer.
+      expect(s.evidenceAsOf).toMatch(/^\d{1,2} [A-Z][a-z]{2} \d{4}$/);
       expect(s.metricId).toMatch(/^MET-|—/);
     }
   });
