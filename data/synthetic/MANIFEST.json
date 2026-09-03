@@ -4,7 +4,7 @@
   "generatorVersion": "1.2.0",
   "specVersion": "2.0.0",
   "asOfDate": "2026-08-31",
-  "contentHash": "eac7ca102c9cd5998f1048c9d8d1cdc7cb8bbfdaf43d338f9b7627e775d010e8",
+  "contentHash": "820e5c1060f1fcbd4fc5e08af550cc1fd068af71c5a6856aa8c1ab9e9dc3d1ec",
   "recordCounts": {
     "businessUnits": 3,
     "regions": 4,
@@ -20,8 +20,8 @@
     "effort": 75292,
     "actualCosts": 7156,
     "progressClaims": 3375,
-    "etcLineItems": 1846,
-    "commitments": 923,
+    "etcLineItems": 1848,
+    "commitments": 924,
     "contingencyDrawdowns": 3024,
     "defects": 27364,
     "acceptanceItems": 44,
@@ -44,7 +44,7 @@
     "scheduleForecasts": 91,
     "assuranceReviews": 58
   },
-  "totalRecords": 129103,
+  "totalRecords": 129106,
   "curatedScenarios": [
     {
       "letter": "A",

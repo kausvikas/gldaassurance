@@ -383,6 +383,19 @@ export const CURATED: readonly CuratedScenario[] = [
       cp(24, 0.38, 0.40, 1_120_000, 1_910_000, 60_000, 60_000, 0, 'GREEN'),
       cp(16, 0.45, 0.47, 1_340_000, 1_720_000, 72_000, 78_000, 0, 'GREEN'),
       cp(8, 0.50, 0.53, 1_520_000, 1_500_000, 84_000, 104_000, 0, 'GREEN'),
+      /*
+       * A fourth checkpoint four weeks out, so the contingency draw *accelerates* into the as-of
+       * date rather than running linearly to it.
+       *
+       * Checkpoints are interpolated weekly, so two points eight weeks apart produce a constant
+       * weekly draw and a flat trend. That was invisible while CONTINGENCY_CONSUMPTION observed a
+       * running total — a cumulative series is adverse whatever its shape — but the signal now reads
+       * movement, and a leading-risk scenario has to actually exhibit the movement it claims. The
+       * buffer here is being spent faster as the schedule tightens, which is the second leading
+       * indicator the scenario is built to show, alongside the milestone slip. Cost and margin stay
+       * clean: that is the whole point of LR.
+       */
+      cp(4, 0.54, 0.565, 1_626_000, 1_400_000, 87_000, 111_000, 0, 'GREEN'),
       // Cost consumed = 1,732,500 / 3,150,000 = 55.00%, BELOW physical completion of 58%.
       // EAC = 1,732,500 + 1,300,000 + 90,000 = 3,122,500 → GM$ 1,077,500 → 25.65%, above as-sold.
       // Nothing in the cost or margin picture is adverse. Everything below it is.
