@@ -115,6 +115,30 @@ const REFINEMENT_OPENER =
  * ones you just showed me"*. That is what an executive means, and treating it as a fresh question
  * would rank the whole portfolio while appearing to answer about the four projects on screen.
  */
+/**
+ * A bare *"Why?"*.
+ *
+ * The shortest and most natural follow-up an executive makes, and it declined as out-of-domain
+ * because it contains no noun, no filter and no family keyword. Resolved as a request to explain the
+ * project the conversation is currently about — which is what the word means at that point in an
+ * exchange, and which the conversation already knows.
+ *
+ * Where no single project is active it still declines, and says a project must be named. That is the
+ * correct answer: *"why"* about a population of nine is not a question with one answer.
+ */
+const BARE_WHY = /^\s*(?:and\s+|but\s+|so\s+)?(?:why|why is that|why though|why so|explain|explain that|how come)[\s?.!]*$/;
+
+/**
+ * A question asking for **one** row.
+ *
+ * *"Which one has the greatest exposure?"* is singular and was answered with a list of five, because
+ * the default limit for a ranking is five and nothing read the word "one". The reader then asked
+ * *"why?"*, which is a question about a single thing, and the conversation had five things in focus
+ * and declined. Reading the singular is what makes that two-turn exchange work.
+ */
+const SINGULAR_REQUEST =
+  /\b(?:which (?:one|of those|of these|has|is)\b|the (?:single |one )?(?:greatest|largest|biggest|worst|highest|most exposed)\b|top one\b)/;
+
 const BACK_REFERENCE =
   /\b(?:of (?:those|these|them)|among (?:those|these|them)|from (?:those|these|them)|which (?:of )?(?:those|these|them|one|ones)\b|which (?:one )?(?:has|have|is|are)\b|that one|the same|those|these)\b/;
 
@@ -127,12 +151,12 @@ const SHAPE_PATTERNS: readonly (readonly [PlanShape, RegExp])[] = [
   ['project.acceptanceEvidence', /\b(acceptance (?:requirements?|criteria)|do we have evidence|evidence that .* met|are the acceptance|acceptance state)\b/],
   ['project.milestones', /\b(milestone|next critical|next gate|deadline|due date|acceptance milestone)\b/],
   ['population.change', /\b(what changed|what has changed|since (?:the )?(?:last|previous) (?:review|cycle|period|month)|movement since|changed since|what moved)\b/],
-  ['population.concentration', /\b(?:concentrat\w*|where is .* worst|which (?:region|vertical|industry|account|group) has the most|pattern|repeating|cluster)\b/],
+  ['population.concentration', /\b(?:concentrat\w*|where is .* worst|where does .* (?:sit|fall|land)|geographically|by (?:region|geography|vertical|industry|account)|which (?:region|vertical|industry|account|group) has the most|pattern|repeating|cluster)\b/],
   ['population.reportedGreenRisk', /\b(reported green|reported as green|says green|claiming green|reported rag|green against the evidence|status is ahead)\b/],
   ['population.emergingRisk', /\b(?:emerging risk|green at risk|green-at-risk|quietly|about to turn|not yet red|expected to deteriorat\w*|healthy today)\b/],
   ['population.recovering', /\b(?:recovering|turning around|getting better|improving projects|which projects are improving|is the recovery)\b/],
   ['population.compare', /\b(compare|versus| vs |against each other|side by side|difference between)\b/],
-  ['population.aggregate', /\b(portfolio (?:margin|gm|tcv|value)|total (?:contract value|tcv|margin|exposure)|overall|in aggregate|across the portfolio|how many (?:fixed|projects)|what is the portfolio)\b/],
+  ['population.aggregate', /\b(?:portfolio (?:margin|gm|tcv|value)|total (?:contract value|tcv|margin|exposure)|overall|in aggregate|across (?:the )?(?:whole |entire |full )?portfolio|how many (?:fixed|projects|engagements)|what is the (?:portfolio|as[- ]sold|forecast|total)|(?:as[- ]sold|forecast|risk[- ]adjusted) (?:gross )?margin (?:across|for the|of the))\b/],
   ['project.recovery', /\b(recover|claw back|get back|mitigat|turn .* around|what specifically improved)\b/],
   ['project.margin', /\b(margin|gm\b|erosion|economics|bridge|why did .* lose)\b/],
   ['project.burn', /\b(burn|progress|completion|ahead or behind|schedule variance|spend against)\b/],
@@ -164,11 +188,26 @@ const POPULATION_COUNTERPART: Readonly<Partial<Record<PlanShape, PlanShape>>> = 
   'project.burn': 'population.list',
   'project.scope': 'population.list',
   'project.confidence': 'source.dataQuality',
-  'project.forwardRisk': 'population.emergingRisk',
+  'project.forwardRisk': 'population.list',
   'project.recovery': 'population.recovering',
   'project.milestones': 'population.list',
   'evidence.lookup': 'source.provenance',
 };
+
+/**
+ * The emerging-risk finding is only assumed when the question actually asks for it.
+ *
+ * A forward-risk question about a population used to become the Green-at-risk finding
+ * unconditionally, so *"is anything in LATAM on a deteriorating trajectory?"* was answered with a
+ * count of projects that are **Green today with a turning outlook** — a different and narrower
+ * population — under a scope line that correctly said *deteriorating*. Scope and answer disagreed,
+ * which is the defect the scope line exists to expose, produced by the scope line's own product.
+ *
+ * The finding is a real one and worth reaching for; it is reached for when the reader mentions the
+ * healthy-today framing that defines it, and not otherwise.
+ */
+const ASKS_FOR_EMERGING_RISK =
+  /\b(green|healthy|emerging|quietly|about to turn|not yet red|no problem yet|look fine|look ok)\b/;
 
 /**
  * Whether the question is about many projects rather than one.
@@ -219,7 +258,17 @@ export function planQuestion(
   }
 
   const filters = readFilters(text, vocabulary, recognised);
-  const isRefinement = REFINEMENT_OPENER.test(text) || BACK_REFERENCE.test(text);
+  const isRefinement = REFINEMENT_OPENER.test(text) || BACK_REFERENCE.test(text) || BARE_WHY.test(text);
+
+  if (BARE_WHY.test(text)) {
+    recognised.push('explains the project in focus');
+    return {
+      plan: { ...emptyPlan('project.health'), origin: 'CONVERSATION_REFINEMENT' },
+      declineReason: null,
+      recognised,
+      isRefinement: true,
+    };
+  }
 
   /*
    * A recognised population question with no recognised family is a list, not a decline.
@@ -254,7 +303,7 @@ export function planQuestion(
           ...emptyPlan('population.list'),
           filters,
           sort: readSort(text, 'population.list'),
-          limit: readLimit(text) ?? DEFAULT_LIMIT,
+          limit: readLimit(text) ?? (SINGULAR_REQUEST.test(text) ? 1 : DEFAULT_LIMIT),
           origin: 'CONVERSATION_REFINEMENT',
         },
         declineReason: null,
@@ -278,8 +327,12 @@ export function planQuestion(
     || filters.regions.length > 0 || filters.industries.length > 0
     || filters.accounts.length > 0 || filters.deliveryGroups.length > 0;
 
+  const counterpart = shape === 'project.forwardRisk' && ASKS_FOR_EMERGING_RISK.test(text)
+    ? 'population.emergingRisk'
+    : POPULATION_COUNTERPART[shape] ?? shape;
+
   const resolvedShape = requiresProject(shape) && projectId === null && namesASet
-    ? POPULATION_COUNTERPART[shape] ?? shape
+    ? counterpart
     : shape;
 
   if (requiresProject(resolvedShape) && projectId === null) {
@@ -296,7 +349,7 @@ export function planQuestion(
   const metricId = METRIC_ID.exec(question)?.[1]?.toUpperCase() ?? null;
   const time = readTime(text);
   const sort = readSort(text, resolvedShape);
-  const limit = readLimit(text) ?? defaultLimitFor(resolvedShape);
+  const limit = readLimit(text) ?? (SINGULAR_REQUEST.test(text) ? 1 : defaultLimitFor(resolvedShape));
   const groupBy = readGroup(text, resolvedShape, filters);
   const metrics = readMetrics(text, resolvedShape);
 
@@ -418,8 +471,18 @@ function readFilters(
 
   const systemRag = readBands(text, /\b(?:system|assessed|actually|evidence says)\s+(green|amber|red)\b/g);
   const reportedRag = readBands(text, /\breported\s+(?:as\s+)?(green|amber|red)\b/g);
-  const outlook30 = readBands(text, /\b30[- ]day(?:\s+outlook)?\s+(green|amber|red)\b/g);
-  const outlook60 = readBands(text, /\b60[- ]day(?:\s+outlook)?\s+(green|amber|red)\b/g);
+  /*
+   * The outlook band, in either word order and with the period spelled out.
+   *
+   * A reader asking for *"an amber sixty-day outlook"* had the band silently dropped, because the
+   * pattern only recognised the digits and only in the order `60-day amber`. The scope line
+   * correctly showed the filter missing — which is the control working — and the answer was still a
+   * population three times too large. Both orders and both spellings now read.
+   */
+  const outlook30 = readBands(text, THIRTY_DAY_BEFORE);
+  const outlook60 = readBands(text, SIXTY_DAY_BEFORE);
+  const outlook30After = readBands(text, THIRTY_DAY_AFTER);
+  const outlook60After = readBands(text, SIXTY_DAY_AFTER);
 
   // A bare colour with no qualifier means the system's assessment, which is the product's own
   // position. Reading it as the reported band would answer with management's view of itself.
@@ -438,7 +501,10 @@ function readFilters(
     ...EMPTY_FILTERS,
     regions, industries, accounts, customers, deliveryGroups,
     systemRag: systemRag.length > 0 ? systemRag : bare,
-    reportedRag, trajectory, outlook30, outlook60, drivers, findings, thresholds,
+    reportedRag, trajectory,
+    outlook30: outlook30.length > 0 ? outlook30 : outlook30After,
+    outlook60: outlook60.length > 0 ? outlook60 : outlook60After,
+    drivers, findings, thresholds,
   };
 }
 
@@ -459,6 +525,15 @@ function matchVocabulary(
   }
   return [...found].sort();
 }
+
+const PERIOD_30 = '(?:30|thirty)[-\\s]?day';
+const PERIOD_60 = '(?:60|sixty)[-\\s]?day';
+const BAND = '(green|amber|red)';
+
+const THIRTY_DAY_BEFORE = new RegExp(`\\b${PERIOD_30}(?:\\s+outlook)?\\s+${BAND}\\b`, 'g');
+const SIXTY_DAY_BEFORE = new RegExp(`\\b${PERIOD_60}(?:\\s+outlook)?\\s+${BAND}\\b`, 'g');
+const THIRTY_DAY_AFTER = new RegExp(`\\b${BAND}\\s+${PERIOD_30}(?:\\s+outlook)?\\b`, 'g');
+const SIXTY_DAY_AFTER = new RegExp(`\\b${BAND}\\s+${PERIOD_60}(?:\\s+outlook)?\\b`, 'g');
 
 function readBands(text: string, pattern: RegExp): readonly Band[] {
   const out = new Set<Band>();

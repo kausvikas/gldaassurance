@@ -634,7 +634,7 @@ describe('factual and ranking answers (E-01, E-03)', () => {
   it('names rank 1 with its deciding tier and no raw float', async () => {
     const cdo = await CDO();
     const r = await cdo.run('Where should I intervene first?');
-    expect(r.answer).toMatch(/^Rank 1:/);
+    expect(r.answer).toMatch(/^Portfolio rank 1 —/);
     expect(r.answer).toMatch(/first place to intervene/);
     // The domain appends "(tier 4: 5552145.679817 vs ...)" - unrounded, twelve digits. DR-075.
     expect(r.answer).not.toMatch(/\d{6,}\.\d{4,}/);

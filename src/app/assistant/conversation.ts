@@ -198,7 +198,19 @@ export function advance(
     turn: state.turn + 1,
     lastPlan: plan ?? state.lastPlan,
     population: population.slice(0, MAX_POPULATION_CARRIED),
-    activeProjectId: plan?.projectId ?? state.activeProjectId,
+    /*
+     * An answer about exactly one project puts that project in focus.
+     *
+     * *"Which one has the greatest exposure?"* → *"Why?"* is the shortest real exchange this product
+     * has, and the second turn is meaningless unless the first one left something to be *about*. A
+     * population answer carries no `projectId` on its plan, so without this the conversation forgot
+     * the project it had just named and the follow-up declined.
+     *
+     * Exactly one, never "the first of several": *"why"* about a population of nine is not a question
+     * with one answer, and picking the top row would be answering a different question confidently.
+     */
+    activeProjectId: plan?.projectId
+      ?? (population.length === 1 ? population[0] ?? null : state.activeProjectId),
     surfaceFilters: state.surfaceFilters,
     history: [
       ...state.history.slice(-(MAX_HISTORY - 1)),

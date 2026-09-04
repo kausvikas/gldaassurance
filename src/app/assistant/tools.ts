@@ -218,9 +218,33 @@ async function summary(tc: ToolContext): Promise<ToolResult> {
   return { tool: 'portfolio.summary.get', claims, untrustedContent: [] };
 }
 
-async function ranking(tc: ToolContext): Promise<ToolResult> {
+async function ranking(
+  tc: ToolContext, narrow?: (rows: readonly Row[]) => readonly Row[], limit?: number,
+): Promise<ToolResult> {
   const row = await portfolioRow(tc);
-  const ranked = list(row, 'ranked').slice(0, MAX_TOOL_ROWS);
+  /*
+   * **The ranking must be of the population the caller asked about.**
+   *
+   * This tool ignored the plan's filters, so a conversation that had narrowed to two Automotive
+   * projects and then asked *"which one has the greatest exposure?"* was answered with the
+   * portfolio-wide rank 1 — a project in a different vertical — underneath a scope line that still
+   * read *Mobility*. The answer contradicted its own scope, which is worse than being merely wrong:
+   * the disclosure that exists to make interpretation checkable was itself the thing being
+   * contradicted.
+   *
+   * With no narrowing this is the Phase 11 behaviour exactly: the governed portfolio ranking,
+   * unchanged.
+   */
+  const all = list(row, 'ranked');
+  /*
+   * The plan's limit is honoured, bounded by the tool's own ceiling.
+   *
+   * A singular question — *"which one has the greatest exposure?"* — plans a limit of one, and
+   * returning five made the next turn's *"why?"* ambiguous: the conversation had five things in
+   * focus and could not answer a question about one.
+   */
+  const ceiling = Math.min(limit ?? MAX_TOOL_ROWS, MAX_TOOL_ROWS);
+  const ranked = (narrow === undefined ? all : narrow(all)).slice(0, Math.max(1, ceiling));
   const claims: MaterialClaim[] = ranked.map((r, i) => claim({
     id: `rank:${str(r, 'projectId') ?? String(i)}`,
     // One sentence, not two fragments. The deciding tier is a subordinate clause here because it
@@ -228,7 +252,15 @@ async function ranking(tc: ToolContext): Promise<ToolResult> {
     // "GM at risk $5.55M. more gross margin is at risk" on the rendered page (Phase 12A).
     text: ((): string => {
       const tier = trimDecidingTier(str(r, 'outranksBecause') ?? '');
-      const head = `Rank ${String(r['rank'] ?? i + 1)}: ${str(r, 'name') ?? ''} — System-Assessed ${str(r, 'systemAssessedRag') ?? 'unknown'}, GM at risk ${str(r, 'gmValueAtRisk') ?? 'not computable'}`;
+      /*
+       * "Portfolio rank 16" rather than "Rank 16".
+       *
+       * The number is the governed intervention rank across the whole portfolio, which is the fact
+       * worth carrying. Presented as "Rank 16" at the top of a three-row filtered answer it reads as
+       * a position in *this* list, which it is not — and a reader counting down from 16 has been
+       * quietly misled by a figure that is entirely correct.
+       */
+      const head = `Portfolio rank ${String(r['rank'] ?? i + 1)} — ${str(r, 'name') ?? ''} — System-Assessed ${str(r, 'systemAssessedRag') ?? 'unknown'}, GM at risk ${str(r, 'gmValueAtRisk') ?? 'not computable'}`;
       return tier === '' ? `${head}.` : `${head}; it outranks the next project because ${tier}.`;
     })(),
     display: String(r['rank'] ?? ''),
@@ -266,7 +298,8 @@ async function ranking(tc: ToolContext): Promise<ToolResult> {
  * `reported` selects the organisation-says-GREEN finding; `system` selects the outlook finding.
  */
 async function greenAtRisk(
-  tc: ToolContext, which: 'reported' | 'system', narrow?: (rows: readonly Row[]) => readonly Row[],
+  tc: ToolContext, which: 'reported' | 'system',
+  narrow?: (rows: readonly Row[]) => readonly Row[], limit?: number,
 ): Promise<ToolResult> {
   const row = await portfolioRow(tc);
   const panel = sub(row, 'greenAtRisk');
@@ -343,7 +376,10 @@ async function greenAtRisk(
       signalState: 'OBSERVED',
     }));
   }
-  for (const r of ranked.slice(0, MAX_TOOL_ROWS)) {
+  // The **count** is of the whole matching population; the **list** is bounded by the plan's limit.
+  // Bounding the count would report a truncated population as the finding, which is the defect the
+  // count claim exists to prevent.
+  for (const r of ranked.slice(0, Math.max(1, Math.min(limit ?? MAX_TOOL_ROWS, MAX_TOOL_ROWS)))) {
     claims.push(claim({
       id: `gar:${which}:${str(r, 'projectId') ?? ''}`,
       text: `${str(r, 'name') ?? ''} — Reported ${str(r, 'reportedRag') ?? '?'}, System-Assessed ${str(r, 'systemAssessedRag') ?? '?'}, 30-day outlook ${str(r, 'outlook30') ?? '?'}, 60-day outlook ${str(r, 'outlook60') ?? '?'}.`,

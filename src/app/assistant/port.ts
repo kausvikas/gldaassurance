@@ -156,13 +156,13 @@ export class GatewayToolPort implements AuthorisedToolPort {
   async #dispatch(tool: AssistantToolId, args: ToolArgs): Promise<ToolResult> {
     switch (tool) {
       case 'portfolio.summary.get': return summary(this.#tc);
-      case 'portfolio.ranking.list': return ranking(this.#tc);
+      case 'portfolio.ranking.list': return ranking(this.#tc, narrowBy(args), args.limit);
       // The plan's filters narrow the population the finding is counted over. Without a plan the
       // narrowing function is absent and the tool behaves exactly as it did in Phase 11.
       case 'portfolio.reportedGreenRisk.list':
-        return greenAtRisk(this.#tc, 'reported', narrowBy(args));
+        return greenAtRisk(this.#tc, 'reported', narrowBy(args), args.limit);
       case 'portfolio.systemGreenAtRisk.list':
-        return greenAtRisk(this.#tc, 'system', narrowBy(args));
+        return greenAtRisk(this.#tc, 'system', narrowBy(args), args.limit);
       case 'portfolio.segments.compare': return compare(this.#tc, args);
       case 'project.executiveHealth.get': return executiveHealth(this.#tc, args.projectId);
       case 'project.marginDrivers.get': return marginDrivers(this.#tc, args.projectId);

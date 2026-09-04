@@ -88,6 +88,40 @@ describe('a question becomes a typed plan before any data is read', () => {
     expect(answer.response.refusal).toBeUndefined();
   });
 
+  /**
+   * The dropped-filter family, found by asking real questions in a browser.
+   *
+   * Each of these was silently discarded, and each produced a population several times too large
+   * under a scope line that correctly showed the filter missing. The scope line is the control that
+   * caught them; these are the regressions that keep them caught.
+   */
+  it('hears a filter however the executive phrases it', () => {
+    const cases: readonly (readonly [string, (p: NonNullable<ReturnType<typeof planQuestion>['plan']>) => unknown, unknown])[] = [
+      ['Which Media & Entertainment work has an amber sixty-day outlook?',
+        (p) => p.filters.outlook60, ['AMBER']],
+      ['Which projects have a 60-day red outlook?', (p) => p.filters.outlook60, ['RED']],
+      ['Show me every engagement in India where cost runs ahead of progress.',
+        (p) => p.filters.drivers, ['burn-ahead-of-progress']],
+      ['Which Communications work has slipped behind the planned position?',
+        (p) => p.filters.drivers, ['behind-plan']],
+      ['Rank the three biggest exposures in Financial Services.', (p) => p.limit, 3],
+      ['Where does scope leakage sit geographically?', (p) => p.shape, 'population.concentration'],
+    ];
+    for (const [question, read, expected] of cases) {
+      const plan = planQuestion(question, vocabulary).plan;
+      expect(plan, question).not.toBeNull();
+      expect(read(plan as NonNullable<typeof plan>), question).toEqual(expected);
+    }
+  });
+
+  it('does not assume the Green-at-risk finding from a forward-risk question', () => {
+    // "Is anything in LATAM deteriorating?" is not "which healthy projects are about to turn".
+    // Answering it with the narrower finding disagreed with its own scope line.
+    const plan = planQuestion('Is anything in LATAM showing a deteriorating trajectory?', vocabulary).plan;
+    expect(plan?.filters.findings).toEqual([]);
+    expect(plan?.filters.trajectory).toContain('DETERIORATING');
+  });
+
   it('renders the scope it resolved, so a dropped filter is visible rather than hidden', async () => {
     const answer = await ask('Which Mobility projects in Europe need intervention?');
     expect(answer.scopeLine).toContain('Mobility');
@@ -132,6 +166,51 @@ describe('a conversation refines the population rather than restarting it', () =
     expect(second.plan?.filters.projectIds).toEqual(first.state.population);
     expect(second.plan?.sort).toBe('economicExposure');
   }, 30_000);
+
+  it('never names a project outside the scope line it just rendered', async () => {
+    // Found in the browser, not by a test: a narrowed conversation asking "which one has the
+    // greatest exposure?" was answered with the portfolio-wide rank 1 — a project in a different
+    // vertical — underneath a scope line that still read Mobility. An answer contradicting its own
+    // disclosure is worse than a wrong answer, because the disclosure is what makes it checkable.
+    const first = await ask('Which Green projects should I worry about over the next 60 days?');
+    const second = await ask('Only Automotive.', first.state);
+    const third = await ask('Which one has the greatest economic exposure?', second.state);
+
+    expect(third.scopeLine).toContain('Mobility');
+    const named = third.response.materialClaims
+      .flatMap((c) => c.groundedBy)
+      .filter((r) => r.entityType === 'project')
+      .map((r) => r.entityId)
+      .filter((id) => id !== '');
+    expect(named.length).toBeGreaterThan(0);
+    for (const id of named) {
+      expect(second.state.population, `${id} is outside the narrowed population`).toContain(id);
+    }
+  }, 45_000);
+
+  it('answers a bare "Why?" about the project the previous answer named', async () => {
+    // The shortest real follow-up there is, and it used to decline as out-of-domain because it
+    // contains no noun and no keyword. It means "about the thing you just told me", which the
+    // conversation already knows.
+    const first = await ask('Which Green projects should I worry about over the next 60 days?');
+    const narrowed = await ask('Only Automotive.', first.state);
+    const one = await ask('Which one has the greatest economic exposure?', narrowed.state);
+    expect(one.state.activeProjectId).not.toBeNull();
+
+    const why = await ask('Why?', one.state);
+    expect(why.response.refusal).toBeUndefined();
+    expect(why.plan?.shape).toBe('project.health');
+    expect(why.plan?.projectId).toBe(one.state.activeProjectId);
+  }, 45_000);
+
+  it('declines a bare "Why?" when no single project is in focus', async () => {
+    // "Why" about a population of ten is not a question with one answer, and picking the top row
+    // would be answering a different question confidently.
+    const population = await ask('Which projects are recovering?');
+    expect(population.state.population.length).toBeGreaterThan(1);
+    const why = await ask('Why?', population.state);
+    expect(why.response.refusal).toBeDefined();
+  }, 45_000);
 
   it('does not let a declined turn silently reset the population', async () => {
     const first = await ask('Which projects are recovering?');

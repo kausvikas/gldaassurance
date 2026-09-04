@@ -283,8 +283,18 @@ export async function askWithPlan(
  */
 function narrationIntent(plan: QueryPlan): IntentId {
   switch (plan.shape) {
-    case 'population.rank': case 'population.list': case 'population.concentration':
+    case 'population.rank':
       return 'portfolio.ranking';
+    /*
+     * A list and a concentration are **not** priority orderings.
+     *
+     * Mapping them to the ranking intent told the model to "summarise where leadership attention
+     * should go first", so a question asking what the as-sold margin was came back opening with
+     * where to intervene. The facts were right and the framing answered a different question — which
+     * a reader has no way to detect, because the sentence is fluent and true.
+     */
+    case 'population.list': case 'population.concentration':
+      return 'portfolio.comparison';
     case 'population.compare': case 'project.compare': return 'portfolio.comparison';
     case 'population.reportedGreenRisk': return 'portfolio.reportedGreenRisk';
     case 'population.emergingRisk': return 'portfolio.systemEmergingRisk';

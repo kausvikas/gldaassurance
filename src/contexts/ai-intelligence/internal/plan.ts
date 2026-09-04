@@ -367,8 +367,8 @@ export const INDUSTRY_SYNONYMS: Readonly<Record<string, string>> = {
  * `burn-ahead-of-progress` rather than matching the bare word *"cost"* somewhere else.
  */
 export const DRIVER_PHRASES: readonly (readonly [DriverId, readonly string[]])[] = [
-  ['burn-ahead-of-progress', ['burn ahead', 'spending ahead', 'cost ahead of progress', 'cost running ahead', 'burn rate', 'overspend']],
-  ['behind-plan', ['behind plan', 'behind schedule', 'behind the plan', 'slipping', 'late delivery', 'declining delivery performance', 'delivery performance']],
+  ['burn-ahead-of-progress', ['burn ahead', 'spending ahead', 'cost ahead of progress', 'cost running ahead', 'cost runs ahead', 'cost is ahead', 'spend ahead of', 'ahead of delivered progress', 'ahead of progress', 'burn rate', 'overspend']],
+  ['behind-plan', ['behind plan', 'behind schedule', 'behind the plan', 'behind the planned', 'slipped behind', 'slipping', 'late delivery', 'declining delivery performance', 'delivery performance']],
   ['scope-leakage', ['scope leakage', 'scope creep', 'unbilled scope', 'uncommercialised', 'uncommercialized', 'unsigned scope', 'without commercial cover', 'scope exposure']],
   ['margin-erosion', ['margin erosion', 'eroding margin', 'margin loss', 'losing margin', 'deteriorating economics', 'economic deterioration', 'margin decline']],
   ['reporting-divergence', ['reporting divergence', 'misreported', 'over-reported', 'status ahead of evidence']],
@@ -382,11 +382,14 @@ export function readLimit(text: string): number | null {
     one: '1', two: '2', three: '3', four: '4', five: '5', six: '6', seven: '7', eight: '8',
     nine: '9', ten: '10', fifteen: '15', twenty: '20',
   };
-  const digits = /\b(?:top|first|best|worst|largest|biggest|highest)\s+(\d{1,2})\b/.exec(text)
-    ?? /\b(\d{1,2})\s+(?:projects?|of them|worst|largest)\b/.exec(text);
+  const digits = /\b(?:top|first|best|worst|largest|biggest|highest|greatest)\s+(\d{1,2})\b/.exec(text)
+    ?? /\b(\d{1,2})\s+(?:projects?|engagements?|of them|worst|largest|biggest|greatest)\b/.exec(text);
   if (digits?.[1] !== undefined) return parseBoundedCount(digits[1], LIMIT_MIN, LIMIT_MAX);
-  const spelled = /\b(?:top|first|largest|biggest|worst|compare the)\s+(one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty)\b/
-    .exec(text);
+  // Both orders. An executive says "the three biggest" at least as often as "the biggest three",
+  // and reading only one of them silently returned the default five to a question that asked for
+  // three — a smaller version of the dropped-filter defect, with the same invisibility.
+  const spelled = /\b(?:top|first|largest|biggest|worst|greatest|compare the)\s+(one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty)\b/.exec(text)
+    ?? /\b(one|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty)\s+(?:biggest|largest|greatest|worst|highest|top)\b/.exec(text);
   const word = spelled?.[1];
   if (word === undefined) return null;
   const mapped = words[word];

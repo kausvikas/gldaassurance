@@ -99,7 +99,8 @@ const NARRATION_INSTRUCTION: Readonly<Record<string, string>> = {
   'portfolio.ranking':
     'Summarise where leadership attention should go first and why that ordering holds.',
   'portfolio.comparison':
-    'Summarise how the compared segments differ, naming the dimension that separates them.',
+    'Summarise what this population contains and how its members differ, naming the dimension that '
+    + 'separates them. Do not recommend where to intervene unless the findings say so.',
   'project.healthExplanation':
     'Explain this project\'s assessed status in terms of the evidence behind it.',
   'project.marginDrivers':
