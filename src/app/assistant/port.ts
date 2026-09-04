@@ -211,8 +211,29 @@ export class GatewayToolPort implements AuthorisedToolPort {
  * policy decided.
  */
 export interface AssistantQueryLineage {
+  /**
+   * Unique per interaction, and therefore **not** the correlation id.
+   *
+   * It was the correlation id, which is per *session*: every question a caller asked in one sitting
+   * carried the same event id, so the events could not be told apart and a lookup by id returned
+   * whichever one the store happened to hand back. Found by asking two questions and trying to read
+   * one of them back after a restart. The correlation id is still recorded — it is what ties this
+   * event to the rest of the request's trail — it is just not the address.
+   */
   readonly eventId: string;
+  readonly correlationId: string;
+  /** The governed as-of instant: what the portfolio this answer describes was true of. */
   readonly occurredAt: Instant;
+  /**
+   * When the interaction actually happened.
+   *
+   * Separate from `occurredAt`, and the distinction is not pedantry. `occurredAt` comes from the
+   * injected clock, which in this demo is frozen at the portfolio's as-of date — correct for a
+   * figure, and useless for a log, where every event would claim the same instant and no sequence
+   * could be reconstructed. Governed time and elapsed time are different things; the audit needs
+   * both and must not confuse them.
+   */
+  readonly recordedAt: Instant;
   readonly actorId: string;
   readonly actorRole: string;
   readonly persona: string | null;
@@ -271,6 +292,8 @@ export async function auditAssistantQuery(
     readonly detections: readonly string[];
     readonly lineage?: {
       readonly persona?: string;
+      /** Real elapsed time. Injected, because the app layer may not read an ambient clock. */
+      readonly recordedAt?: Instant;
       readonly plan?: Readonly<Record<string, unknown>> | null;
       readonly planOrigin?: string | null;
       readonly planValidation?: AssistantQueryLineage['planValidation'];
@@ -323,11 +346,21 @@ export async function auditAssistantQuery(
   if (args.durable === undefined) return;
 
   const extra = args.lineage ?? {};
+  const recordedAt = extra.recordedAt ?? occurredAt;
   const lineage: AssistantQueryLineage = {
-    // The correlation id is the event id, so the governed record and the lineage are the same event
-    // rather than two events that happen to be about the same request.
-    eventId: String(ctx.auth.correlationId),
+    /*
+     * Session, then when, then what was asked.
+     *
+     * All three are needed for uniqueness: the correlation id alone repeats across a sitting, and
+     * correlation-plus-time repeats too when the clock is frozen — which it is, for the governed
+     * figures, in this deployment. Adding the question digest makes two different questions
+     * distinguishable even under a stopped clock, and re-asking the identical question in the same
+     * session at the same instant is genuinely the same event.
+     */
+    eventId: `${String(ctx.auth.correlationId)}:${recordedAt}:${questionDigest(args.question)}`,
+    correlationId: String(ctx.auth.correlationId),
     occurredAt,
+    recordedAt,
     actorId: String(ctx.auth.actorId),
     actorRole: String(ctx.auth.role),
     persona: extra.persona ?? null,

@@ -326,6 +326,13 @@ async function main(): Promise<void> {
     check('the lineage records the caller and their authorised scope',
       typeof latest?.['actorId'] === 'string'
       && typeof latest['authorisedProjectCount'] === 'number');
+    check('every interaction has its own event id',
+      new Set(events.map((e) => String(e['eventId']))).size === events.length,
+      `${String(new Set(events.map((e) => String(e['eventId']))).size)} ids for ${String(events.length)} events`);
+    check('the lineage separates when the portfolio was true from when it was asked',
+      typeof latest?.['occurredAt'] === 'string' && typeof latest['recordedAt'] === 'string'
+      && latest['occurredAt'] !== latest['recordedAt'],
+      `${String(latest?.['occurredAt'])} vs ${String(latest?.['recordedAt'])}`);
     check('a refusal is audited as well as a grant',
       events.some((e) => e['decision'] === 'DENY'),
       events.map((e) => String(e['decision'])).join(','));

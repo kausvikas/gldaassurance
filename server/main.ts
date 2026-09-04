@@ -446,6 +446,7 @@ export function buildRuntime(): Runtime {
        */
       auditAs: {
         persona: session.persona,
+        recordedAt: elapsing,
         provider: () => {
           const d = narration?.lastDecision()?.decision ?? null;
           return {

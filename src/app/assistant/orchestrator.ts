@@ -91,6 +91,13 @@ export interface PlannedAskOptions {
    */
   readonly auditAs?: {
     readonly persona: string;
+    /**
+     * Real elapsed time, injected.
+     *
+     * The orchestrator has an as-of clock and must not acquire an ambient one — but an audit trail
+     * stamped with a frozen as-of date is a trail in which nothing has an order.
+     */
+    readonly recordedAt?: () => Instant;
     /** The routing decision, read at audit time so a refused or unused provider is recorded too. */
     readonly provider?: () => {
       readonly providerId: string | null;
@@ -162,6 +169,8 @@ export async function askWithPlan(
       detections: outcome.detections,
       lineage: {
         persona: opts.auditAs.persona,
+        ...(opts.auditAs.recordedAt === undefined
+          ? {} : { recordedAt: opts.auditAs.recordedAt() }),
         plan: outcome.answer.plan as unknown as Readonly<Record<string, unknown>> | null,
         planOrigin: outcome.answer.plan?.origin ?? null,
         planValidation: outcome.planValidation,

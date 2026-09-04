@@ -40,7 +40,9 @@ async function harness(persona = 'exec.cdo', actorId = 'usr-exec-cdo'): Promise<
 }
 
 /** Asks one question through the whole orchestration, writing lineage to `stores`. */
-async function ask(h: Harness, stores: InMemoryStores, question: string) {
+async function ask(
+  h: Harness, stores: InMemoryStores, question: string, recordedAt?: () => never,
+) {
   const demo = knowledgeDemo(h.authorised, h.authorised[0] ?? 'prj-001');
   const tools = new GatewayToolPort(
     h.ctx, h.api.gateway, DEMO_NOW, h.authorised, demo.registry,
@@ -49,7 +51,11 @@ async function ask(h: Harness, stores: InMemoryStores, question: string) {
     ctx: h.ctx, tools, asOf: DEMO_NOW, scopeLabel: 'CDO',
     populationCount: h.authorised.length, vocabulary: h.vocabulary, knownMetricIds: [],
     state: NEW_CONVERSATION, knowledge: demo.registry,
-    auditAs: { persona: 'exec.cdo', durable: stores.audit },
+    auditAs: {
+      persona: 'exec.cdo',
+      durable: stores.audit,
+      ...(recordedAt === undefined ? {} : { recordedAt }),
+    },
   });
 }
 
@@ -95,6 +101,51 @@ describe('answer lineage survives the process that produced it', () => {
     expect(event?.['planValidation']).toBe('ACCEPTED');
     expect(event?.['groundingValidation']).toBe('PASS');
     expect((event?.['tools'] as string[]).length).toBeGreaterThan(0);
+  });
+
+  it('gives every interaction its own event id, even under a frozen clock', async () => {
+    /*
+     * The event id used to be the correlation id, which is per *session*. Two questions in one
+     * sitting therefore shared an id, and looking one of them up returned whichever the store handed
+     * back first. Found on the deployed runtime by asking two questions and trying to read one back
+     * after a restart — the fields "differed" because the lookup was answering about a different
+     * question entirely.
+     *
+     * The frozen demo clock is what makes this sharper than it looks: `occurredAt` is identical for
+     * every event, so time alone cannot separate them either.
+     */
+    const h = await harness();
+    const stores = new InMemoryStores();
+    await ask(h, stores, 'What is the portfolio forecast margin across the whole portfolio?');
+    await ask(h, stores, 'Which projects are recovering?');
+    await ask(h, stores, 'What is the probability that Atlas fails?');
+
+    const events = await afterRestart(stores);
+    expect(events.length).toBe(3);
+    expect(new Set(events.map((e) => String(e['eventId']))).size).toBe(3);
+    // The correlation id is still recorded — it is what ties these to the rest of the request trail.
+    expect(new Set(events.map((e) => String(e['correlationId']))).size).toBe(1);
+
+    // Addressable: one id resolves to exactly one event.
+    for (const event of events) {
+      const matches = events.filter((e) => e['eventId'] === event['eventId']);
+      expect(matches.length).toBe(1);
+    }
+  });
+
+  it('distinguishes when the portfolio was true from when the question was asked', async () => {
+    const h = await harness();
+    const stores = new InMemoryStores();
+    let tick = 0;
+    await ask(h, stores, 'Which projects are recovering?', () => {
+      tick += 1;
+      return `2026-09-04T12:00:0${String(tick)}Z` as never;
+    });
+    const [event] = await afterRestart(stores);
+    // `occurredAt` is the governed as-of date; `recordedAt` is when it happened. A log stamped only
+    // with the first has no sequence at all.
+    expect(event?.['occurredAt']).toBe(DEMO_NOW);
+    expect(event?.['recordedAt']).toBe('2026-09-04T12:00:01Z');
   });
 
   it('records a refusal, with its reason, not only a success', async () => {
