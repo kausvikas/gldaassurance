@@ -385,30 +385,29 @@ export function buildRuntime(): Runtime {
     const body = request.body as { persona?: unknown; accessCode?: unknown } | null;
 
     /*
-     * An open deployment answers questions without a code, and writes nothing without one.
+     * An open deployment issues a session to a caller who brought no code.
      *
-     * The distinction is what the two halves actually cost. Asking is bounded read-only work over a
-     * fixed synthetic portfolio; uploading is unbounded work over bytes the caller chose, plus
-     * durable storage that accumulates. So an anonymous visitor gets an `ask` session — enough to
-     * use the Assistant, and refused by every route that writes.
+     * How much of one is the deployment's decision, not the caller's: `GLDI_OPEN_ACCESS` says `ask`
+     * or `full`, and the capability is stamped into the signature here. A caller cannot ask for more
+     * than the deployment offers, because nothing in the request is consulted.
      *
-     * The persona is not negotiable here: an anonymous caller is `exec.cdo`, because letting an
-     * unauthenticated request name its own persona would be choosing its own scope. With no code
-     * there is nothing to distinguish one anonymous visitor from another, so they all get the same
-     * one, and it is the one the demo is about.
+     * The persona is not negotiable either: an anonymous caller is `exec.cdo`. With no code there is
+     * nothing to tell one visitor from another, so letting the request name its own persona would be
+     * letting it choose its own scope for no reason at all.
      */
-    if (access.openAssistant && body?.accessCode === undefined) {
+    if (access.openAccess !== 'off' && body?.accessCode === undefined) {
+      const capability = access.openAccess;
       const state = await personaState('exec.cdo');
-      const issued = access.issue('exec.cdo', 'ask');
+      const issued = access.issue('exec.cdo', capability);
       return envelope({
         token: issued.token,
         persona: 'exec.cdo',
-        capability: 'ask',
+        capability,
         expiresAt: new Date(issued.caller.expiresAtMs).toISOString(),
         authorisedProjectCount: state.authorised.length,
         knowledgeDurable: durability.durable,
         // Said plainly, so a surface can tell a visitor what they cannot do before they try.
-        addKnowledge: false,
+        addKnowledge: capability === 'full',
         filters: {
           regions: state.vocabulary.regions,
           industries: state.vocabulary.industries,

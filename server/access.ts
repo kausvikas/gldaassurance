@@ -46,14 +46,27 @@ export interface AccessConfig {
   /** How long a session lasts. Short: a demo session is a sitting, not a subscription. */
   readonly sessionLifetimeMs: number;
   /**
-   * Whether asking a question needs the code.
+   * What an anonymous visitor is given, if anything.
    *
-   * Off by default, and the default is the safe one: a deployment that has not said "open this"
-   * is closed. When on, an anonymous visitor receives an `ask` session — enough to use the
-   * Assistant, never enough to write. Ingestion is unaffected and always needs the code, because
-   * an upload consumes parser CPU and durable storage that somebody is paying for.
+   * Three positions rather than a spreading set of booleans:
+   *
+   *   - `off`  — nothing; every route needs the code. The default, because a deployment that has
+   *              not said "open this" has not said it.
+   *   - `ask`  — an `ask` session: the Assistant answers, nothing writes.
+   *   - `full` — a `full` session: uploads work too, for anyone on the internet.
+   *
+   * `full` is a deliberate choice with a cost attached, and it is worth naming rather than burying.
+   * An upload is unbounded work over bytes a stranger chose, parsed in the process that holds the
+   * API credential, written to storage that accumulates with no retention policy. It is defensible
+   * for a synthetic demo whose uploads reach `SANDBOX` and can move no executive figure; it would be
+   * indefensible the moment either of those stopped being true, and the conditions are listed in
+   * `docs/REAL_GL_CONNECTOR_ONBOARDING.md` §4.
+   *
+   * What does **not** change with this setting: the per-session rate limits, the 8 MiB parse
+   * ceiling, the parser budgets, `--max-instances`, and the billing budget. Those are the controls
+   * that bound the cost of being open, and none of them was ever conditional on being closed.
    */
-  readonly openAssistant: boolean;
+  readonly openAccess: 'off' | 'ask' | 'full';
 }
 
 /**
@@ -105,8 +118,20 @@ export function loadAccessConfig(
      */
     sessionSigningKey: key === '' ? randomBytes(32).toString('hex') : key,
     sessionLifetimeMs: 8 * 60 * 60 * 1000,
-    openAssistant: (source['GLDI_OPEN_ASSISTANT'] ?? '').trim().toLowerCase() === 'true',
+    openAccess: readOpenAccess(source['GLDI_OPEN_ACCESS']),
   };
+}
+
+/**
+ * Reads the open-access setting, refusing to guess.
+ *
+ * An unrecognised value is `off`, never a best-effort interpretation. A typo in this one variable is
+ * the difference between a closed deployment and an open one, and the failure a reader can see —
+ * *"why is it still asking me for the code?"* — is far cheaper than the one they cannot.
+ */
+function readOpenAccess(raw: string | undefined): 'off' | 'ask' | 'full' {
+  const value = (raw ?? '').trim().toLowerCase();
+  return value === 'ask' || value === 'full' ? value : 'off';
 }
 
 /** Constant-time comparison. A code checked with `===` leaks its prefix through timing. */
@@ -169,9 +194,9 @@ export class AccessControl {
     };
   }
 
-  /** Whether this deployment issues sessions to callers who have no code. */
-  get openAssistant(): boolean {
-    return this.config.openAssistant;
+  /** What this deployment issues to a caller with no code. `off` means nothing. */
+  get openAccess(): 'off' | 'ask' | 'full' {
+    return this.config.openAccess;
   }
 
   /**

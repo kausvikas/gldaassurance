@@ -314,7 +314,7 @@ async function main(): Promise<void> {
      */
     const open = new (await import('../../server/access.js')).AccessControl(
       { demoAccessCode: ACCESS_CODE, sessionSigningKey: 'server-check-signing-key',
-        sessionLifetimeMs: 8 * 60 * 60 * 1000, openAssistant: true },
+        sessionLifetimeMs: 8 * 60 * 60 * 1000, openAccess: 'ask' },
       () => new Date().toISOString() as never,
     );
     const askOnly = open.issue('exec.cdo', 'ask').token;
@@ -336,6 +336,20 @@ async function main(): Promise<void> {
       // 401 here because this check's own runtime is closed; the point is that it is never 200.
       check(`an ask-only session cannot write via ${path}`, response.status !== 200,
         `got ${String(response.status)}`);
+    }
+
+    /*
+     * `full` open access is the setting that lets a stranger upload, so its refusals are the ones
+     * worth asserting: an unrecognised value must not quietly become "open".
+     */
+    const { loadAccessConfig } = await import('../../server/access.js');
+    for (const [value, expected] of [
+      [undefined, 'off'], ['', 'off'], ['true', 'off'], ['FULL ', 'full'], ['Ask', 'ask'],
+      ['yes', 'off'], ['1', 'off'],
+    ] as const) {
+      const cfg = loadAccessConfig({ GLDI_OPEN_ACCESS: value } as Record<string, string | undefined>);
+      check(`GLDI_OPEN_ACCESS=${String(value)} reads as ${expected}`, cfg.openAccess === expected,
+        `got ${cfg.openAccess}`);
     }
 
     console.log('\naudit lineage');

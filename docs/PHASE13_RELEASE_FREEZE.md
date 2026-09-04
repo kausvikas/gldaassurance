@@ -6,6 +6,10 @@
 
 ## Status: **B — operational; final closure still required**
 
+> **Superseded in one respect.** §2a records a deliberate change made after this document was
+> written: the deployment is now open to anonymous callers for both asking and uploading. The
+> measurements in §1 were taken against the closed configuration.
+
 Not A, and the reason is one line: **the authenticated browser path has not been clicked through by a
 person.** Everything it would exercise is proven by measurement against the live public API, and that
 is not the same claim. The remaining step is small, it needs a human, and it is named in §5.
@@ -105,6 +109,57 @@ move. The deployment is returned to `AI_PROVIDER=none`, which remains the govern
 | `npm run audit:links` | 0 broken, 0 unsafe |
 
 ---
+
+## 2a · Access posture, changed after this was recorded
+
+**This deployment is now open. The evidence in §1 was measured against a closed one, and that part
+of it no longer describes what is deployed.**
+
+`GLDI_OPEN_ACCESS=full` means an anonymous visitor receives a `full` session: they can ask questions
+*and* upload files. This was requested deliberately after the freeze, to make the demo shareable
+without handing out a code. It reverses **P0-9** on purpose rather than by regression.
+
+| | Before | Now |
+| --- | --- | --- |
+| Ask a question | code required | **open** |
+| Add knowledge | code required | **open** |
+| Persona | chosen at sign-in | fixed at `exec.cdo` for anonymous callers |
+| Rate limits, 8 MiB parse ceiling, parser budgets | unchanged | unchanged |
+| `--max-instances 3`, $25 budget | unchanged | unchanged |
+
+### What still holds, and why this is defensible for *this* deployment
+
+- Uploads reach `SANDBOX` and no code path promotes them further, so nothing a stranger adds can
+  move an executive figure. That is a structural property, not a setting.
+- The portfolio is synthetic. There is nothing here to leak.
+- Authority is granted per concept and never claimed by a source, so an uploaded file cannot make
+  itself authoritative.
+- Every write is still rate-limited per session, capped at 8 MiB decoded, and bounded by the parser
+  budgets.
+
+### What is now true and was not
+
+- **Anyone can consume parser CPU and durable storage.** There is no retention or deletion path, so
+  the Firestore collections and the bucket grow without bound.
+- **Anyone can add a source that then appears in the inventory and the conflict register**, which a
+  viewer may reasonably read as part of the demonstration.
+- The per-session rate limit is weak against a caller who simply mints new sessions, because minting
+  one now costs nothing. The real ceiling is `--max-instances` and the billing budget.
+
+### To close it again
+
+```bash
+# Assistant open, uploads need the code
+gcloud run services update gldi-runtime --region europe-west1 --project gldaassurance \
+  --update-env-vars GLDI_OPEN_ACCESS=ask
+
+# both need the code
+gcloud run services update gldi-runtime --region europe-west1 --project gldaassurance \
+  --update-env-vars GLDI_OPEN_ACCESS=off
+```
+
+`off` is the default, and an unrecognised value reads as `off` — asserted in `server:check`, because
+a typo in this one variable is the difference between a closed deployment and an open one.
 
 ## 3 · The economics, frozen and reconciled
 
