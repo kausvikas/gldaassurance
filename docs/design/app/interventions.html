@@ -73,7 +73,21 @@ h2.gl-h2{font-size:26px;margin-bottom:6px}
 /* ---- figures: aligned columns, no boxes ---- */
 .gl-figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0;
   border-top:1px solid var(--rule-strong);margin-top:32px}
-.gl-fig{padding:20px 24px 20px 0;border-right:1px solid var(--rule)}
+/*
+ * The gutter around a divider has to be symmetric, or the row reads as misaligned.
+ *
+ * This was 20px/24px/20px/0 — nothing on the left, 24px on the right, with the divider
+ * drawn on the right edge. So every cell after the first had its label and figure pressed against
+ * the rule immediately to its left, while all the air sat on the far side of the rule to its right.
+ * The dividers were evenly spaced and the *content* was not, which is what makes the row look like
+ * its columns do not line up.
+ *
+ * The first cell keeps a flush left edge, because it aligns with the headline, the prose and the
+ * tables above and below it; every other cell is inset from the rule it follows by the same 24px it
+ * leaves before the rule it precedes.
+ */
+.gl-fig{padding:20px 20px;border-right:1px solid var(--rule)}
+.gl-fig:first-child{padding-left:0}
 .gl-fig:last-child{border-right:0}
 .gl-fig dt{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--steel-50);font-weight:600}
 .gl-fig dd{margin:8px 0 0;font-size:30px;font-weight:600;letter-spacing:-0.02em}
@@ -147,6 +161,48 @@ table.gl-t--queue td:first-child,table.gl-t--queue th:first-child{min-width:340p
 table.gl-t--queue td:last-child,table.gl-t--queue th:last-child{min-width:215px;padding-right:0}
 table.gl-t--queue td,table.gl-t--queue th{white-space:nowrap}
 table.gl-t--queue td:first-child,table.gl-t--queue td:last-child{white-space:normal}
+
+/*
+ * The intervention queue carries a paragraph, so it is sized differently.
+ *
+ * Measured: the name column had 205px and wrapped every project onto two lines, the action column
+ * 171px and wrapped every one of those too, while the ranking rationale — the only genuinely long
+ * text in the table — was squeezed into 199px and ran to five lines. Rows stood 150–170px tall.
+ *
+ * A smaller floor than the Command Center's queue, because this table has to keep room for that
+ * paragraph: names and actions stop wrapping, the rationale gets the width it actually needs, and
+ * the condition column gives up the space it was not using.
+ */
+/*
+ * Explicit widths, because min-widths made it worse.
+ *
+ * Adding floors to the first and last columns took the space from the only column that genuinely
+ * needed it: the rationale dropped to 149px, ran to seven lines, and the rows grew from 150px to
+ * 189px — the opposite of the intent, and the table then overflowed its frame.
+ *
+ * So this one is budgeted rather than nudged. 1160px available: the rationale is a paragraph and
+ * gets 280, the name gets two comfortable lines, the short columns take exactly what their contents
+ * need, and the total comes in under the frame. Percentages so it degrades proportionally rather
+ * than falling off the edge on a narrower window.
+ */
+table.gl-t--long{table-layout:fixed}
+/*
+ * Each width is the measured width its own header needs, not a guess.
+ *
+ * Two rounds of nudging produced first a collision ("MARGIN AT RISKTRAJECTORY" running together) and
+ * then two headers truncated to "TRAJECT…" and "TIME TO A…" — a clipped header being the worse of
+ * the two, since a column you cannot name is a column you cannot read. Measured: 220 / 197 / 128 /
+ * 102 / 99 / — / 174 at 1160px, which is 19/17/11/9/9/15 with 20 left for the paragraph.
+ */
+table.gl-t--long th:nth-child(1),table.gl-t--long td:nth-child(1){width:19%;white-space:normal}
+table.gl-t--long th:nth-child(2),table.gl-t--long td:nth-child(2){width:17%;white-space:normal}
+table.gl-t--long th:nth-child(3),table.gl-t--long td:nth-child(3){width:11%}
+table.gl-t--long th:nth-child(4),table.gl-t--long td:nth-child(4){width:9%;white-space:normal}
+table.gl-t--long th:nth-child(5),table.gl-t--long td:nth-child(5){width:9%}
+table.gl-t--long th:nth-child(6),table.gl-t--long td:nth-child(6){width:20%;white-space:normal}
+table.gl-t--long th:nth-child(7),table.gl-t--long td:nth-child(7){width:15%;white-space:normal;padding-right:0}
+/* Graceful degradation only. Sized above so it never fires; if it ever does, the column is wrong. */
+table.gl-t--long th{overflow:hidden;text-overflow:ellipsis}
 .gl-pname{font-weight:600}
 .gl-pname a{text-decoration:none;border-bottom:1px solid var(--steel-25)}
 .gl-pname a:hover{border-bottom-color:var(--orange)}
@@ -585,7 +641,7 @@ footer.gl-foot p{max-width:78ch}
       </dl></div></section>
   <section class="gl-band gl-band--white"><div class="gl-wrap">
       <h2 class="gl-h2">Intervention queue</h2>
-      <div class="gl-tablewrap"><table class="gl-t"><thead><tr>
+      <div class="gl-tablewrap"><table class="gl-t gl-t--long"><thead><tr>
         <th class="gl-sticky">Project</th><th>Condition</th><th class="num">Margin at risk</th>
         <th>Trajectory</th><th>Time to act</th><th>Why it ranks here</th><th>Executive action</th>
       </tr></thead><tbody id="gl-int-body"></tbody></table></div></div></section>

@@ -317,7 +317,7 @@ const interventions = page('Interventions', 'interventions', [
       </dl>`),
   band('white', `
       <h2 class="gl-h2">Intervention queue</h2>
-      <div class="gl-tablewrap"><table class="gl-t"><thead><tr>
+      <div class="gl-tablewrap"><table class="gl-t gl-t--long"><thead><tr>
         <th class="gl-sticky">Project</th><th>Condition</th><th class="num">Margin at risk</th>
         <th>Trajectory</th><th>Time to act</th><th>Why it ranks here</th><th>Executive action</th>
       </tr></thead><tbody id="gl-int-body"></tbody></table></div>`),
