@@ -13,9 +13,12 @@
 #   | Accessibility / contrast         | 6            | DEFERRED — no components exist        |
 #   | Token-usage lint (REQ-UX-001)    | 6            | PARTIAL — G-COLOUR gate active, unused|
 #   | Generator validation             | 3            | ACTIVE — npm run data:validate         |
-#   | Golden fixture change review     | 4            | DEFERRED — no fixtures exist          |
+#   | Golden fixture change review     | 4            | ACTIVE — report:phase13 exits non-zero |
+#   |                                  |              | if a golden-truth figure moves        |
 #   | DB-level immutability            | —            | ACTIVE — npm run db:verify (DR-012     |
-#   |                                  |              | closed; needs a PostgreSQL service)   |
+#   |                                  |              | closed; brings its own container)     |
+#   | Trusted runtime contract         | 13           | ACTIVE — npm run server:check          |
+#   | Distribution link audit          | 13           | ACTIVE — npm run audit:links           |
 
 name: CI
 
@@ -78,7 +81,39 @@ jobs:
         run: npm run db:verify
         continue-on-error: false
 
-      # REQ-SEC-008.
+      # ---------------------------------------------------------------------
+      # Phase 13 gates.
+      #
+      # These were being run by hand, which is the same thing as not having them.
+      # Every P0 closed in Phase 13 was found by running the product rather than by
+      # the suite above, and three of the gates that now catch those regressions
+      # lived only in a developer's terminal. A frozen baseline whose regressions
+      # CI does not catch is not frozen.
+      # ---------------------------------------------------------------------
+
+      # The trusted runtime's transport and access-control contract, against a live
+      # socket: anonymous refusal on every route, token forgery, caller isolation,
+      # rate limiting, audit lineage, and the honest 503 when no durable store exists.
+      # Asserting these against a handler function would prove something about the
+      # function; DR-029's obligations are about the server.
+      - name: Trusted runtime contract
+        run: npm run server:check
+
+      # Re-derives the golden truth and the governed facts from the running system and
+      # exits non-zero if a figure has moved. A benchmark written by hand is a claim
+      # about a system; this one is a measurement of it.
+      - name: Phase 13 evidence and golden truth
+        run: npm run report:phase13
+
+      # The distribution the public URL serves, and its internal links. `audit:links`
+      # needs the built site, so the build is a step rather than an assumption.
+      - name: Build distribution
+        run: npm run build:dist
+
+      - name: Link audit
+        run: npm run audit:links
+
+      # REQ-SEC-008. Runs after the build so it scans generated output, not only source.
       - name: Secret scan
         run: node scripts/ci/secret-scan.mjs
 
