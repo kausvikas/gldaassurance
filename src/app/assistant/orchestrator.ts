@@ -162,9 +162,27 @@ export async function askWithPlan(
    * composition, licensing and validation all see the same neutralised text, so a payload cannot
    * license itself.
    */
-  const claims = claimsForShape(plan.shape, execution.claims)
-    .map((c) => ({ ...c, text: neutraliseRetrievedText(c.text) }))
+  const selected = claimsForShape(plan.shape, execution.claims);
+  const claims = selected
+    .map((c) => (c.composedFromGovernedValues === true
+      ? c
+      : { ...c, text: neutraliseRetrievedText(c.text) }))
     .filter((c) => c.text.trim() !== NEUTRALISED);
+
+  /*
+   * A claim removed by neutralisation is **reported**, not silently dropped — and not fatal either.
+   *
+   * Phase 11 decided that a fully-redacted claim is dropped rather than qualified, and that is
+   * right: nothing governed remains in it to qualify. What was missing is that the reader was never
+   * told. An aggregate shipped one figure short with every remaining sentence true, which is the
+   * DR-072 failure class exactly.
+   *
+   * Withholding the whole answer was the first correction and it was too blunt: one supporting
+   * sentence tripping a content rule would suppress an entire health explanation whose governed
+   * findings were intact. So the claim goes, the answer stands, and the redaction is named — and if
+   * what went was a *required* claim, `missingRequiredForShape` below withholds the answer anyway.
+   */
+  const redacted = selected.length - claims.length;
 
   if (claims.length === 0) {
     return decline(question, opts, state, plan, refusal(
@@ -235,7 +253,18 @@ export async function askWithPlan(
   }
 
   // Step 13. Answerability, from the evidence rather than from the prose.
-  const answerability = classify(plan, claims, false);
+  const base = classify(plan, claims, false);
+  const answerability: AnswerabilityVerdict = redacted === 0 ? base : {
+    classification: base.classification === 'ANSWERABLE' ? 'PARTIALLY_ANSWERABLE' : base.classification,
+    statement: base.statement === ''
+      ? 'Part of the supporting evidence was withheld because its text matched a content-safety rule.'
+      : base.statement,
+    gaps: [
+      ...base.gaps,
+      `${String(redacted)} supporting finding${redacted === 1 ? '' : 's'} withheld: the stored text `
+      + 'matched a rule for content that reads as an instruction rather than as evidence.',
+    ],
+  };
 
   const response: AssistantResponse = {
     question,

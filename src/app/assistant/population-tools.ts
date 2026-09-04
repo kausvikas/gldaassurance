@@ -270,6 +270,7 @@ export async function populationQuery(tc: ToolContext, plan: QueryPlan): Promise
     asOf: tc.asOf, sourceDomain: 'portfolio',
     refs: [{ context: 'portfolio', entityType: 'population', entityId: str(row, 'populationLabel') ?? 'population' }],
     signalState: 'OBSERVED',
+    composedFromGovernedValues: true,
     overrides: { executiveAuthoritative: true, assessmentStatus: 'COMPLETE' },
   }));
 
@@ -286,6 +287,7 @@ export async function populationQuery(tc: ToolContext, plan: QueryPlan): Promise
       asOf: tc.asOf, sourceDomain: 'portfolio',
       refs: [{ context: 'portfolio', entityType: 'project', entityId: str(r, 'projectId') ?? '', metricId: 'MET-FIN-019' }],
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
     }));
   }
   return { tool: 'portfolio.population.query', claims, untrustedContent: [] };
@@ -357,6 +359,7 @@ export async function populationAggregate(tc: ToolContext, plan: QueryPlan): Pro
       asOf: tc.asOf, sourceDomain: 'portfolio',
       refs: [{ context: 'portfolio', entityType: 'population', entityId: 'filtered' }],
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
       overrides: { executiveAuthoritative: true, assessmentStatus: 'COMPLETE' },
     }),
     claim({
@@ -368,6 +371,7 @@ export async function populationAggregate(tc: ToolContext, plan: QueryPlan): Pro
       asOf: tc.asOf, sourceDomain: 'financial',
       refs: [{ context: 'portfolio', entityType: 'aggregate', entityId: 'contract-value', metricId: 'MET-PORT-001' }],
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
       overrides: { executiveAuthoritative: true, assessmentStatus: 'COMPLETE' },
     }),
   ];
@@ -384,6 +388,7 @@ export async function populationAggregate(tc: ToolContext, plan: QueryPlan): Pro
       asOf: tc.asOf, sourceDomain: 'financial',
       refs: [{ context: 'portfolio', entityType: 'aggregate', entityId: 'forecast-margin', metricId: 'MET-PORT-002' }],
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
       overrides: { executiveAuthoritative: true, assessmentStatus: 'COMPLETE' },
     }));
   }
@@ -397,6 +402,7 @@ export async function populationAggregate(tc: ToolContext, plan: QueryPlan): Pro
       asOf: tc.asOf, sourceDomain: 'financial',
       refs: [{ context: 'portfolio', entityType: 'aggregate', entityId: 'sold-margin', metricId: 'MET-PORT-008' }],
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
       overrides: { executiveAuthoritative: true, assessmentStatus: 'COMPLETE' },
     }));
   }
@@ -411,6 +417,7 @@ export async function populationAggregate(tc: ToolContext, plan: QueryPlan): Pro
     asOf: tc.asOf, sourceDomain: 'financial',
     refs: [{ context: 'portfolio', entityType: 'aggregate', entityId: 'value-at-risk', metricId: 'MET-FIN-019' }],
     signalState: 'OBSERVED',
+    composedFromGovernedValues: true,
   }));
 
   return { tool: 'portfolio.population.aggregate', claims, untrustedContent: [] };
@@ -462,6 +469,7 @@ export async function concentration(tc: ToolContext, plan: QueryPlan): Promise<T
     asOf: tc.asOf, sourceDomain: 'portfolio',
     refs: [{ context: 'portfolio', entityType: 'population', entityId: dimension }],
     signalState: 'OBSERVED',
+    composedFromGovernedValues: true,
     overrides: { executiveAuthoritative: true, assessmentStatus: 'COMPLETE' },
   })];
 
@@ -479,6 +487,7 @@ export async function concentration(tc: ToolContext, plan: QueryPlan): Promise<T
         context: 'portfolio', entityType: 'project', entityId: str(g, 'projectId') ?? '',
       })),
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
     }));
   }
   if (claims.length === 1) throw new ToolDenied();
@@ -626,6 +635,7 @@ export async function periodChange(tc: ToolContext, plan: QueryPlan): Promise<To
       asOf: tc.asOf, sourceDomain: 'financial',
       refs: ref(label, 'MET-FIN-014'),
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
       overrides: { executiveAuthoritative: true, assessmentStatus: 'COMPLETE' },
     }),
     claim({
@@ -637,6 +647,7 @@ export async function periodChange(tc: ToolContext, plan: QueryPlan): Promise<To
       asOf: tc.asOf, sourceDomain: 'financial',
       refs: ref(label),
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
     }),
     claim({
       id: 'change:loss',
@@ -649,6 +660,7 @@ export async function periodChange(tc: ToolContext, plan: QueryPlan): Promise<To
       asOf: tc.asOf, sourceDomain: 'financial',
       refs: ref(label),
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
     }),
     claim({
       id: 'change:eac',
@@ -660,6 +672,7 @@ export async function periodChange(tc: ToolContext, plan: QueryPlan): Promise<To
       asOf: tc.asOf, sourceDomain: 'financial',
       refs: ref(label, 'MET-FIN-008'),
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
     }),
     claim({
       id: 'change:reported',
@@ -671,6 +684,7 @@ export async function periodChange(tc: ToolContext, plan: QueryPlan): Promise<To
       asOf: tc.asOf, sourceDomain: 'delivery',
       refs: ref(label),
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
     }),
     claim({
       id: 'change:coverage',
@@ -684,6 +698,7 @@ export async function periodChange(tc: ToolContext, plan: QueryPlan): Promise<To
       asOf: tc.asOf, sourceDomain: 'portfolio',
       refs: ref(label),
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
     }),
   ];
 
@@ -709,6 +724,7 @@ export async function compareProjects(tc: ToolContext, plan: QueryPlan): Promise
     asOf: tc.asOf, sourceDomain: 'portfolio',
     refs: [{ context: 'portfolio', entityType: 'project', entityId: str(r, 'projectId') ?? '', metricId: 'MET-FIN-019' }],
     signalState: 'OBSERVED',
+    composedFromGovernedValues: true,
   }));
   return { tool: 'projects.compare', claims, untrustedContent: [] };
 }
@@ -737,6 +753,7 @@ export async function recovering(tc: ToolContext, plan: QueryPlan): Promise<Tool
     asOf: tc.asOf, sourceDomain: 'portfolio',
     refs: [{ context: 'portfolio', entityType: 'population', entityId: 'improving' }],
     signalState: 'OBSERVED',
+    composedFromGovernedValues: true,
   })];
 
   for (const r of improving) {
@@ -752,6 +769,7 @@ export async function recovering(tc: ToolContext, plan: QueryPlan): Promise<Tool
       asOf: tc.asOf, sourceDomain: 'portfolio',
       refs: [{ context: 'portfolio', entityType: 'project', entityId: str(r, 'projectId') ?? '' }],
       signalState: 'OBSERVED',
+      composedFromGovernedValues: true,
     }));
   }
   return { tool: 'portfolio.recovery.list', claims, untrustedContent: [] };

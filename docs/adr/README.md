@@ -45,6 +45,7 @@ edit an accepted ADR in substance — supersede it instead.
 | [0036](ADR-0036-knowledge-ingestion-and-citation.md) | Knowledge grounding is ingestion, indexing and citation — not training; a source is grounded only when an answer has used it | Accepted |
 | [0037](ADR-0037-enterprise-connector-contract.md) | One connector contract, honest status, and no invented GlobalLogic schemas | Accepted |
 | [0038](ADR-0038-historical-learning-seam.md) | The historical-learning seam is declared and deliberately not implemented | Accepted |
+| [0039](ADR-0039-portfolio-contract-value-is-contractual-revenue.md) | Portfolio contract value is contractual revenue, not the as-sold baseline (corrects a published headline figure) | Accepted |
 
 `Proposed` means **no code may depend on it** (`../../ARCHITECTURE_DECISIONS.md` §2) and it is not
 implemented (§3 step 7). ADR-0006…0012 were raised in Phase 1 and await approval.

@@ -34,7 +34,8 @@
     "design:app": "vite-node -c vitest.config.ts scripts/design/build-app.tsx",
     "server": "vite-node -c vitest.config.ts server/start.ts",
     "server:check": "vite-node -c vitest.config.ts scripts/deploy/server-check.ts",
-    "scan:secrets": "node scripts/ci/secret-scan.mjs"
+    "scan:secrets": "node scripts/ci/secret-scan.mjs",
+    "report:phase13": "vite-node -c vitest.config.ts scripts/deploy/phase13-report.ts"
   },
   "dependencies": {
     "decimal.js": "^10.6.0",

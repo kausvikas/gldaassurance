@@ -125,6 +125,14 @@ export function claim(args: {
   readonly refs: readonly RecordRef[];
   readonly signalState?: SignalState;
   readonly overrides?: Partial<ClaimEnvelope>;
+  /**
+   * Set only where the caller composed every word from governed values and fixed wording.
+   *
+   * Opt-in by design: the default is that a claim may carry record text, which is the conservative
+   * reading and the one ADR-0031 requires. A tool that assembles its sentence from a DTO's free-text
+   * field must not set this, and none of the Phase 11 tools does.
+   */
+  readonly composedFromGovernedValues?: boolean;
 }): MaterialClaim {
   const env = envelope({
     metricId: args.metricId,
@@ -145,6 +153,7 @@ export function claim(args: {
     epistemicLayer: args.layer,
     envelope: env,
     groundedBy: args.refs,
+    ...(args.composedFromGovernedValues === true ? { composedFromGovernedValues: true } : {}),
   };
 }
 

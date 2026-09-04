@@ -217,6 +217,21 @@ export interface MaterialClaim {
   readonly envelope: ClaimEnvelope;
   /** Non-empty, or the claim is rejected. Empty evidence is a defect (REQ-DATA-010). */
   readonly groundedBy: readonly RecordRef[];
+  /**
+   * `true` when every word of `text` was composed here from governed values and fixed wording, with
+   * no free text from any record.
+   *
+   * **Opt-in, and absent means "treat as untrusted"** — the ADR-0031 rule that an unstated
+   * qualification must weaken a claim, never strengthen it.
+   *
+   * It exists because the injection neutraliser is right about retrieved content and wrong about
+   * this product's own sentences. *"Total contract value across that population is $451.28M"* matches
+   * a shape written to catch a record note asserting a governed economic figure — which is exactly
+   * what that shape should catch, and exactly what this sentence is not. Without the distinction the
+   * claim was silently deleted and an aggregate answer shipped one figure short, with nothing to
+   * show it had been.
+   */
+  readonly composedFromGovernedValues?: boolean;
 }
 
 export interface Citation {

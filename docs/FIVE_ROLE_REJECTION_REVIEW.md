@@ -1,5 +1,12 @@
 # Five-role rejection review — live product
 
+> **Corrected by ADR-0039 (2026-09-03).** The portfolio contract value recorded below as
+> **$451.28M** was the sum of the as-sold baseline. `MET-PORT-001` is the sum of `MET-FIN-002`
+> contractual revenue — the as-sold baseline **plus executed change requests** — which is
+> **$453.47M**, and is what the application's own KPI had been reporting all along. The two surfaces
+> disagreed under one label; the catalogue won. Every other figure in this document is unchanged.
+
+
 Conducted against `https://gldaassurance.web.app` in Chrome at 1440×900 and 1024, after the final
 acceptance remediation. Each role was used to attempt rejection, not confirmation.
 

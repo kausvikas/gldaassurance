@@ -246,7 +246,16 @@ export function executiveFacts(): {
       trajectory: String(row['trajectory']),
       outlook30: String(row['outlook30']),
       outlook60: String(row['outlook60']),
-      tcv: num(spec?.contractValue),
+      /*
+       * `MET-PORT-001` is the sum of `MET-FIN-002` — contractual revenue — which is the as-sold
+       * baseline **plus executed change requests** (ADR-0039).
+       *
+       * This field previously carried the generator's contract specification, so the aggregate on
+       * the landing page summed the as-sold position while the KPI in the application summed
+       * contractual revenue, and the two surfaces published different numbers under one label. The
+       * per-project display string beside it was already correct, which is what kept it invisible.
+       */
+      tcv: num(e.contractualRevenue),
       tcvDisplay: String(row['tcv']),
       gmAtRisk: num(e.gmValueAtRisk),
       gmAtRiskDisplay: String(row['gmValueAtRisk']),
