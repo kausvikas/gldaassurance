@@ -12,6 +12,7 @@ import { executiveFacts, type ExecutiveFact } from './executive-facts.js';
 import { GL_RUNTIME } from './gl-runtime.js';
 import { shell, filterBar, esc, executiveText, type Area } from './gl-shell.js';
 import { projectExecutiveHealthFor } from '../assessment/project-health-adapter.js';
+import { GL_ACCESS } from './gl-access.js';
 import { GL_ASSISTANT_RUNTIME } from './gl-assistant.js';
 import { GL_UPLOAD_RUNTIME } from './gl-upload.js';
 import {
@@ -542,12 +543,20 @@ function statusLine(status: string, cause: string, f: ExecutiveFact): string {
  */
 function withAssistantRuntime(html: string): string {
   const recording = `<script type="application/json" id="gl-recorded">${RECORDED.replace(/</g, '\\u003c')}</script>`;
-  return html.replace('</body>', `${recording}\n<script>${GL_ASSISTANT_RUNTIME}</script>\n</body>`);
+  // The gate first: both scripts call `GLAccess`, and a page that shipped one without the other
+  // would ask the runtime for a session it has no way to obtain.
+  return html.replace(
+    '</body>',
+    `${recording}\n<script>${GL_ACCESS}</script>\n<script>${GL_ASSISTANT_RUNTIME}</script>\n</body>`,
+  );
 }
 
 /** The upload client, on the one route that needs it. */
 function withUploadRuntime(html: string): string {
-  return html.replace('</body>', `<script>${GL_UPLOAD_RUNTIME}</script>\n</body>`);
+  return html.replace(
+    '</body>',
+    `<script>${GL_ACCESS}</script>\n<script>${GL_UPLOAD_RUNTIME}</script>\n</body>`,
+  );
 }
 
 function word(t: string): string {

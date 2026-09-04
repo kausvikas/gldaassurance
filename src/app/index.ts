@@ -119,7 +119,7 @@ export const APPLICATION_LAYER_STATE = 'Layering contract plus the Phase 4 Metri
 
 // --- Phase 13: the plan-driven assistant (ADR-0034) -------------------------
 export {
-  askWithPlan, type PlannedAnswer, type PlannedAskOptions, ORCHESTRATOR_STATE,
+  askWithPlan, type PlannedAnswer, type PlannedAskOptions, type PlanningPort, ORCHESTRATOR_STATE,
 } from './assistant/orchestrator.js';
 export { planQuestion, type PlannerVocabulary, type PlanningResult, EMPTY_VOCABULARY } from './assistant/planner.js';
 export {
@@ -136,7 +136,7 @@ export {
 } from './assistant/answerability.js';
 export { vocabularyFrom } from './assistant/population-tools.js';
 export {
-  buildProvider, buildRouter, providerNarration, ProviderRouter, NoProvider,
+  buildProvider, buildRouter, providerNarration, providerPlanning, ProviderRouter, NoProvider,
   AnthropicClaudeProvider, LocalLLMProvider, POC_EXTERNAL_AI_POLICY,
   evaluateExternalTransmission, type LLMProvider, type ProviderHealth, type ProviderMetadata,
   type RoutingDecision, type MaterialInventory, type ExternalAiPolicy,
@@ -147,6 +147,8 @@ export {
   type MappingSuggestion, type ApprovedMapping, type StructuredIngestionRequest,
   type StructuredIngestionResult, type DocumentIngestionRequest, type DocumentIngestionResult,
   type RegisteredSource, type KnowledgeVerification,
-  UnreadableUpload, UnreadableDocument, SourceRegistry,
+  type Keyed, type SourceRepository, type KnowledgeRepository, type DocumentBlobStore,
+  type AuditRepository, type DurableStores,
+  UnreadableUpload, UnreadableDocument, SourceRegistry, InMemoryStores,
   ingestStructured, ingestConnectorRecords, ingestDocument, suggestMappings,
 } from './ingestion/index.js';

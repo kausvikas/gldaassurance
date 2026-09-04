@@ -22,7 +22,10 @@ import type { PlannerVocabulary, SourceRegistry } from '@app';
 import { CONCEPT_LABEL, STATUS_MEANING } from '@contexts/integration';
 import { DEMO_NOW, createDemoApi } from '../security/demo-api.js';
 import { knowledgeDemo, syncFixtures } from '../fixtures/demo-knowledge.js';
-import { GOLDEN_TRUTH, type GoldenCase } from './golden-truth.js';
+import { GOLDEN_TRUTH, GOVERNED_FACTS, type GoldenCase } from './golden-truth.js';
+import { buildCommandCenterFor } from '../assessment/command-center-adapter.js';
+import { generatePortfolio } from '../generator/index.js';
+import { Money } from '@platform/decimal';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DOCS = join(HERE, '..', '..', 'docs');
@@ -186,6 +189,94 @@ ${authorityRows.join('\n')}
     );
   }
 
+  // -------------------------------------------------------------------------
+  // Governed facts the Assistant carries no claim for (§19, §20, §21)
+  // -------------------------------------------------------------------------
+  const portfolio = generatePortfolio();
+  const centre = buildCommandCenterFor(portfolio, authorised);
+  const USD = 'USD' as const;
+
+  /*
+   * The as-sold baseline and the executed change, summed the way the engine sums them.
+   *
+   * `Money` rather than a float, and summed from the same specifications the engines were fed —
+   * because a reconciliation computed in a different arithmetic from the thing it reconciles is not a
+   * reconciliation, it is a coincidence that will eventually stop happening.
+   */
+  const zero = Money.zero(USD);
+  const assessed = new Set(centre.contributions.map((c) => c.projectId));
+  const asSold = portfolio.structure.projects
+    // The **assessed** population, not the authorised universe: the two differ, and reconciling an
+    // as-sold total over one against a contractual total over the other would produce a false delta.
+    .filter((spec) => assessed.has(spec.projectId))
+    .reduce((a, spec) => a.plus(Money.of(spec.contractValue.toDto().amount, USD)), zero);
+  const contractual = centre.contributions
+    .reduce((a, c) => a.plus(Money.of(c.contractValue, USD)), zero);
+  const executedDelta = contractual.minus(asSold);
+
+  const rag = centre.ragDistribution;
+
+  /*
+   * Before / after, measured rather than asserted in prose.
+   *
+   * `bare` is the same demonstration registry with the statement of work **not** ingested — the same
+   * fixtures, the same connectors, the same everything else. The only difference between the two
+   * runs below is one document, which is the whole claim: what moved is the evidence, not the model
+   * and not the question.
+   */
+  const atlasId = discovered.projects[0]?.id ?? 'prj-001';
+  const atlasName = discovered.projects[0]?.name ?? 'the project';
+  const ACCEPTANCE_QUESTION =
+    `What does the SOW for ${atlasName} say about acceptance?`;
+  const bare = knowledgeDemo(authorised, atlasId);
+  const bareTools = new GatewayToolPort(
+    ctx, api.gateway, DEMO_NOW, authorised, bare.registry,
+  );
+  const bareRegistry = bare.registry;
+
+  const beforeKnowledge = await askWithPlan(ACCEPTANCE_QUESTION, {
+    ctx, tools: bareTools, asOf: DEMO_NOW, scopeLabel: 'CDO', populationCount: authorised.length,
+    vocabulary, knownMetricIds: [], state: NEW_CONVERSATION, knowledge: bareRegistry,
+  });
+  const afterKnowledge = await askWithPlan(ACCEPTANCE_QUESTION, {
+    ctx, tools, asOf: DEMO_NOW, scopeLabel: 'CDO', populationCount: authorised.length,
+    vocabulary, knownMetricIds: [], state: NEW_CONVERSATION, knowledge: demo.registry,
+  });
+
+  const conflict = demo.registry.conflicts()[0];
+  const uploadGrant = demo.registry.authority.grantsBySource('src-upload-financials')[0];
+
+  const measured: Readonly<Record<string, string>> = {
+    'rag:green': String(rag['GREEN'] ?? 0),
+    'rag:amber': String(rag['AMBER'] ?? 0),
+    'rag:red': String(rag['RED'] ?? 0),
+    'rag:total': String((rag['GREEN'] ?? 0) + (rag['AMBER'] ?? 0) + (rag['RED'] ?? 0)),
+    'economics:as-sold-contract-value': formatCompact(asSold),
+    'economics:executed-cr-delta': formatCompact(executedDelta),
+    'economics:contractual-value': formatCompact(contractual),
+    // Decimal equality, not formatted equality: two figures can print the same and differ.
+    'economics:reconciles': String(asSold.plus(executedDelta).compare(contractual) === 0),
+    'knowledge:before': beforeKnowledge.answerability.classification,
+    'knowledge:after': afterKnowledge.answerability.classification,
+    'conflict:concept': conflict?.concept ?? '—',
+    'conflict:authoritative': conflict?.governedValue ?? '—',
+    'conflict:supplemental': conflict?.entries.find(
+      (e) => e.sourceId !== conflict.governedSourceId,
+    )?.value ?? '—',
+    'authority:upload-cannot-be-authoritative': uploadGrant?.authority ?? '—',
+  };
+
+  const factRows: string[] = [];
+  let factsPassed = 0;
+  for (const item of GOVERNED_FACTS) {
+    const actual = measured[item.fact] ?? '—';
+    const ok = actual === item.expected;
+    if (ok) factsPassed += 1;
+    factRows.push(
+      `| \`${item.fact}\` | ${item.surface} | ${item.expected} | ${actual} | ${ok ? '**PASS**' : '**FAIL**'} |`,
+    );
+  }
+
   writeFileSync(join(DOCS, 'ASSISTANT_GOLDEN_TRUTH_RESULTS.md'), `${HEADER(
     'Assistant golden-truth results',
     `## What this compares, and what it does not
@@ -209,6 +300,31 @@ changes the \`composer\` badge.`,
 ${goldenRows.join('\n')}
 
 **${String(passed)} of ${String(GOLDEN_TRUTH.length)} golden-truth checks pass.**
+
+## Governed facts the Assistant carries no claim for
+
+The Command Center publishes the RAG distribution and the contract-value relationship; the Assistant
+has no claim for either. Reaching for the figure where the product actually publishes it makes this a
+cross-surface reconciliation rather than a second opinion from the same source — and adding claims to
+the Assistant so a benchmark could read them would be building product to make a test pass.
+
+| Fact | Surface | Expected | Actual | Result |
+| --- | --- | --- | --- | --- |
+${factRows.join('\n')}
+
+**${String(factsPassed)} of ${String(GOVERNED_FACTS.length)} governed-fact checks pass.**
+
+### The contract-value relationship, stated once
+
+\`\`\`
+as-sold contract value      ${formatCompact(asSold)}
+executed change requests  + ${formatCompact(executedDelta)}
+                          ─────────
+current contractual value   ${formatCompact(contractual)}   = MET-PORT-001
+\`\`\`
+
+Pending changes appear in neither line. They are \`MET-FIN-011\` unsecured upside, and there is no
+code path by which an unexecuted change raises contractual revenue.
 `, 'utf8');
 
   // -------------------------------------------------------------------------
@@ -305,9 +421,20 @@ established says *section*, never an inferred page.
 `, 'utf8');
 
   process.stdout.write(
-    `phase 13 evidence written: 4 documents · golden truth ${String(passed)}/${String(GOLDEN_TRUTH.length)}\n`,
+    `phase 13 evidence written: 4 documents · golden truth ${String(passed)}/${String(GOLDEN_TRUTH.length)}`
+    + ` · governed facts ${String(factsPassed)}/${String(GOVERNED_FACTS.length)}\n`,
   );
-  if (passed !== GOLDEN_TRUTH.length) process.exit(1);
+  if (passed !== GOLDEN_TRUTH.length || factsPassed !== GOVERNED_FACTS.length) process.exit(1);
+}
+
+/** Compact money, matching the Command Center's own formatting so the two are comparable. */
+function formatCompact(m: Money): string {
+  const amount = globalThis.Number.parseFloat(m.toQuantity());
+  const sign = amount < 0 ? '\u2212' : '';
+  const abs = Math.abs(amount);
+  if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${sign}$${Math.round(abs / 1e3).toLocaleString('en-GB')}K`;
+  return `${sign}$${Math.round(abs).toLocaleString('en-GB')}`;
 }
 
 function readFact(

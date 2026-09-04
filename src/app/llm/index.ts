@@ -27,4 +27,4 @@ export {
   ProviderRouter,
 } from './routing.js';
 
-export { buildProvider, buildRouter, providerNarration } from './composition.js';
+export { buildProvider, buildRouter, providerNarration, providerPlanning } from './composition.js';

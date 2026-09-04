@@ -17,3 +17,9 @@ export {
 export {
   type RegisteredSource, type KnowledgeVerification, SourceRegistry,
 } from './registry.js';
+
+export {
+  type Keyed, type SourceRepository, type KnowledgeRepository, type DocumentBlobStore,
+  type AuditRepository, type DurableStores,
+  InMemoryStores,
+} from './ports.js';

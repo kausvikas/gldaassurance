@@ -13,8 +13,9 @@
  * fully exercised, the *identity* is a demo fixture.
  */
 import {
-  GatewayToolPort, NEW_CONVERSATION, askWithPlan, buildRouter, ingestDocument, ingestStructured,
-  providerNarration, readState, suggestMappings, vocabularyFrom,
+  GatewayToolPort, NEW_CONVERSATION, ToolDenied, askWithPlan, buildProvider, buildRouter,
+  ingestDocument, ingestStructured, providerNarration, providerPlanning, readState, suggestMappings,
+  vocabularyFrom,
 } from '@app';
 import type { ApprovedMapping, PlannerVocabulary, SourceRegistry } from '@app';
 import { ALL_CONCEPTS } from '@contexts/integration';
@@ -22,10 +23,14 @@ import { detectFormat, parseCsv, parseXlsx, profile } from '@platform/parse';
 import type { TabularSheet } from '@platform/parse';
 import { fingerprint, fromBase64, utf8 } from '@platform/bytes';
 import { loadAiConfig, loadConfig } from '@platform/config';
+import { SystemClock } from '@platform/time';
 import type { Instant } from '@platform/time';
 
 import { DEMO_NOW, createDemoApi } from '../scripts/security/demo-api.js';
 import { knowledgeDemo } from '../scripts/fixtures/demo-knowledge.js';
+import { AccessControl, CallerRateLimit, loadAccessConfig } from './access.js';
+import type { Caller } from './access.js';
+import { durableStores } from './stores.js';
 import { DEFAULT_RUNTIME, Runtime } from './runtime.js';
 import type { RouteRequest, RouteResponse } from './runtime.js';
 
@@ -33,8 +38,55 @@ const config = loadConfig(process.env);
 const ai = loadAiConfig(process.env);
 const now = (): Instant => DEMO_NOW;
 
+/**
+ * Real elapsed time — a different clock from `now`, deliberately.
+ *
+ * `now` returns `DEMO_NOW`, the frozen as-of date the whole synthetic portfolio is reported against;
+ * freezing it is what makes the demo reproducible. It is the wrong clock for anything that measures
+ * *duration*: a session signed against a frozen clock never expires, and a rate-limit window
+ * measured on one never reopens, so a caller would be blocked for the life of the process after their
+ * thirtieth question. Governed time and operational time are two different things, and this is the
+ * operational one.
+ */
+const wall = new SystemClock();
+const elapsing = (): Instant => wall.now();
+
 const api = createDemoApi();
 const providerRouter = buildRouter(ai, now);
+const { provider: selectedProvider } = buildProvider(ai, now);
+
+/**
+ * The model-assisted planner, present only where a provider could actually plan.
+ *
+ * Built once, at composition, and passed to every request — or not built at all, in which case the
+ * orchestrator has no planning object in scope and the grammar is the only planner. That is the same
+ * "enforced by what exists" pattern as the external-AI fallback: there is no runtime flag to get
+ * wrong, because with no provider there is nothing to flag.
+ */
+const planningPort = selectedProvider.capabilities().structuredOutput
+  ? providerPlanning(providerRouter, selectedProvider)
+  : null;
+const access = new AccessControl(loadAccessConfig(process.env), elapsing);
+
+/**
+ * Cost and abuse ceilings, per caller per minute (§18).
+ *
+ * Asking is limited more generously than uploading because asking is bounded work over a fixed
+ * portfolio, while an upload is unbounded work over bytes the caller chose. Neither of these is the
+ * real spending ceiling — Cloud Run's `max-instances` is, and it holds whatever a limiter does — but
+ * they are what stops one caller consuming the instance everybody else is sharing.
+ */
+const askLimit = new CallerRateLimit(60_000, 30, elapsing);
+const ingestLimit = new CallerRateLimit(60_000, 10, elapsing);
+
+/**
+ * The decoded upload ceiling (§15).
+ *
+ * The transport already refuses a body over 12 MiB, but that is a limit on base64 text; this is the
+ * limit on what gets parsed, which is the thing that actually costs CPU. A file over it is refused
+ * with its size named, because "too large" without a number is a support ticket.
+ */
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
 /** The personas the demo will authenticate. A name not on this list is a not-found, not an error. */
 const PERSONAS: Readonly<Record<string, string>> = {
@@ -43,17 +95,44 @@ const PERSONAS: Readonly<Record<string, string>> = {
   'dm.mobility': 'usr-dm-mobility',
 };
 
-interface Session {
-  readonly persona: string;
-  readonly ctx: Awaited<ReturnType<typeof buildSession>>['ctx'];
+interface PersonaState {
+  readonly ctx: Awaited<ReturnType<typeof buildPersonaState>>['ctx'];
   readonly authorised: readonly string[];
   readonly vocabulary: PlannerVocabulary;
 }
 
-const sessions = new Map<string, Session>();
-let knowledge: SourceRegistry | null = null;
+interface Session extends PersonaState {
+  readonly persona: string;
+  /** Identifies the sitting, for rate limiting and audit. Never an IP address. */
+  readonly callerId: string;
+}
 
-async function buildSession(persona: string) {
+/**
+ * Per-persona state, cached per process.
+ *
+ * Deliberately keyed by **persona and not by token**. A cache keyed by token is a session store, and
+ * a session store in a horizontally-scaled runtime is the same defect this release exists to close:
+ * a token minted on one instance would be unknown to the next, and the second request of a
+ * conversation would be rejected for no reason a user could see. Here every instance can rebuild any
+ * caller's state from the signed token alone, so which instance answers is unobservable.
+ */
+const personaStates = new Map<string, PersonaState>();
+let knowledge: SourceRegistry | null = null;
+let knowledgeBuild: Promise<SourceRegistry> | null = null;
+
+/**
+ * Whether uploads will survive a restart, and why not when they will not.
+ *
+ * Reported rather than assumed. A deployment whose durable store is unreachable still answers
+ * questions perfectly well — the portfolio is generated from code — but it must not accept an upload
+ * and print a receipt, because the receipt would be false by the next cold start.
+ */
+let durability: { readonly durable: boolean; readonly detail: string } = {
+  durable: false,
+  detail: 'Durable storage has not been initialised yet.',
+};
+
+async function buildPersonaState(persona: string) {
   const actorId = PERSONAS[persona];
   if (actorId === undefined) throw new Error('unknown persona');
   const login = await api.login(persona);
@@ -63,32 +142,138 @@ async function buildSession(persona: string) {
   return { ctx, authorised };
 }
 
+/** Nothing to name. Not an error — see `personaState`. */
+const NO_VOCABULARY: PlannerVocabulary = {
+  regions: [], industries: [], deliveryGroups: [], projects: [], accounts: [], customers: [],
+};
+
+async function personaState(persona: string): Promise<PersonaState> {
+  const cached = personaStates.get(persona);
+  if (cached !== undefined) return cached;
+  const { ctx, authorised } = await buildPersonaState(persona);
+
+  /*
+   * The planner's vocabulary is discovered from the Command Center, which not every persona may
+   * read — and a denial there is an **answer**, not a failure.
+   *
+   * A delivery manager is not authorised for the portfolio view, so asking it what regions exist is
+   * denied, and the previous code let that denial escape as a 500: the narrowest persona in the
+   * product could not obtain a session at all. They can still ask about the projects they run; what
+   * they cannot do is name a portfolio-level filter, and an empty vocabulary is exactly that
+   * statement. Only a denial is absorbed — anything else is a real fault and still propagates.
+   */
+  let vocabulary = NO_VOCABULARY;
+  try {
+    const discovered = await vocabularyFrom({
+      ctx, gateway: api.gateway, asOf: DEMO_NOW, authorisedProjectIds: authorised,
+    });
+    vocabulary = { ...discovered, accounts: [], customers: [] };
+  } catch (e) {
+    if (!(e instanceof ToolDenied)) throw e;
+  }
+
+  const state: PersonaState = { ctx, authorised, vocabulary };
+  personaStates.set(persona, state);
+  return state;
+}
+
 /**
- * The knowledge registry, built once, lazily.
+ * The knowledge registry: deterministic seed first, then durable storage, then everything anyone has
+ * uploaded.
  *
- * Lazily because building it parses the fixture documents and workbooks, and a health check should
- * not pay for that. Once, because the index is in-memory and rebuilding it per request would make
- * "what has this source been used for" meaningless.
+ * The order is the whole design. The fixture portfolio, its connectors and its demonstration
+ * documents are rebuilt from code on every start — they are deterministic, so persisting them would
+ * only mean reading a second copy back and double-counting it. Durable storage is attached *after*
+ * that seed and `hydrate()` then overlays what real callers have added, which is the only content
+ * that cannot be regenerated.
+ *
+ * Lazily because building it parses fixture documents and workbooks, and a health check should not
+ * pay for that. Once, and behind a single in-flight promise: two requests arriving on a cold instance
+ * would otherwise each build a registry, each hydrate it, and one of them would answer from a
+ * registry the other had already replaced.
  */
 async function knowledgeRegistry(): Promise<SourceRegistry> {
   if (knowledge !== null) return knowledge;
-  const { ctx, authorised } = await buildSession('exec.cdo');
-  const vocabulary = await vocabularyFrom({
-    ctx, gateway: api.gateway, asOf: DEMO_NOW, authorisedProjectIds: authorised,
-  });
-  const first = vocabulary.projects[0];
-  const demo = knowledgeDemo(authorised, first?.id ?? authorised[0] ?? 'prj-001');
-  knowledge = demo.registry;
-  return knowledge;
+  knowledgeBuild ??= (async () => {
+    const { ctx, authorised } = await buildPersonaState('exec.cdo');
+    const vocabulary = await vocabularyFrom({
+      ctx, gateway: api.gateway, asOf: DEMO_NOW, authorisedProjectIds: authorised,
+    });
+    const first = vocabulary.projects[0];
+    const demo = knowledgeDemo(authorised, first?.id ?? authorised[0] ?? 'prj-001');
+    const registry = demo.registry;
+
+    // Wall time again: an access token cached against a frozen clock is cached for ever, and the
+    // first write after an hour would fail on an expired credential.
+    const stores = durableStores(process.env, elapsing);
+    if (stores === null) {
+      durability = {
+        durable: false,
+        detail: 'No durable store is configured, so this process keeps uploads in memory only and '
+          + 'loses them when it restarts. Uploading is refused rather than accepted and lost.',
+      };
+    } else {
+      await registry.useDurableStores(stores);
+      try {
+        await registry.hydrate();
+        durability = { durable: true, detail: 'Uploads are written through to durable storage.' };
+      } catch (e) {
+        /*
+         * A failed hydrate is not a failed start.
+         *
+         * The governed portfolio needs no storage, so every executive surface and every question
+         * still works. What must not happen is an upload being accepted into a registry that could
+         * not read what was already there — it would be reported as ingested, and it would be
+         * missing content it should have superseded or conflicted with. So the process serves, and
+         * ingestion is closed until storage answers.
+         */
+        durability = {
+          durable: false,
+          detail: `Durable storage did not answer, so uploading is closed: ${
+            e instanceof Error ? e.message : 'unknown failure'}`,
+        };
+      }
+    }
+
+    knowledge = registry;
+    return registry;
+  })();
+  return knowledgeBuild;
 }
 
-async function sessionFor(request: RouteRequest): Promise<Session | null> {
-  const token = request.bearer;
-  if (token === null) return null;
-  const existing = sessions.get(token);
-  if (existing !== undefined) return existing;
-  return null;
+/**
+ * Resolves the caller, or nothing.
+ *
+ * The persona comes out of the **signed token** and is never read from the request body or the query
+ * string on any route but `/api/session`, where it is what the access code is being exchanged for.
+ * That is what makes authorization ordering correct: identity is established from something the
+ * server signed, and only then is scope resolved from that identity.
+ */
+async function callerFor(request: RouteRequest): Promise<Session | null> {
+  const outcome = access.authenticate(request.bearer);
+  if (!outcome.ok) return null;
+  const caller: Caller = outcome.caller;
+  if (!(caller.persona in PERSONAS)) return null;
+  const state = await personaState(caller.persona);
+  return { ...state, persona: caller.persona, callerId: caller.callerId };
 }
+
+/** The refusal a caller sees when they have no valid session. */
+const unauthorised: RouteResponse = {
+  status: 401,
+  body: {
+    error: 'unauthenticated',
+    detail: 'This API requires a session. Exchange the demo access code at POST /api/session.',
+  },
+};
+
+const rateLimited: RouteResponse = {
+  status: 429,
+  body: {
+    error: 'rate_limited',
+    detail: 'Too many requests from this session in the last minute. Nothing was processed.',
+  },
+};
 
 const envelope = (data: unknown, extra: Record<string, unknown> = {}): RouteResponse => ({
   status: 200,
@@ -154,30 +339,60 @@ export function buildRuntime(): Runtime {
   // Session
   // -------------------------------------------------------------------------
 
+  /**
+   * Exchanges the demo access code for a signed session.
+   *
+   * This route used to hand a token to anyone who asked, which made every other route's
+   * authentication check decorative: it verified that a caller had a token, and everyone could have
+   * one. The access code is checked in constant time, the persona is checked against the closed list,
+   * and only then is a token minted — with the persona **inside the signature**, so no later request
+   * can claim a different one.
+   *
+   * The token is a bearer in a header. There is no cookie, which is what makes CSRF structurally
+   * absent rather than mitigated (ADR-0032 §6).
+   */
   runtime.route('POST', '/api/session', async (request) => {
-    const body = request.body as { persona?: unknown } | null;
+    if (!access.enabled) {
+      return {
+        status: 503,
+        body: {
+          error: 'access_not_configured',
+          detail: 'This deployment has no demo access code configured, so the API is closed. Set '
+            + 'GLDI_DEMO_ACCESS_CODE to open it.',
+        },
+      };
+    }
+
+    const body = request.body as { persona?: unknown; accessCode?: unknown } | null;
+    if (!access.verifyCode(body?.accessCode)) {
+      /*
+       * One refusal for a wrong code and for an unknown persona alike, and no hint which it was.
+       * Distinguishing them turns this route into an oracle for enumerating valid personas, and
+       * nobody legitimate needs to know which half they got wrong.
+       */
+      return { status: 401, body: { error: 'access_denied', detail: 'The access code was not accepted.' } };
+    }
     const persona = typeof body?.persona === 'string' ? body.persona : 'exec.cdo';
-    if (!(persona in PERSONAS)) return notFound;
+    if (!(persona in PERSONAS)) {
+      return { status: 401, body: { error: 'access_denied', detail: 'The access code was not accepted.' } };
+    }
 
-    const { ctx, authorised } = await buildSession(persona);
-    const discovered = await vocabularyFrom({
-      ctx, gateway: api.gateway, asOf: DEMO_NOW, authorisedProjectIds: authorised,
-    });
-    const vocabulary: PlannerVocabulary = { ...discovered, accounts: [], customers: [] };
-
-    // The bearer is the demo session id. There is no cookie, which is what makes CSRF structurally
-    // absent rather than mitigated (ADR-0032 §6).
-    const token = ctx.auth.sessionId;
-    sessions.set(token, { persona, ctx, authorised, vocabulary });
+    const state = await personaState(persona);
+    const issued = access.issue(persona);
+    const vocabulary = state.vocabulary;
 
     return envelope({
-      token,
+      token: issued.token,
       persona,
-      authorisedProjectCount: authorised.length,
+      expiresAt: new Date(issued.caller.expiresAtMs).toISOString(),
+      authorisedProjectCount: state.authorised.length,
+      // Whether an upload made in this session will still be here tomorrow. Surfaced on the session
+      // rather than discovered at the receipt, so the surface can say so before anyone chooses a file.
+      knowledgeDurable: durability.durable,
       filters: {
-        regions: discovered.regions,
-        industries: discovered.industries,
-        deliveryGroups: discovered.deliveryGroups,
+        regions: vocabulary.regions,
+        industries: vocabulary.industries,
+        deliveryGroups: vocabulary.deliveryGroups,
       },
     });
   });
@@ -187,8 +402,9 @@ export function buildRuntime(): Runtime {
   // -------------------------------------------------------------------------
 
   runtime.route('POST', '/api/ask', async (request) => {
-    const session = await sessionFor(request);
-    if (session === null) return notFound;
+    const session = await callerFor(request);
+    if (session === null) return unauthorised;
+    if (!askLimit.allow(session.callerId, 'ask')) return rateLimited;
 
     const body = request.body as {
       question?: unknown; state?: unknown; narrate?: unknown;
@@ -200,6 +416,7 @@ export function buildRuntime(): Runtime {
     const tools = new GatewayToolPort(
       session.ctx, api.gateway, DEMO_NOW, session.authorised, registry,
     );
+
 
     /*
      * Narration is opt-in per request and the provider is not.
@@ -217,7 +434,29 @@ export function buildRuntime(): Runtime {
       })
       : undefined;
 
+    const registryForAudit = await knowledgeRegistry();
     const answer = await askWithPlan(question, {
+      ...(planningPort === null ? {} : { planning: planningPort }),
+      /*
+       * Step 14 finally has a caller in the deployed product.
+       *
+       * The provider is read as a **thunk**, evaluated at audit time rather than passed by value,
+       * so the record shows what the router actually decided for this request — including a refusal
+       * to call an external model, which is the decision most worth having a record of.
+       */
+      auditAs: {
+        persona: session.persona,
+        provider: () => {
+          const d = narration?.lastDecision()?.decision ?? null;
+          return {
+            providerId: d?.providerId ?? null,
+            model: d?.model ?? null,
+            outcome: d?.outcome ?? null,
+            policy: d?.policy.code ?? null,
+          };
+        },
+        durable: registryForAudit.stores.audit,
+      },
       ctx: session.ctx,
       tools,
       asOf: DEMO_NOW,
@@ -237,6 +476,9 @@ export function buildRuntime(): Runtime {
       why: answer.response.why,
       scopeLine: answer.scopeLine,
       plan: answer.plan,
+      // Disclosure, not diagnostics: a reader is entitled to know whether the grammar resolved their
+      // question or a model proposed an interpretation that the validator then accepted.
+      planOrigin: answer.plan?.origin ?? null,
       recognised: answer.recognised,
       answerability: answer.answerability,
       evidence: answer.evidence,
@@ -275,10 +517,14 @@ export function buildRuntime(): Runtime {
   // -------------------------------------------------------------------------
 
   runtime.route('GET', '/api/sources', async (request) => {
-    const session = await sessionFor(request);
-    if (session === null) return notFound;
+    const session = await callerFor(request);
+    if (session === null) return unauthorised;
     const registry = await knowledgeRegistry();
     return envelope({
+      durability,
+      // Named on the response rather than left to be inferred from a status: a reader who is looking
+      // at a shorter conflict register than they expected is entitled to know why it is shorter.
+      legacyIncomplete: registry.legacyIncompleteCount(),
       sources: registry.sources().map((s) => ({
         ...s,
         meaning: registry.statusMeaning(s.status as never),
@@ -291,13 +537,39 @@ export function buildRuntime(): Runtime {
   });
 
   runtime.route('GET', '/api/sources/:id/verify', async (request) => {
-    const session = await sessionFor(request);
-    if (session === null) return notFound;
+    const session = await callerFor(request);
+    if (session === null) return unauthorised;
     const registry = await knowledgeRegistry();
     const id = request.query['id'];
     if (id === undefined) return notFound;
     const verification = registry.verify(id);
     return verification === null ? notFound : envelope(verification);
+  });
+
+  /**
+   * The caller's own answer lineage, read back.
+   *
+   * **Narrowed to the caller before a row is returned.** `SECURITY_MODEL.md` §4.2 says every read is
+   * computed over the resolved set and the audit log is a read like any other — an auditor granted
+   * one business unit has no more business reading another's audit rows than its projects. Here the
+   * resolved set is the caller themselves: this route answers "what did *I* ask, and how was it
+   * answered", which is what a person needs to check an answer they were given.
+   *
+   * The lineage carries no prose. The question is a digest and claims are identifiers, so this route
+   * cannot be used to read back what anybody's answer actually said.
+   */
+  runtime.route('GET', '/api/audit', async (request) => {
+    const session = await callerFor(request);
+    if (session === null) return unauthorised;
+    const registry = await knowledgeRegistry();
+    const recent = await registry.stores.audit.recent(200);
+    const actorId = String(session.ctx.auth.actorId);
+    const mine = recent.filter((r) => r['actorId'] === actorId);
+    return envelope({
+      durable: durability.durable,
+      count: mine.length,
+      events: mine.slice(-25).reverse(),
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -318,14 +590,27 @@ export function buildRuntime(): Runtime {
    * bytes and removes the parser entirely.
    */
   runtime.route('POST', '/api/ingest/profile', (request) => {
-    const body = request.body as { fileName?: unknown; contentBase64?: unknown } | null;
-    if (typeof body?.contentBase64 !== 'string' || typeof body.fileName !== 'string') {
-      return Promise.resolve({ status: 400, body: { error: 'malformed_request' } });
-    }
     return (async () => {
-      const session = await sessionFor(request);
-      if (session === null) return notFound;
+      /*
+       * Authentication first, and body validation second — the order matters.
+       *
+       * These two routes used to check the body shape before the caller, so an anonymous request
+       * with a malformed body got `400 malformed_request` and one with a well-formed body got `401`.
+       * The difference is small and it is still an oracle: it tells an unauthenticated caller that
+       * the route exists, what shape it wants, and when they have guessed that shape correctly. §12
+       * asks for the request to be rejected *before any work is done*, and reading the body counts.
+       */
+      const session = await callerFor(request);
+      if (session === null) return unauthorised;
+      if (!ingestLimit.allow(session.callerId, 'ingest')) return rateLimited;
+
+      const body = request.body as { fileName?: unknown; contentBase64?: unknown } | null;
+      if (typeof body?.contentBase64 !== 'string' || typeof body.fileName !== 'string') {
+        return { status: 400, body: { error: 'malformed_request' } };
+      }
       const bytes = fromBase64(body.contentBase64 as string);
+      const oversize = refuseOversize(bytes);
+      if (oversize !== null) return oversize;
       try {
         const sheet = profileUpload(bytes, body.fileName as string);
         return envelope({
@@ -368,17 +653,25 @@ export function buildRuntime(): Runtime {
    * (ADR-0035 §4).
    */
   runtime.route('POST', '/api/ingest/structured', (request) => {
-    const body = request.body as {
-      fileName?: unknown; contentBase64?: unknown; sourceName?: unknown;
-      identityField?: unknown; periodField?: unknown; fields?: unknown;
-    } | null;
-    if (typeof body?.contentBase64 !== 'string' || typeof body.fileName !== 'string'
-      || typeof body.identityField !== 'string') {
-      return Promise.resolve({ status: 400, body: { error: 'malformed_request' } });
-    }
     return (async () => {
-      const session = await sessionFor(request);
-      if (session === null) return notFound;
+      // Caller before body, for the reason given on the profile route above.
+      const session = await callerFor(request);
+      if (session === null) return unauthorised;
+      if (!ingestLimit.allow(session.callerId, 'ingest')) return rateLimited;
+      const closed = await refuseWhenNotDurable();
+      if (closed !== null) return closed;
+
+      const body = request.body as {
+        fileName?: unknown; contentBase64?: unknown; sourceName?: unknown;
+        identityField?: unknown; periodField?: unknown; fields?: unknown;
+      } | null;
+      if (typeof body?.contentBase64 !== 'string' || typeof body.fileName !== 'string'
+        || typeof body.identityField !== 'string') {
+        return { status: 400, body: { error: 'malformed_request' } };
+      }
+      const bytes = fromBase64(body.contentBase64 as string);
+      const oversize = refuseOversize(bytes);
+      if (oversize !== null) return oversize;
 
       const mapping = readMapping(
         body.identityField as string,
@@ -421,7 +714,7 @@ export function buildRuntime(): Runtime {
           sourceId,
           sourceName: displayName,
           fileName: body.fileName as string,
-          bytes: fromBase64(body.contentBase64 as string),
+          bytes,
           mapping,
           identity: await knowledgeDemoIdentity(),
           registry: registry.authority,
@@ -435,6 +728,18 @@ export function buildRuntime(): Runtime {
         registry.addReceipt(sourceId, result.receipt);
         registry.addObservations(result.observations);
         registry.addStaged(result.staged);
+        registry.retainOriginal(sourceId, result.receipt.fingerprint, bytes, uploadContentType(bytes));
+
+        /*
+         * Commit before reporting (§9).
+         *
+         * The receipt is the product's promise that the upload landed. Returning it while the writes
+         * were still in flight would make that promise true only until the next cold start — which is
+         * precisely the failure this release was opened to close, and it would have been reported as
+         * a success on the way in.
+         */
+        const failures = await registry.flush();
+        if (failures.length > 0) return commitFailed(failures);
 
         return envelope({
           receipt: result.receipt,
@@ -459,8 +764,11 @@ export function buildRuntime(): Runtime {
   }, true);
 
   runtime.route('POST', '/api/ingest/document', async (request) => {
-    const session = await sessionFor(request);
-    if (session === null) return notFound;
+    const session = await callerFor(request);
+    if (session === null) return unauthorised;
+    if (!ingestLimit.allow(session.callerId, 'ingest')) return rateLimited;
+    const closed = await refuseWhenNotDurable();
+    if (closed !== null) return closed;
     const body = request.body as {
       fileName?: unknown; contentBase64?: unknown; projectId?: unknown; documentClass?: unknown;
       statedVersion?: unknown;
@@ -468,6 +776,9 @@ export function buildRuntime(): Runtime {
     if (typeof body?.contentBase64 !== 'string' || typeof body.fileName !== 'string') {
       return { status: 400, body: { error: 'malformed_request' } };
     }
+    const bytes = fromBase64(body.contentBase64);
+    const oversize = refuseOversize(bytes);
+    if (oversize !== null) return oversize;
     const projectId = typeof body.projectId === 'string' ? body.projectId : null;
     // A plan may narrow the caller's scope and never widen it, and neither may an upload: a document
     // cannot be associated with a project the uploader is not authorised for.
@@ -483,7 +794,7 @@ export function buildRuntime(): Runtime {
     const result = ingestDocument({
       sourceId,
       fileName: body.fileName,
-      bytes: fromBase64(body.contentBase64),
+      bytes,
       title: null,
       documentClass: typeof body.documentClass === 'string'
         ? body.documentClass as never : 'OTHER',
@@ -498,6 +809,15 @@ export function buildRuntime(): Runtime {
       index: registry.index,
     });
     registry.addReceipt(sourceId, result.receipt);
+    // `ingestDocument` has already put the version in the in-memory index; this is what makes it
+    // durable, so a restart rebuilds the retrieval corpus rather than losing it.
+    registry.indexDocument(result.version);
+    const retained = registry.retainOriginal(
+      sourceId, result.version.versionId, bytes, uploadContentType(bytes),
+    );
+
+    const failures = await registry.flush();
+    if (failures.length > 0) return commitFailed(failures);
 
     return envelope({
       receipt: result.receipt,
@@ -506,10 +826,83 @@ export function buildRuntime(): Runtime {
       pageCount: result.version.pageCount,
       completeness: result.version.completeness,
       unreadable: result.version.unreadable,
+      originalRetainedAt: retained,
     });
   }, true);
 
   return runtime;
+}
+
+/**
+ * Refuses an upload larger than the parse ceiling (§15).
+ *
+ * Before any parser sees the bytes. The parsers are bounded individually — entry counts, inflate
+ * budgets, row caps — but a ceiling that only exists inside them is a ceiling that has to be
+ * re-established in every one, including the next one somebody adds.
+ */
+function refuseOversize(bytes: Uint8Array): RouteResponse | null {
+  if (bytes.length <= MAX_UPLOAD_BYTES) return null;
+  return {
+    status: 413,
+    body: {
+      error: 'upload_too_large',
+      detail: `This file is ${String(Math.round(bytes.length / 1024))} KiB. The limit is `
+        + `${String(MAX_UPLOAD_BYTES / 1024 / 1024)} MiB and nothing was parsed.`,
+    },
+  };
+}
+
+/**
+ * Closes ingestion when what is uploaded would not survive the process (§52).
+ *
+ * A refusal is the honest answer here and an acceptance is not. The alternative — take the file,
+ * parse it, print a receipt saying 3 detected 2 accepted, and lose all of it at the next revision —
+ * is worse than being unable to upload, because the person has been told the opposite of what
+ * happened and has no way to find out.
+ */
+async function refuseWhenNotDurable(): Promise<RouteResponse | null> {
+  /*
+   * Building the registry is what *determines* durability, so it has to happen first.
+   *
+   * Reading the flag without this returned "Durable storage has not been initialised yet" — the
+   * initial value — on any instance whose first request was an upload, which is every cold instance a
+   * person actually uses. The check was answering a question nobody had asked yet, and refusing a
+   * perfectly durable deployment.
+   */
+  await knowledgeRegistry();
+  if (durability.durable) return null;
+  return {
+    status: 503,
+    body: { error: 'ingestion_unavailable', detail: durability.detail },
+  };
+}
+
+/** A receipt is never returned for content that did not commit. */
+function commitFailed(failures: readonly string[]): RouteResponse {
+  return {
+    status: 503,
+    body: {
+      error: 'not_committed',
+      detail: 'The file was read and validated, and durable storage did not accept it. Nothing has '
+        + 'been reported as ingested, because it is not.',
+      failures,
+    },
+  };
+}
+
+/**
+ * The content type of retained bytes, decided by the bytes.
+ *
+ * Not by the filename, and not by anything the caller said: this string is stored alongside the
+ * object and would be echoed by whatever eventually serves it, so a caller who could set it could
+ * choose how a browser interprets bytes it later downloads.
+ */
+function uploadContentType(bytes: Uint8Array): string {
+  const format = detectFormat(bytes);
+  if (format === 'PDF') return 'application/pdf';
+  if (format === 'XLSX') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  if (format === 'TEXT') return 'text/plain; charset=utf-8';
+  return 'application/octet-stream';
 }
 
 /**

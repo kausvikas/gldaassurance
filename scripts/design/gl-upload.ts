@@ -152,15 +152,13 @@ export const GL_UPLOAD_RUNTIME = `
     base = BASES[index];
     return fetch(base + '/health')
       .then(function (r) { if (!r.ok) throw new Error('unhealthy'); return r.json(); })
-      .then(function () {
-        return fetch(base + '/session', {
-          method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ persona: 'exec.cdo' })
-        }).then(function (r) { return r.json(); });
-      })
-      .then(function (payload) {
-        token = payload && payload.data ? payload.data.token : null;
-        if (!token) throw new Error('no session');
+      .then(function () { return window.GLAccess.session(base); })
+      .then(function (issued) {
+        if (!issued) {
+          disable('Adding knowledge requires a signed-in session. Reload this page to sign in.');
+          return false;
+        }
+        token = issued;
         if (note) { note.textContent = 'Connected to the trusted runtime'; note.className = 'gl-badge'; }
         if (picker) picker.disabled = false;
         return true;
@@ -175,6 +173,17 @@ export const GL_UPLOAD_RUNTIME = `
       body: JSON.stringify(body)
     }).then(function (r) {
       return r.json().then(function (payload) {
+        /*
+         * A stale session is discarded rather than retried.
+         *
+         * Sessions expire. Holding on to a token the server has stopped accepting turns every later
+         * upload into an unexplained refusal, so the token goes and the message says what to do —
+         * which is the one thing an error should always do.
+         */
+        if (r.status === 401) {
+          window.GLAccess.forget(base);
+          throw new Error('This session has expired. Reload the page to sign in again.');
+        }
         if (!r.ok) throw new Error((payload && payload.detail) || 'The upload was refused.');
         return payload;
       });

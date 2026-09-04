@@ -1,8 +1,46 @@
 # PHASE_HANDOFF.md
 
-**Current state:** Phases 0–10 **model-correctness certified** · **Phase 11 COMPLETE — AI trust certification PASSED** · **Phase 12A EXECUTED in a real browser — PASSED WITH UX DEBT; DR-042 CLOSED** — 12B is next and **Phase 12 not started**
-**Last updated:** 2026-09-01 (Phase 12A — human browser and executive UX acceptance, executed in Chrome)
-**Updated by:** AI Red Team Lead · CISO / Application Security Architect · Chief Enterprise Architect · Model-Risk Officer · BOLA Specialist
+**Current state:** Phases 0–12 complete · **Phase 13 COMPLETE and FROZEN — status B, freeze with stated limitations** · **Phase 14 not started** (no scope defined; the six open findings below are its candidate inputs)
+**Last updated:** 2026-09-04 (Phase 13 — enterprise conversational intelligence, release freeze)
+**Updated by:** Chief Data Officer · CISO · Chief Enterprise Architect · CFO · Global Delivery Head
+
+> ## Phase 13 — what closed, and what did not
+>
+> **Live:** `https://gldaassurance.web.app` · Cloud Run `gldi-runtime-00012-f5z` (europe-west1).
+> The freeze record is `docs/PHASE13_RELEASE_FREEZE.md`; the rejection review is
+> `docs/PHASE13_FIVE_ROLE_REVIEW.md`; the durability evidence is
+> `docs/PHASE13_STATE_LOCATION_AUDIT.md`, measured before and after the fix.
+>
+> **Eleven P0s were found and closed during the phase. Every one was found by running the product,
+> and none by the test suite as it then stood.** The last four were invisible to a preview build, a
+> local server and a green suite: they needed a public URL, a process that restarts, and someone
+> willing to measure the same thing twice.
+>
+> ### Governance added
+>
+> ADR-0032 (trusted server runtime) · ADR-0033 (LLM provider boundary, no silent fallback) ·
+> ADR-0034 (typed query plan supersedes intent routing) · ADR-0035 (three planes, source authority
+> per concept) · ADR-0036 (knowledge ingestion and citation) · ADR-0037 (enterprise connector
+> contract, no write method) · ADR-0038 (historical-learning seam, declared and deliberately
+> unimplemented) · ADR-0039 (portfolio contract value is contractual revenue: $451.28M → $453.47M).
+>
+> ### Open, accepted, and carried forward
+>
+> | # | Finding | Severity | Owner for the next phase |
+> | --- | --- | --- | --- |
+> | 1 | The demo access code is a shared credential, not an identity | P1 | Replace with SSO before any non-synthetic data |
+> | 2 | Audit lineage is not durable — the port exists, the assistant still writes in-memory | P1 | Wire `AuditRepository` into the assistant's audit path |
+> | 3 | Rate limiting is per-process | P2 | Acceptable while `--max-instances 3` and the $25 budget hold |
+> | 4 | Parsers are not sandboxed | P2 | Decision recorded with trigger conditions in `docs/UPLOAD_THREAT_MODEL.md` §1 |
+> | 5 | No retention or deletion path for uploaded records and blobs | P2 | Required before real data |
+> | 6 | Three sources from a pre-fix revision remain listed with lost receipts | P3 | Needs a destructive clear nobody has authorised |
+>
+> ### The lesson this phase paid for
+>
+> The suite was good at what the code *does* and silent about where the code *keeps things* and who
+> is allowed to *reach* it. Both gaps now have tests — `tests/integration/durable-knowledge.test.ts`
+> reproduces the write-ordering race against a store whose writes complete out of order, and
+> `npm run server:check` asserts every access-control path against a live socket.
 
 > ## Gate status — stated precisely
 >

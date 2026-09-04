@@ -26,7 +26,7 @@ words.
 | Authority | EVIDENCE_ONLY |
 | Data context | SANDBOX |
 | Version | 1 |
-| Verification | ingested true · retrievable true · used false → **INGESTED_NOT_USED** |
+| Verification | ingested true · retrievable true · used true → **GROUNDED** |
 
 Re-uploading identical bytes is admitted as `DUPLICATE`, not as a second version. Changed bytes
 create a new version, and the previous one is retained so an answer that cited it still resolves.

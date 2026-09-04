@@ -99,3 +99,111 @@ export const GOLDEN_TRUTH: readonly GoldenCase[] = [
     note: 'Reported-status movements: 12 downgrades and 8 upgrades.',
   },
 ];
+
+/**
+ * Facts the Assistant does not carry a claim for, checked against the governed engines directly.
+ *
+ * Two of §20's required figures — the RAG distribution and the as-sold/executed-CR/contractual
+ * relationship — are published by the Command Center and have no Assistant claim. Adding claims for
+ * them would be adding product surface to make a benchmark pass, which is the wrong way round: the
+ * benchmark should reach for the figure where the product actually publishes it.
+ *
+ * So these are read from the Command Center view and from the portfolio the engines were fed, and
+ * compared against the same frozen baseline. That makes this section a genuine cross-surface
+ * reconciliation (§21) rather than a second opinion from the same source.
+ */
+export interface GovernedFactCase {
+  readonly fact: string;
+  readonly surface: string;
+  readonly expected: string;
+  readonly note: string;
+}
+
+export const GOVERNED_FACTS: readonly GovernedFactCase[] = [
+  {
+    fact: 'rag:green',
+    surface: 'Command Center · ragDistribution',
+    expected: '38',
+    note: 'System-assessed GREEN. Distinct from *reported* GREEN, which is a management declaration.',
+  },
+  { fact: 'rag:amber', surface: 'Command Center · ragDistribution', expected: '22', note: 'System-assessed AMBER.' },
+  { fact: 'rag:red', surface: 'Command Center · ragDistribution', expected: '15', note: 'System-assessed RED.' },
+  {
+    fact: 'rag:total',
+    surface: 'Command Center · ragDistribution',
+    expected: '75',
+    note: 'The three bands account for the whole assessed population, with nothing unclassified.',
+  },
+  {
+    fact: 'economics:as-sold-contract-value',
+    surface: 'Portfolio specifications · Σ as-sold contract value',
+    expected: '$451.28M',
+    note: 'The as-sold baseline. This is the figure the built site once published under the label '
+      + '"contract value", which ADR-0039 corrected: it is a real and useful number and it is not '
+      + 'MET-PORT-001.',
+  },
+  {
+    fact: 'economics:executed-cr-delta',
+    surface: 'Contract engine · Σ executed change value delta',
+    expected: '$2.19M',
+    note: 'Executed change requests only. Pending changes are deliberately absent — there is no code '
+      + 'path by which an unexecuted change raises contractual revenue (REQ-FIN-005).',
+  },
+  {
+    fact: 'economics:contractual-value',
+    surface: 'Command Center · KPI, and Assistant · aggregate:tcv',
+    expected: '$453.47M',
+    note: 'MET-PORT-001. Must equal as-sold plus executed CR delta exactly, and must equal what the '
+      + 'Assistant answers, or the two surfaces are publishing different portfolios.',
+  },
+  {
+    fact: 'economics:reconciles',
+    surface: 'derived',
+    expected: 'true',
+    note: 'as-sold + executed CR delta = contractual value, to the cent, in decimal arithmetic. This '
+      + 'is the relationship §19 requires be verified rather than asserted.',
+  },
+  {
+    fact: 'knowledge:before',
+    surface: 'Assistant · knowledge.document, before the SOW is ingested',
+    expected: 'NOT_ANSWERABLE',
+    note: 'The acceptance-clause question, with nothing ingested. Answerable-from-nothing would be '
+      + 'the single most damaging possible result here.',
+  },
+  {
+    fact: 'knowledge:after',
+    surface: 'Assistant · knowledge.document, after the SOW is ingested',
+    expected: 'ANSWERABLE',
+    note: 'The same question, unchanged, after one document. What moved is the evidence, not the '
+      + 'model and not the question.',
+  },
+  {
+    fact: 'conflict:concept',
+    surface: 'Conflict register · concept in dispute',
+    expected: 'financial.forecastRevenue',
+    note: 'Authority is per concept, not per system: Finance governs this one, and the same two '
+      + 'sources could resolve the other way for a concept Finance does not originate.',
+  },
+  {
+    fact: 'conflict:authoritative',
+    surface: 'Conflict register · governing entry',
+    expected: '3600000',
+    note: 'Finance, which holds AUTHORITATIVE for forecast revenue on prj-002. This is the governed '
+      + 'value — the one the product will stand behind.',
+  },
+  {
+    fact: 'conflict:supplemental',
+    surface: 'Conflict register · disagreeing entry',
+    expected: '5100000',
+    note: 'An uploaded extract, 42% higher. Disclosed, never merged, never averaged, never allowed '
+      + 'to win. A last-writer-wins system would report this figure and no longer know the other '
+      + 'existed, which is how a wrong number becomes an unfalsifiable one.',
+  },
+  {
+    fact: 'authority:upload-cannot-be-authoritative',
+    surface: 'Source authority registry',
+    expected: 'SUPPLEMENTAL',
+    note: 'Whatever the upload requested. A source that could assert its own authority could promote '
+      + 'itself above Finance by sending one field (ADR-0035 §4).',
+  },
+];

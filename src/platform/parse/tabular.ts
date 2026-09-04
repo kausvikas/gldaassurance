@@ -64,7 +64,17 @@ const EXECUTION_PREFIX = /^[=+\-@\t\r]/;
  */
 export function neutraliseFormula(value: string): { readonly value: string; readonly changed: boolean } {
   if (!EXECUTION_PREFIX.test(value)) return { value, changed: false };
-  if (/^[+-]?\d/.test(value)) return { value, changed: false };
+  /*
+   * A signed number is left alone — but only when the **whole** value is one.
+   *
+   * The exemption used to be `^[+-]?\d`, which asks whether the value *starts* like a number. That
+   * let `+1+cmd|'/c calc'!A1` through untouched: it begins `+1`, so it was read as a negative-signed
+   * figure, and Excel reads it as a formula. The prefix test and the exemption were answering
+   * different questions, and the gap between them was the payload. Requiring the entire value to be
+   * digits, separators and spaces closes it while still leaving `-4820000` and `-1,234.00` as the
+   * numbers a finance export means them to be.
+   */
+  if (/^[+-][\d,. ]*\d[\d,. ]*$/.test(value)) return { value, changed: false };
   return { value: `'${value}`, changed: true };
 }
 

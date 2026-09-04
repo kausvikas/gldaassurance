@@ -16,6 +16,8 @@ import { NoProvider } from './provider.js';
 import { POC_EXTERNAL_AI_POLICY, type ExternalAiPolicy, type MaterialInventory } from './policy.js';
 import type { RoutedGeneration } from './routing.js';
 import { ProviderRouter } from './routing.js';
+import type { PlanningPort } from '../assistant/orchestrator.js';
+import { planSchemaDescription } from '../assistant/plan-validator.js';
 
 /** Builds the configured provider. Never guesses: unconfigured means `NoProvider`, loudly. */
 export function buildProvider(config: AiConfig, now: () => Instant): {
@@ -158,6 +160,51 @@ export function providerNarration(
       });
       last = routed;
       return routed.text ?? '';
+    },
+    lastDecision: () => last,
+  };
+}
+
+/**
+ * Adapts a router to `PlanningPort`.
+ *
+ * The material inventory passed here is **empty of claims**, and that is the substantive difference
+ * from narration rather than an oversight. Planning happens at step 4, before any data is read, so
+ * there is nothing yet to disclose: the model receives the question and the schema, and nothing
+ * about the portfolio. A deployment that prohibits external processing of delivery material can
+ * therefore still use a hosted model to *interpret a sentence*, because interpreting a sentence
+ * transmits only the sentence.
+ *
+ * `structuredOutput` gates it. A provider that does not reliably return JSON will produce a
+ * proposal the reader drops, and every such call is latency and money spent to reach the answer the
+ * grammar had already given.
+ */
+export function providerPlanning(
+  router: ProviderRouter,
+  provider: LLMProvider,
+): PlanningPort & { lastDecision: () => RoutedGeneration | null } {
+  let last: RoutedGeneration | null = null;
+  return {
+    async propose(question: string): Promise<string | null> {
+      if (!provider.capabilities().structuredOutput) return null;
+      const routed = await router.generate({
+        // Nothing about the portfolio is in scope yet: the question is the only material, and it is
+        // the caller's own words.
+        materialClasses: [], documentClasses: [], authorities: [],
+      }, async (p) => {
+        const response = await p.generate({
+          task: 'PLAN',
+          instruction: planSchemaDescription(),
+          claims: [],
+          caveats: [],
+          untrustedQuestion: question,
+          maxOutputTokens: 700,
+          timeoutMs: 20_000,
+        });
+        return { text: response.text, elapsedMs: response.elapsedMs };
+      });
+      last = routed;
+      return routed.text;
     },
     lastDecision: () => last,
   };

@@ -35,3 +35,41 @@ changes the `composer` badge.
 | What changed since the previous review? | `change:reported` | 20 | 20 | **PASS** |
 
 **11 of 11 golden-truth checks pass.**
+
+## Governed facts the Assistant carries no claim for
+
+The Command Center publishes the RAG distribution and the contract-value relationship; the Assistant
+has no claim for either. Reaching for the figure where the product actually publishes it makes this a
+cross-surface reconciliation rather than a second opinion from the same source — and adding claims to
+the Assistant so a benchmark could read them would be building product to make a test pass.
+
+| Fact | Surface | Expected | Actual | Result |
+| --- | --- | --- | --- | --- |
+| `rag:green` | Command Center · ragDistribution | 38 | 38 | **PASS** |
+| `rag:amber` | Command Center · ragDistribution | 22 | 22 | **PASS** |
+| `rag:red` | Command Center · ragDistribution | 15 | 15 | **PASS** |
+| `rag:total` | Command Center · ragDistribution | 75 | 75 | **PASS** |
+| `economics:as-sold-contract-value` | Portfolio specifications · Σ as-sold contract value | $451.28M | $451.28M | **PASS** |
+| `economics:executed-cr-delta` | Contract engine · Σ executed change value delta | $2.19M | $2.19M | **PASS** |
+| `economics:contractual-value` | Command Center · KPI, and Assistant · aggregate:tcv | $453.47M | $453.47M | **PASS** |
+| `economics:reconciles` | derived | true | true | **PASS** |
+| `knowledge:before` | Assistant · knowledge.document, before the SOW is ingested | NOT_ANSWERABLE | NOT_ANSWERABLE | **PASS** |
+| `knowledge:after` | Assistant · knowledge.document, after the SOW is ingested | ANSWERABLE | ANSWERABLE | **PASS** |
+| `conflict:concept` | Conflict register · concept in dispute | financial.forecastRevenue | financial.forecastRevenue | **PASS** |
+| `conflict:authoritative` | Conflict register · governing entry | 3600000 | 3600000 | **PASS** |
+| `conflict:supplemental` | Conflict register · disagreeing entry | 5100000 | 5100000 | **PASS** |
+| `authority:upload-cannot-be-authoritative` | Source authority registry | SUPPLEMENTAL | SUPPLEMENTAL | **PASS** |
+
+**14 of 14 governed-fact checks pass.**
+
+### The contract-value relationship, stated once
+
+```
+as-sold contract value      $451.28M
+executed change requests  + $2.19M
+                          ─────────
+current contractual value   $453.47M   = MET-PORT-001
+```
+
+Pending changes appear in neither line. They are `MET-FIN-011` unsecured upside, and there is no
+code path by which an unexecuted change raises contractual revenue.

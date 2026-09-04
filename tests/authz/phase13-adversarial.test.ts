@@ -28,7 +28,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import {
   GatewayToolPort, NEW_CONVERSATION, askWithPlan, planQuestion, validatePlan, vocabularyFrom,
 } from '@app';
-import type { PlannedAnswer, PlannerVocabulary } from '@app';
+import type { PlannedAnswer, PlannerVocabulary, PlanningPort } from '@app';
 import { CREDENTIAL_PATTERNS, Secret, scanForSecrets } from '@platform/secrets';
 import { DEMO_NOW, createDemoApi } from '../../scripts/security/demo-api.js';
 import { knowledgeDemo } from '../../scripts/fixtures/demo-knowledge.js';
@@ -36,7 +36,7 @@ import { knowledgeDemo } from '../../scripts/fixtures/demo-knowledge.js';
 let vocabulary: PlannerVocabulary;
 let session: { api: ReturnType<typeof createDemoApi>; ctx: never; authorised: readonly string[] };
 
-async function ask(question: string): Promise<PlannedAnswer> {
+async function ask(question: string, planning?: PlanningPort): Promise<PlannedAnswer> {
   const demo = knowledgeDemo(session.authorised, session.authorised[0] ?? 'prj-001');
   const tools = new GatewayToolPort(
     session.ctx, session.api.gateway, DEMO_NOW, session.authorised, demo.registry,
@@ -45,8 +45,19 @@ async function ask(question: string): Promise<PlannedAnswer> {
     ctx: session.ctx, tools, asOf: DEMO_NOW, scopeLabel: 'CDO',
     populationCount: session.authorised.length, vocabulary, knownMetricIds: [],
     state: NEW_CONVERSATION, knowledge: demo.registry,
+    ...(planning === undefined ? {} : { planning }),
   });
 }
+
+/** A model that always proposes whatever this test wants proposed. */
+const proposes = (payload: unknown): PlanningPort => ({
+  propose: () => Promise.resolve(
+    typeof payload === 'string' ? payload : JSON.stringify(payload),
+  ),
+});
+
+/** A question the deterministic grammar cannot resolve, so the model is actually consulted. */
+const UNGRAMMATICAL = 'zzz qqq portfolio thing please';
 
 beforeAll(async () => {
   const api = createDemoApi();
@@ -128,6 +139,132 @@ describe('the twelve adversarial requests fail safely', () => {
       vocabulary, authorisedProjectIds: session.authorised, knownMetricIds: [],
     });
     expect(verdict.ok).toBe(false);
+  });
+
+  /*
+   * The model-assisted planner, through the whole request path rather than through its parser.
+   *
+   * The two tests above prove `readProposedPlan` and `validatePlan` behave correctly when a test
+   * calls them directly. That is a different claim from "a model cannot widen scope in this
+   * product", and until these existed the second claim was untested — the orchestrator's own
+   * docstring described a model-assisted planning step that had **no caller anywhere in the
+   * codebase**. Scaffolding described as wiring is exactly the condition §24 asks about, so the
+   * planner is now wired and these run against it.
+   */
+  describe('the model-assisted planner, end to end', () => {
+    it('is not consulted at all when the grammar resolved the question', async () => {
+      let consulted = false;
+      const answer = await ask('Which projects need intervention?', {
+        propose: () => { consulted = true; return Promise.resolve('{"shape":"population.list"}'); },
+      });
+      expect(consulted).toBe(false);
+      expect(answer.plan?.origin).toBe('DETERMINISTIC');
+    });
+
+    it('cannot overturn a governed refusal', async () => {
+      /*
+       * A probability question is declined by a deterministic guard because this product does not
+       * produce probabilities. Handing that to a model would let a proposal reverse a decision the
+       * product has made — the one thing a proposal must never do — so the model is never asked.
+       */
+      let consulted = false;
+      const answer = await ask('What is the probability that Atlas fails?', {
+        propose: () => { consulted = true; return Promise.resolve('{"shape":"population.rank"}'); },
+      });
+      expect(consulted).toBe(false);
+      expect(answer.response.refusal).not.toBeNull();
+    });
+
+    it('accepts a proposal the validator accepts, and says the model proposed it', async () => {
+      const answer = await ask(UNGRAMMATICAL, proposes({ shape: 'population.rank', limit: 5 }));
+      expect(answer.plan).not.toBeNull();
+      // The disclosure matters as much as the acceptance: a plan a model proposed is a different
+      // epistemic object from one a grammar resolved, and the response says which it was.
+      expect(answer.plan?.origin).toBe('MODEL_PROPOSED');
+      expect(answer.plan?.limit).toBe(5);
+    });
+
+    it('rejects a proposal naming a project the caller is not authorised for', async () => {
+      const answer = await ask(UNGRAMMATICAL, proposes({
+        shape: 'project.health', projectId: 'prj-999',
+      }));
+      expect(answer.response.refusal).not.toBeNull();
+      expect(answer.rejections.length).toBeGreaterThan(0);
+    });
+
+    it('rejects a proposal asking for an unbounded read', async () => {
+      // A limit outside the bounds is a rejected plan, not a clamped one: clamping would answer a
+      // question nobody asked and call it the answer to the one they did.
+      const answer = await ask(UNGRAMMATICAL, proposes({ shape: 'population.rank', limit: 5_000 }));
+      expect(answer.response.refusal).not.toBeNull();
+    });
+
+    it('ignores everything in a proposal that is not in the closed vocabulary', async () => {
+      const answer = await ask(UNGRAMMATICAL, proposes({
+        shape: 'population.rank',
+        sql: 'SELECT * FROM projects',
+        fields: ['cost', 'margin'],
+        scope: 'enterprise',
+        filters: { regions: ['Europe'], secretFilter: 'everything' },
+      }));
+      const asRecord = answer.plan as unknown as Record<string, unknown>;
+      expect(asRecord['sql']).toBeUndefined();
+      expect(asRecord['fields']).toBeUndefined();
+      expect((answer.plan?.filters as unknown as Record<string, unknown>)['secretFilter'])
+        .toBeUndefined();
+    });
+
+    it('declines rather than erroring when the model returns prose, or nothing', async () => {
+      for (const payload of ['I think you should look at Atlas.', '', 'null', '{']) {
+        const answer = await ask(UNGRAMMATICAL, proposes(payload));
+        expect(answer.response.refusal).not.toBeNull();
+      }
+    });
+
+    it('translates five natural formulations the grammar cannot resolve, through the same validator', async () => {
+      /*
+       * §11's substantive test. These five are natural English an executive would actually type, and
+       * `planQuestion` returns `OUT_OF_DOMAIN` for every one of them — verified below rather than
+       * assumed, because a formulation the grammar quietly *does* handle would make the model's
+       * contribution untestable and the assertion meaningless.
+       *
+       * Each is answered from the same governed executor a deterministic plan reaches. What the model
+       * supplies is a reading of a sentence; what the product supplies is everything after that.
+       */
+      const natural = [
+        ['I need to know where we are bleeding money', 'population.rank'],
+        ['What should be on my board pack this month?', 'population.list'],
+        ['Anything I should be losing sleep over?', 'population.emergingRisk'],
+        ['Sort by badness', 'population.rank'],
+        ['Tell me about the German work', 'population.list'],
+      ] as const;
+
+      for (const [question, shape] of natural) {
+        expect(planQuestion(question, vocabulary).plan,
+          `"${question}" must be beyond the grammar for this test to mean anything`).toBeNull();
+
+        const answer = await ask(question, proposes({ shape, limit: 5 }));
+        expect(answer.plan?.shape, question).toBe(shape);
+        expect(answer.plan?.origin, question).toBe('MODEL_PROPOSED');
+        expect(answer.response.refusal ?? null, question).toBeNull();
+        // The governed executor, not a model-shaped shortcut: real claims, with provenance.
+        expect(answer.response.materialClaims.length, question).toBeGreaterThan(0);
+        expect(answer.response.materialClaims.every((c) => c.envelope !== undefined)).toBe(true);
+        // And the caller's scope still bounds it, whatever the model asked for.
+        expect(answer.plan?.limit).toBeLessThanOrEqual(50);
+      }
+    });
+
+    it('degrades to the deterministic decline when the planner throws', async () => {
+      // Not a 500. An unavailable model is not an error condition in a product whose whole design
+      // says it is not one — the grammar's answer stands and the response says the question was
+      // not understood, which is true and actionable.
+      const answer = await ask(UNGRAMMATICAL, {
+        propose: () => Promise.reject(new Error('provider exploded')),
+      });
+      expect(answer.response.refusal).not.toBeNull();
+      expect(answer.plan).toBeNull();
+    });
   });
 
   it('drops a model-proposed threshold rather than trusting it', async () => {

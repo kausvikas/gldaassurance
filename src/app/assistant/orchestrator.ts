@@ -18,20 +18,27 @@
  *
  * ## Where the model is, and is not
  *
- * It is consulted at step 4 only when the deterministic planner is unsure, and its proposal is
- * parsed into the same typed structure and put through the same validator (step 5). It is consulted
- * at step 11 to phrase an answer whose facts are already fixed. It is nowhere else. Switch it off
- * and every step still runs; the prose becomes the deterministic composer's and the response says so.
+ * It is consulted at step 4 only when the grammar could not resolve the question **and** the
+ * question was not one the product deliberately declines; its proposal is parsed into the same typed
+ * structure and put through the same validator (step 5), and the plan records `MODEL_PROPOSED` so a
+ * reader can see which it was. It is consulted at step 11 to phrase an answer whose facts are
+ * already fixed. It is nowhere else. Switch it off and every step still runs; the prose becomes the
+ * deterministic composer's and the response says so.
+ *
+ * Both consultations are optional ports supplied by the composition root, so a deployment with no
+ * provider has no planner and no narrator object in scope at all — the constraint is enforced by
+ * what exists rather than by a flag somebody has to check.
  */
 import type {
   AssistantResponse, AuthorisedToolPort, Citation, IntentId, KnowledgePort, MaterialClaim,
   NarrationPort, QueryPlan, Refusal, RefusalReason,
 } from '@contexts/ai-intelligence';
-import { describeScope } from '@contexts/ai-intelligence';
+import { describeScope, emptyPlan } from '@contexts/ai-intelligence';
 import type { Instant } from '@platform/time';
 import type { RequestContext } from '../authorization/enforcement.js';
 import { AuthorizationDenied, EnforcementPoint } from '../authorization/enforcement.js';
 import { ASSISTANT_DECLARATION } from './service.js';
+import { auditAssistantQuery } from './port.js';
 import { alternatives, deriveCaveats } from './intent.js';
 import {
   authorityOf, claimsForShape, composeShape, missingEvidence, missingRequiredForShape, whyShape,
@@ -42,7 +49,7 @@ import { POC_CALIBRATION } from './envelope.js';
 import { executePlan } from './executor.js';
 import type { PlannerVocabulary } from './planner.js';
 import { planQuestion } from './planner.js';
-import { validatePlan } from './plan-validator.js';
+import { readProposedPlan, validatePlan } from './plan-validator.js';
 import type { PlanRejection } from './plan-validator.js';
 import type { ConversationState } from './conversation.js';
 import { NEW_CONVERSATION, advance, refine } from './conversation.js';
@@ -62,8 +69,49 @@ export interface PlannedAskOptions {
   readonly knownMetricIds: readonly string[];
   readonly state?: ConversationState;
   readonly narration?: NarrationPort;
+  /**
+   * The model-assisted planner, consulted **only** when the grammar could not resolve the question.
+   *
+   * Optional, and absent in most compositions: a deployment with no provider has no planner object
+   * in scope at all, which is the same "enforced by what exists" pattern the external-AI fallback
+   * uses. What it returns is raw text, not a plan — parsing it into the typed structure and putting
+   * that structure through `validatePlan` happens here, on the trusted side, so a provider
+   * implementation cannot hand back something that skips either step.
+   */
+  readonly planning?: PlanningPort;
   readonly enforcement?: EnforcementPoint;
   readonly knowledge?: KnowledgePort;
+  /**
+   * Where this turn's lineage is written, and what to record about the caller.
+   *
+   * Optional so that a unit test asking one question does not need an audit store — but absent means
+   * **no record is written**, and a composition that answers real questions without supplying this
+   * is a composition with no lineage. `server/main.ts` supplies it; the static build script supplies
+   * it; nothing else answers a real caller.
+   */
+  readonly auditAs?: {
+    readonly persona: string;
+    /** The routing decision, read at audit time so a refused or unused provider is recorded too. */
+    readonly provider?: () => {
+      readonly providerId: string | null;
+      readonly model: string | null;
+      readonly outcome: string | null;
+      readonly policy: string | null;
+    };
+    readonly durable?: { append(record: Readonly<Record<string, unknown>>): Promise<void> };
+  };
+}
+
+/**
+ * A model asked to propose a plan.
+ *
+ * Returns the model's raw text, or `null` when no provider ran — never a `QueryPlan`. Typing it as
+ * text is the point: a port that returned a plan would be a port that could return a *valid-looking*
+ * plan, and the boundary between "the model proposed" and "the product accepted" would sit inside
+ * whatever implemented this interface rather than in `validatePlan` where it can be read.
+ */
+export interface PlanningPort {
+  propose(question: string): Promise<string | null>;
 }
 
 /**
@@ -85,9 +133,68 @@ export interface PlannedAnswer {
   readonly recognised: readonly string[];
 }
 
+/**
+ * Step 14, on **every** exit — including every refusal.
+ *
+ * `askWithPlan` is a wrapper for exactly this reason. The audit call used to be documented as step 14
+ * and written nowhere: `auditAssistantQuery` existed, was correct, and its only caller in the whole
+ * repository was the static build script — so the deployed Assistant answered questions and recorded
+ * nothing. Sprinkling a call before each of the nine `return decline(...)` statements would have
+ * fixed today's version and lost the tenth. One seam, past which nothing returns unaudited, is the
+ * only arrangement that stays true.
+ *
+ * The audit is awaited, and a failure propagates. `SECURITY_MODEL.md` §5.3 is explicit that a failure
+ * to audit fails the operation, and an answer delivered without its lineage is precisely the thing
+ * this phase was reopened to close.
+ */
 export async function askWithPlan(
   question: string, opts: PlannedAskOptions,
 ): Promise<PlannedAnswer> {
+  const outcome = await resolveAsk(question, opts);
+  if (opts.auditAs !== undefined) {
+    await auditAssistantQuery(opts.ctx, {
+      question,
+      response: outcome.answer.response,
+      trace: [...(opts.tools.trace ?? [])].map((t) => ({
+        tool: t.tool as never, decision: t.decision as never, objects: t.objects,
+      })),
+      composer: outcome.answer.response.composer,
+      detections: outcome.detections,
+      lineage: {
+        persona: opts.auditAs.persona,
+        plan: outcome.answer.plan as unknown as Readonly<Record<string, unknown>> | null,
+        planOrigin: outcome.answer.plan?.origin ?? null,
+        planValidation: outcome.planValidation,
+        planRejections: outcome.answer.rejections.map((r) => r.code),
+        sourceVersions: outcome.sourceVersions,
+        providerId: opts.auditAs.provider?.().providerId ?? null,
+        providerModel: opts.auditAs.provider?.().model ?? null,
+        providerOutcome: opts.auditAs.provider?.().outcome ?? null,
+        externalAiPolicy: opts.auditAs.provider?.().policy ?? null,
+        answerability: outcome.answer.answerability.classification,
+      },
+      ...(opts.auditAs.durable === undefined ? {} : { durable: opts.auditAs.durable }),
+    });
+  }
+  return outcome.answer;
+}
+
+/**
+ * One turn's result, plus the few facts the audit needs that the answer does not carry.
+ *
+ * Kept off `PlannedAnswer` deliberately: grounding detections and the plan-validation outcome are
+ * *lineage*, not disclosure, and putting them on the response would eventually put them on a screen.
+ */
+interface AskOutcome {
+  readonly answer: PlannedAnswer;
+  readonly detections: readonly string[];
+  readonly sourceVersions: readonly string[];
+  readonly planValidation: 'ACCEPTED' | 'REJECTED' | 'NOT_REACHED';
+}
+
+async function resolveAsk(
+  question: string, opts: PlannedAskOptions,
+): Promise<AskOutcome> {
   const state = opts.state ?? NEW_CONVERSATION;
   const enforcement = opts.enforcement ?? new EnforcementPoint();
 
@@ -106,7 +213,8 @@ export async function askWithPlan(
   }
 
   // Step 4. Planning. Deterministic, over governed vocabulary, before any data is read.
-  const planned = planQuestion(question, opts.vocabulary);
+  const grammar = planQuestion(question, opts.vocabulary);
+  const planned = await assistPlan(question, grammar, opts);
   if (planned.plan === null) {
     const reason = planned.declineReason ?? 'OUT_OF_DOMAIN';
     const [code, statement] = reason === 'MUTATION_REQUEST'
@@ -291,14 +399,30 @@ export async function askWithPlan(
   };
 
   return {
-    response,
-    plan,
-    scopeLine: describeScope(plan),
-    rejections: [],
-    answerability,
-    evidence: profile(claims),
-    state: advance(state, question, plan, execution.population),
-    recognised: planned.recognised,
+    answer: {
+      response,
+      plan,
+      scopeLine: describeScope(plan),
+      rejections: [],
+      answerability,
+      evidence: profile(claims),
+      state: advance(state, question, plan, execution.population),
+      recognised: planned.recognised,
+    },
+    detections: groundingVerdict.findings.map((f) => f.detection),
+    /*
+     * The document versions this answer actually stood on.
+     *
+     * Versions rather than document ids: a citation that named only the document would be worthless
+     * six months later, when the document has been superseded twice and nobody can tell which text
+     * the answer was true of.
+     */
+    sourceVersions: [...new Set(
+      claims.flatMap((c) => c.groundedBy
+        .filter((ref) => ref.context === 'knowledge')
+        .map((ref) => ref.entityId)),
+    )],
+    planValidation: 'ACCEPTED',
   };
 }
 
@@ -310,6 +434,63 @@ export async function askWithPlan(
  * the closest governed intent purely to select an instruction. Nothing about the answer's content
  * depends on this choice; it selects emphasis for a rewriting task whose facts are already fixed.
  */
+/**
+ * Asks the model for a plan, but only where the grammar has genuinely run out.
+ *
+ * Three conditions, all of them narrow on purpose:
+ *
+ *   - **Only `OUT_OF_DOMAIN`.** Every other decline is a *decision*: a probability question is
+ *     refused because this product does not produce probabilities, and a mutation request because it
+ *     is advisory. Handing those to a model would let it overturn a governed refusal, which is the
+ *     one thing a proposal must never be able to do. `PROJECT_NOT_NAMED` is excluded for a duller
+ *     reason: the model would guess a project, and a guessed project is a wrong answer that looks
+ *     exactly like a right one.
+ *   - **Only when a provider is configured.** With none, this returns the grammar's answer
+ *     unchanged, so the common path stays model-free, reproducible and free.
+ *   - **The proposal is parsed and validated like any other.** `readProposedPlan` drops every field
+ *     that is not in the closed vocabulary, and the result goes to `validatePlan` at step 5 exactly
+ *     as a deterministic plan does — it is not a separate, gentler path. The strongest thing a
+ *     compromised model can achieve is a read the caller was already entitled to.
+ */
+async function assistPlan(
+  question: string,
+  grammar: ReturnType<typeof planQuestion>,
+  opts: PlannedAskOptions,
+): Promise<ReturnType<typeof planQuestion>> {
+  if (grammar.plan !== null) return grammar;
+  if (opts.planning === undefined) return grammar;
+  if ((grammar.declineReason ?? 'OUT_OF_DOMAIN') !== 'OUT_OF_DOMAIN') return grammar;
+
+  /*
+   * A planner that fails is a planner that did not run, not a request that failed.
+   *
+   * The router already turns provider trouble into a decision rather than an exception, so this
+   * catch is for the seam itself — a port implementation, a timeout, a bad deployment. The product's
+   * position throughout is that an unavailable model degrades to the deterministic path and says so;
+   * a 500 here would make the model load-bearing for questions it was only ever advising on.
+   */
+  let raw: string | null;
+  try {
+    raw = await opts.planning.propose(question);
+  } catch {
+    return grammar;
+  }
+  if (raw === null || raw.trim() === '') return grammar;
+
+  /*
+   * The base is the most-constrained plan available, not a permissive one.
+   *
+   * `readProposedPlan` overlays the model's fields onto this, so every field the model does not name
+   * — or names wrongly — keeps the base's value. A base with a wide default limit or a project scope
+   * would therefore be a set of permissions granted by omission.
+   */
+  const proposed = readProposedPlan(raw, emptyPlan('population.rank'));
+  // `null` means the model produced nothing usable — which is information, not an error, and is
+  // rendered as the same decline the grammar had already reached.
+  if (proposed === null) return grammar;
+  return { ...grammar, plan: proposed };
+}
+
 function narrationIntent(plan: QueryPlan): IntentId {
   switch (plan.shape) {
     case 'population.rank':
@@ -353,8 +534,9 @@ function decline(
   classification: AnswerabilityVerdict['classification'],
   recognised: readonly string[] = [],
   rejections: readonly PlanRejection[] = [],
-): PlannedAnswer {
-  return {
+  detections: readonly string[] = [],
+): AskOutcome {
+  const answer: PlannedAnswer = {
     response: {
       question,
       intent: null,
@@ -389,6 +571,17 @@ function decline(
     // would answer about a different set than the reader is looking at.
     state,
     recognised,
+  };
+  return {
+    answer,
+    detections,
+    sourceVersions: [],
+    /*
+     * A declined turn distinguishes "the validator rejected the plan" from "no plan was ever
+     * reached". They look the same on screen and they are entirely different in an audit: one is the
+     * product refusing something it understood, the other is the product not understanding.
+     */
+    planValidation: rejections.length > 0 ? 'REJECTED' : plan === null ? 'NOT_REACHED' : 'ACCEPTED',
   };
 }
 

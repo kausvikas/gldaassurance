@@ -174,24 +174,47 @@ export const GL_ASSISTANT_RUNTIME = `
     var headers = { 'content-type': 'application/json' };
     if (token) headers.authorization = 'Bearer ' + token;
     return fetch(base + path, { method: 'POST', headers: headers, body: JSON.stringify(body) })
-      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error(String(r.status))); });
+      .then(function (r) {
+        // A session that has expired is dropped, so the next load asks for a code instead of
+        // repeating a rejection the reader cannot act on.
+        if (r.status === 401) {
+          window.GLAccess.forget(base);
+          token = null;
+          return Promise.reject(new Error('session_expired'));
+        }
+        if (r.status === 429) return Promise.reject(new Error('rate_limited'));
+        return r.ok ? r.json() : Promise.reject(new Error(String(r.status)));
+      });
   }
 
   function connect(index) {
     if (index >= BASES.length) {
       setStatus('Trusted runtime not reachable — showing a recorded run', true);
-      showOffline();
+      showOffline('NO_RUNTIME');
       return Promise.resolve(false);
     }
     base = BASES[index];
     return fetch(base + '/health', { method: 'GET' })
       .then(function (r) { if (!r.ok) throw new Error('unhealthy'); return r.json(); })
       .then(function () {
-        return post('/session', { persona: 'exec.cdo' });
+        /*
+         * Health first, then sign-in — and never the other way round.
+         *
+         * The health check is what decides whether this base is the runtime at all, and asking
+         * someone for a code before knowing that would mean prompting on a page with no server
+         * behind it, then failing anyway. \`GLAccess\` prompts only when this tab has no session.
+         */
+        return window.GLAccess.session(base);
       })
-      .then(function (payload) {
-        token = payload && payload.data ? payload.data.token : null;
-        if (!token) throw new Error('no session');
+      .then(function (issued) {
+        if (!issued) {
+          // The visitor declined to sign in. That is a choice, not a failure: the recorded run is
+          // still worth reading, and the status says why it is a recording.
+          setStatus('Not signed in — showing a recorded run', true);
+          showOffline('NOT_SIGNED_IN');
+          return false;
+        }
+        token = issued;
         setStatus('Connected to the trusted runtime', false);
         button.disabled = false;
         return true;
@@ -199,7 +222,32 @@ export const GL_ASSISTANT_RUNTIME = `
       .catch(function () { return connect(index + 1); });
   }
 
-  function showOffline() {
+  /*
+   * Two different reasons produce this state, and telling a reader the wrong one is a small lie the
+   * product has no reason to tell.
+   *
+   * \`NO_RUNTIME\` is the static preview: there is no server behind the page and nothing the reader
+   * can do about it here. \`NOT_SIGNED_IN\` is a working deployment the reader declined to enter — the
+   * runtime is right there, and the action that fixes it is reloading. Saying "this preview has no
+   * trusted runtime behind it" in the second case sends someone to run a server they do not need.
+   */
+  var OFFLINE_COPY = {
+    NO_RUNTIME: {
+      placeholder: 'Answering requires the trusted runtime, which is not deployed here',
+      body: 'This static preview has no trusted runtime behind it, so questions cannot be answered '
+        + 'live. Running the server locally makes this page live against the same engine; nothing '
+        + 'about the answers changes, because the answers were never produced here.'
+    },
+    NOT_SIGNED_IN: {
+      placeholder: 'Sign in to ask a question — reload this page to enter the demo access code',
+      body: 'The trusted runtime is running and this session is not signed in to it, so questions '
+        + 'cannot be answered live. Reload the page to enter the demo access code. Nothing about the '
+        + 'answers changes either way, because the answers were never produced in this browser.'
+    }
+  };
+
+  function showOffline(reason) {
+    var copy = OFFLINE_COPY[reason] || OFFLINE_COPY.NO_RUNTIME;
     /*
      * An input that cannot produce an answer should not invite one.
      *
@@ -209,7 +257,7 @@ export const GL_ASSISTANT_RUNTIME = `
      * rather than the reader having to discover it.
      */
     input.disabled = true;
-    input.setAttribute('placeholder', 'Answering requires the trusted runtime, which is not deployed here');
+    input.setAttribute('placeholder', copy.placeholder);
     out.textContent = '';
     /*
      * Turns first, in reverse, so \`insertBefore\` leaves them in the order they were asked — and the
@@ -220,10 +268,7 @@ export const GL_ASSISTANT_RUNTIME = `
       for (var i = recorded.turns.length - 1; i >= 0; i -= 1) render(recorded.turns[i], true);
     }
     var box = el('div', 'gl-offline');
-    box.appendChild(el('p', null,
-      'This static preview has no trusted runtime behind it, so questions cannot be answered live. '
-      + 'Running the server locally makes this page live against the same engine; nothing about the '
-      + 'answers changes, because the answers were never produced here.'));
+    box.appendChild(el('p', null, copy.body));
     var p = el('p', 'gl-note');
     p.style.marginTop = '10px';
     p.textContent = 'Below is a recorded run of the real engine, captured at build time. It is a '
@@ -364,7 +409,7 @@ export const GL_ASSISTANT_RUNTIME = `
   }
 
   function ask(question) {
-    if (!base || !token) { showOffline(); return; }
+    if (!base || !token) { showOffline(base ? 'NOT_SIGNED_IN' : 'NO_RUNTIME'); return; }
     button.disabled = true;
     setStatus('Asking…', false);
     post('/ask', { question: question, state: state, narrate: true })
@@ -375,8 +420,17 @@ export const GL_ASSISTANT_RUNTIME = `
         render(data, false);
         setStatus('Connected to the trusted runtime', false);
       })
-      .catch(function () {
-        setStatus('The trusted runtime did not answer', true);
+      .catch(function (error) {
+        // Three genuinely different situations, said differently. "Did not answer" for all three
+        // would leave a rate-limited reader waiting for a server that is working perfectly.
+        var reason = error && error.message;
+        if (reason === 'session_expired') {
+          setStatus('Session expired — reload to sign in again', true);
+        } else if (reason === 'rate_limited') {
+          setStatus('Too many questions in the last minute — nothing was processed', true);
+        } else {
+          setStatus('The trusted runtime did not answer', true);
+        }
       })
       .then(function () { button.disabled = false; input.value = ''; input.focus(); });
   }

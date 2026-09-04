@@ -64,7 +64,16 @@ export type SourceStatus =
   | 'DEGRADED'
   | 'SYNCING'
   | 'ERROR'
-  | 'MAPPING_REVIEW_REQUIRED';
+  | 'MAPPING_REVIEW_REQUIRED'
+  /**
+   * Content that reached the store without the receipt describing how it got there.
+   *
+   * Produced by a defect rather than by a workflow, and kept as a status rather than swept up,
+   * because sweeping it up is how a demo quietly stops matching the account it gives of itself. A
+   * source in this state is **excluded from governed retrieval and from conflict detection** — its
+   * rows exist and nothing will stand on them.
+   */
+  | 'LEGACY_INCOMPLETE';
 
 export const STATUS_LABEL: Readonly<Record<SourceStatus, string>> = {
   REAL_VERIFIED: 'Connected and verified',
@@ -77,6 +86,7 @@ export const STATUS_LABEL: Readonly<Record<SourceStatus, string>> = {
   SYNCING: 'Synchronising',
   ERROR: 'Error',
   MAPPING_REVIEW_REQUIRED: 'Mapping review required',
+  LEGACY_INCOMPLETE: 'Legacy incomplete — pre-durability',
 };
 
 /** What a status means for the data. Rendered, so a reader never has to infer it from a colour. */
@@ -91,6 +101,9 @@ export const STATUS_MEANING: Readonly<Record<SourceStatus, string>> = {
   SYNCING: 'A synchronisation is in progress.',
   ERROR: 'The last attempt failed. The previous known-good state is still shown, dated.',
   MAPPING_REVIEW_REQUIRED: 'The source structure changed. Ingestion is stopped until a mapping is re-approved.',
+  LEGACY_INCOMPLETE: 'Ingested before durable storage existed, so its receipt was lost and how it '
+    + 'arrived cannot be reconstructed. Not available for governed retrieval, and excluded from '
+    + 'conflict detection. Retained rather than deleted so the record of what happened stays honest.',
 };
 
 export interface SourceHealth {

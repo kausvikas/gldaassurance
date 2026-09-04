@@ -371,6 +371,19 @@ export interface AuthorisedToolPort {
   invoke(tool: AssistantToolId, args: ToolArgs): Promise<ToolResult>;
   /** The caller's resolved set. Used to reject any entity the prose names but retrieval never saw. */
   readonly authorisedProjectIds: readonly string[];
+  /**
+   * What this port actually did, for the audit record.
+   *
+   * Declared structurally rather than by importing the application's `ToolInvocation`, because this
+   * context may import no other and must not learn the application's types. Optional, because a test
+   * double is a legitimate port and should not have to keep a trace to be one — an absent trace is
+   * recorded as `none`, never as an empty success.
+   */
+  readonly trace?: readonly {
+    readonly tool: string;
+    readonly decision: string;
+    readonly objects: readonly string[];
+  }[];
 }
 
 /** Optional. When absent, the deterministic composer renders and says so. */

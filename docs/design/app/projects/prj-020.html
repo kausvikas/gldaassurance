@@ -294,6 +294,31 @@ footer.gl-foot p{max-width:78ch}
 .gl-receipt--warn{border-left-color:var(--orange)}
 
 @media (max-width:720px){ .gl-maprow{grid-template-columns:1fr} }
+
+/* The gate, in the site's own language: white panel, soft radius, orange reserved for the one action. */
+.gl-gate{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:24px;
+  background:rgba(24,26,36,.55)}
+.gl-gate__card{width:min(430px,100%);display:flex;flex-direction:column;gap:10px;padding:32px;
+  background:var(--white);border-radius:14px;
+  box-shadow:0 1px 2px rgba(24,26,36,.06),0 24px 60px rgba(24,26,36,.28)}
+.gl-gate__eyebrow{margin:0;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--steel-50)}
+.gl-gate__title{margin:0;font-size:22px;line-height:1.15;letter-spacing:-.02em;color:var(--steel-100)}
+.gl-gate__body{margin:0 0 6px;font-size:13.5px;line-height:1.55;color:var(--steel-75)}
+.gl-gate__label{margin-top:8px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--steel-50)}
+.gl-gate__input{width:100%;padding:10px 12px;font:inherit;font-size:14px;color:var(--steel-100);
+  background:var(--white);border:1px solid var(--rule-strong);border-radius:8px}
+.gl-gate__input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.gl-gate__error{margin:6px 0 0;font-size:13px;color:var(--rag-red)}
+.gl-gate__actions{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+.gl-gate__go{padding:11px 16px;font:inherit;font-size:14px;font-weight:600;color:var(--white);
+  background:var(--orange);border:0;border-radius:8px;cursor:pointer}
+.gl-gate__go:hover{background:var(--orange-deep)}
+.gl-gate__go[disabled]{opacity:.55;cursor:default}
+.gl-gate__skip{padding:8px;font:inherit;font-size:13px;color:var(--steel-50);background:none;border:0;
+  cursor:pointer;text-decoration:underline}
+.gl-gate__skip:hover{color:var(--steel-75)}
 </style>
 </head>
 <body>

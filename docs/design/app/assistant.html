@@ -294,6 +294,31 @@ footer.gl-foot p{max-width:78ch}
 .gl-receipt--warn{border-left-color:var(--orange)}
 
 @media (max-width:720px){ .gl-maprow{grid-template-columns:1fr} }
+
+/* The gate, in the site's own language: white panel, soft radius, orange reserved for the one action. */
+.gl-gate{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:24px;
+  background:rgba(24,26,36,.55)}
+.gl-gate__card{width:min(430px,100%);display:flex;flex-direction:column;gap:10px;padding:32px;
+  background:var(--white);border-radius:14px;
+  box-shadow:0 1px 2px rgba(24,26,36,.06),0 24px 60px rgba(24,26,36,.28)}
+.gl-gate__eyebrow{margin:0;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--steel-50)}
+.gl-gate__title{margin:0;font-size:22px;line-height:1.15;letter-spacing:-.02em;color:var(--steel-100)}
+.gl-gate__body{margin:0 0 6px;font-size:13.5px;line-height:1.55;color:var(--steel-75)}
+.gl-gate__label{margin-top:8px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--steel-50)}
+.gl-gate__input{width:100%;padding:10px 12px;font:inherit;font-size:14px;color:var(--steel-100);
+  background:var(--white);border:1px solid var(--rule-strong);border-radius:8px}
+.gl-gate__input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.gl-gate__error{margin:6px 0 0;font-size:13px;color:var(--rag-red)}
+.gl-gate__actions{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+.gl-gate__go{padding:11px 16px;font:inherit;font-size:14px;font-weight:600;color:var(--white);
+  background:var(--orange);border:0;border-radius:8px;cursor:pointer}
+.gl-gate__go:hover{background:var(--orange-deep)}
+.gl-gate__go[disabled]{opacity:.55;cursor:default}
+.gl-gate__skip{padding:8px;font:inherit;font-size:13px;color:var(--steel-50);background:none;border:0;
+  cursor:pointer;text-decoration:underline}
+.gl-gate__skip:hover{color:var(--steel-75)}
 </style>
 </head>
 <body>
@@ -804,6 +829,146 @@ footer.gl-foot p{max-width:78ch}
 (function () {
   'use strict';
 
+  var PERSONAS = [
+    { id: 'exec.cdo', label: 'Chief Delivery Officer — the whole portfolio' },
+    { id: 'dir.emea', label: 'Delivery Director, EMEA — the European portfolio' },
+    { id: 'dm.mobility', label: 'Delivery Manager, Mobility — a single account' }
+  ];
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined && text !== null) n.textContent = String(text);
+    return n;
+  }
+
+  function stored(base) {
+    try { return window.sessionStorage.getItem('gldi.token.' + base); } catch (e) { return null; }
+  }
+  function remember(base, token) {
+    try { window.sessionStorage.setItem('gldi.token.' + base, token); } catch (e) { /* private mode */ }
+  }
+  function forget(base) {
+    try { window.sessionStorage.removeItem('gldi.token.' + base); } catch (e) { /* private mode */ }
+  }
+
+  /**
+   * Asks for a session, prompting only when there isn't one.
+   *
+   * Resolves with a token, or with null when the visitor closes the panel — which is a legitimate
+   * choice and leaves the page in its recorded-transcript mode rather than in a broken one.
+   */
+  function session(base) {
+    var saved = stored(base);
+    if (saved) return Promise.resolve(saved);
+    return prompt_(base);
+  }
+
+  function prompt_(base) {
+    return new Promise(function (resolve) {
+      var overlay = el('div', 'gl-gate');
+      var card = el('form', 'gl-gate__card');
+      card.setAttribute('novalidate', 'novalidate');
+
+      card.appendChild(el('p', 'gl-gate__eyebrow', 'DEMO — SYNTHETIC DATA'));
+      card.appendChild(el('h2', 'gl-gate__title', 'Sign in to the trusted runtime'));
+      card.appendChild(el('p', 'gl-gate__body',
+        'Answering a question and reading a file both run on the server, so this deployment asks for '
+        + 'a demo access code before it will do either. Nothing here is real client data.'));
+
+      var personaLabel = el('label', 'gl-gate__label', 'Sign in as');
+      personaLabel.setAttribute('for', 'gl-gate-persona');
+      var select = el('select', 'gl-gate__input');
+      select.id = 'gl-gate-persona';
+      for (var i = 0; i < PERSONAS.length; i += 1) {
+        var opt = el('option', null, PERSONAS[i].label);
+        opt.value = PERSONAS[i].id;
+        select.appendChild(opt);
+      }
+
+      var codeLabel = el('label', 'gl-gate__label', 'Demo access code');
+      codeLabel.setAttribute('for', 'gl-gate-code');
+      var code = el('input', 'gl-gate__input');
+      code.id = 'gl-gate-code';
+      code.type = 'password';
+      code.autocomplete = 'off';
+      code.setAttribute('spellcheck', 'false');
+
+      var error = el('p', 'gl-gate__error');
+      error.hidden = true;
+      error.setAttribute('role', 'alert');
+
+      var actions = el('div', 'gl-gate__actions');
+      var submit = el('button', 'gl-gate__go', 'Sign in');
+      submit.type = 'submit';
+      var cancel = el('button', 'gl-gate__skip', 'Browse the recorded run instead');
+      cancel.type = 'button';
+      actions.appendChild(submit);
+      actions.appendChild(cancel);
+
+      card.appendChild(personaLabel);
+      card.appendChild(select);
+      card.appendChild(codeLabel);
+      card.appendChild(code);
+      card.appendChild(error);
+      card.appendChild(actions);
+      overlay.appendChild(card);
+      document.body.appendChild(overlay);
+      code.focus();
+
+      function close(value) {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        resolve(value);
+      }
+
+      function fail(message) {
+        error.textContent = message;
+        error.hidden = false;
+        submit.disabled = false;
+        submit.textContent = 'Sign in';
+        code.focus();
+        code.select();
+      }
+
+      cancel.addEventListener('click', function () { close(null); });
+
+      card.addEventListener('submit', function (event) {
+        event.preventDefault();
+        if (!code.value) { fail('Enter the demo access code.'); return; }
+        submit.disabled = true;
+        submit.textContent = 'Signing in…';
+        error.hidden = true;
+        fetch(base + '/session', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ persona: select.value, accessCode: code.value })
+        }).then(function (r) {
+          return r.json().then(function (payload) { return { ok: r.ok, status: r.status, payload: payload }; });
+        }).then(function (result) {
+          if (result.status === 401) { fail('That code was not accepted.'); return; }
+          if (result.status === 503) {
+            fail((result.payload && result.payload.detail) || 'This deployment is not open.');
+            return;
+          }
+          var token = result.ok && result.payload && result.payload.data
+            ? result.payload.data.token : null;
+          if (!token) { fail('The runtime did not return a session.'); return; }
+          remember(base, token);
+          close(token);
+        }).catch(function () {
+          fail('The runtime could not be reached.');
+        });
+      });
+    });
+  }
+
+  window.GLAccess = { session: session, forget: forget, personas: PERSONAS };
+}());
+</script>
+<script>
+(function () {
+  'use strict';
+
   var out = document.getElementById('gl-out');
   var form = document.getElementById('gl-askform');
   var input = document.getElementById('gl-q');
@@ -859,24 +1024,47 @@ footer.gl-foot p{max-width:78ch}
     var headers = { 'content-type': 'application/json' };
     if (token) headers.authorization = 'Bearer ' + token;
     return fetch(base + path, { method: 'POST', headers: headers, body: JSON.stringify(body) })
-      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error(String(r.status))); });
+      .then(function (r) {
+        // A session that has expired is dropped, so the next load asks for a code instead of
+        // repeating a rejection the reader cannot act on.
+        if (r.status === 401) {
+          window.GLAccess.forget(base);
+          token = null;
+          return Promise.reject(new Error('session_expired'));
+        }
+        if (r.status === 429) return Promise.reject(new Error('rate_limited'));
+        return r.ok ? r.json() : Promise.reject(new Error(String(r.status)));
+      });
   }
 
   function connect(index) {
     if (index >= BASES.length) {
       setStatus('Trusted runtime not reachable — showing a recorded run', true);
-      showOffline();
+      showOffline('NO_RUNTIME');
       return Promise.resolve(false);
     }
     base = BASES[index];
     return fetch(base + '/health', { method: 'GET' })
       .then(function (r) { if (!r.ok) throw new Error('unhealthy'); return r.json(); })
       .then(function () {
-        return post('/session', { persona: 'exec.cdo' });
+        /*
+         * Health first, then sign-in — and never the other way round.
+         *
+         * The health check is what decides whether this base is the runtime at all, and asking
+         * someone for a code before knowing that would mean prompting on a page with no server
+         * behind it, then failing anyway. `GLAccess` prompts only when this tab has no session.
+         */
+        return window.GLAccess.session(base);
       })
-      .then(function (payload) {
-        token = payload && payload.data ? payload.data.token : null;
-        if (!token) throw new Error('no session');
+      .then(function (issued) {
+        if (!issued) {
+          // The visitor declined to sign in. That is a choice, not a failure: the recorded run is
+          // still worth reading, and the status says why it is a recording.
+          setStatus('Not signed in — showing a recorded run', true);
+          showOffline('NOT_SIGNED_IN');
+          return false;
+        }
+        token = issued;
         setStatus('Connected to the trusted runtime', false);
         button.disabled = false;
         return true;
@@ -884,7 +1072,32 @@ footer.gl-foot p{max-width:78ch}
       .catch(function () { return connect(index + 1); });
   }
 
-  function showOffline() {
+  /*
+   * Two different reasons produce this state, and telling a reader the wrong one is a small lie the
+   * product has no reason to tell.
+   *
+   * `NO_RUNTIME` is the static preview: there is no server behind the page and nothing the reader
+   * can do about it here. `NOT_SIGNED_IN` is a working deployment the reader declined to enter — the
+   * runtime is right there, and the action that fixes it is reloading. Saying "this preview has no
+   * trusted runtime behind it" in the second case sends someone to run a server they do not need.
+   */
+  var OFFLINE_COPY = {
+    NO_RUNTIME: {
+      placeholder: 'Answering requires the trusted runtime, which is not deployed here',
+      body: 'This static preview has no trusted runtime behind it, so questions cannot be answered '
+        + 'live. Running the server locally makes this page live against the same engine; nothing '
+        + 'about the answers changes, because the answers were never produced here.'
+    },
+    NOT_SIGNED_IN: {
+      placeholder: 'Sign in to ask a question — reload this page to enter the demo access code',
+      body: 'The trusted runtime is running and this session is not signed in to it, so questions '
+        + 'cannot be answered live. Reload the page to enter the demo access code. Nothing about the '
+        + 'answers changes either way, because the answers were never produced in this browser.'
+    }
+  };
+
+  function showOffline(reason) {
+    var copy = OFFLINE_COPY[reason] || OFFLINE_COPY.NO_RUNTIME;
     /*
      * An input that cannot produce an answer should not invite one.
      *
@@ -894,7 +1107,7 @@ footer.gl-foot p{max-width:78ch}
      * rather than the reader having to discover it.
      */
     input.disabled = true;
-    input.setAttribute('placeholder', 'Answering requires the trusted runtime, which is not deployed here');
+    input.setAttribute('placeholder', copy.placeholder);
     out.textContent = '';
     /*
      * Turns first, in reverse, so `insertBefore` leaves them in the order they were asked — and the
@@ -905,10 +1118,7 @@ footer.gl-foot p{max-width:78ch}
       for (var i = recorded.turns.length - 1; i >= 0; i -= 1) render(recorded.turns[i], true);
     }
     var box = el('div', 'gl-offline');
-    box.appendChild(el('p', null,
-      'This static preview has no trusted runtime behind it, so questions cannot be answered live. '
-      + 'Running the server locally makes this page live against the same engine; nothing about the '
-      + 'answers changes, because the answers were never produced here.'));
+    box.appendChild(el('p', null, copy.body));
     var p = el('p', 'gl-note');
     p.style.marginTop = '10px';
     p.textContent = 'Below is a recorded run of the real engine, captured at build time. It is a '
@@ -1049,7 +1259,7 @@ footer.gl-foot p{max-width:78ch}
   }
 
   function ask(question) {
-    if (!base || !token) { showOffline(); return; }
+    if (!base || !token) { showOffline(base ? 'NOT_SIGNED_IN' : 'NO_RUNTIME'); return; }
     button.disabled = true;
     setStatus('Asking…', false);
     post('/ask', { question: question, state: state, narrate: true })
@@ -1060,8 +1270,17 @@ footer.gl-foot p{max-width:78ch}
         render(data, false);
         setStatus('Connected to the trusted runtime', false);
       })
-      .catch(function () {
-        setStatus('The trusted runtime did not answer', true);
+      .catch(function (error) {
+        // Three genuinely different situations, said differently. "Did not answer" for all three
+        // would leave a rate-limited reader waiting for a server that is working perfectly.
+        var reason = error && error.message;
+        if (reason === 'session_expired') {
+          setStatus('Session expired — reload to sign in again', true);
+        } else if (reason === 'rate_limited') {
+          setStatus('Too many questions in the last minute — nothing was processed', true);
+        } else {
+          setStatus('The trusted runtime did not answer', true);
+        }
       })
       .then(function () { button.disabled = false; input.value = ''; input.focus(); });
   }

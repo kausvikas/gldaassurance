@@ -1,8 +1,12 @@
 # Phase 13 — five-role rejection review
 
-> **DEMO — SYNTHETIC DATA.** Reviewed 2026-09-03 against the preview build at
-> `https://gldaassurance--phase13-preview-l9kii4xx.web.app`, the trusted runtime running locally,
-> and the source at commit `acf4bd4`. The frozen production URL is untouched.
+> **DEMO — SYNTHETIC DATA.** First reviewed 2026-09-03 against a preview build. **Re-reviewed
+> 2026-09-04** against the live public deployment at `https://gldaassurance.web.app` and Cloud Run
+> revision `gldi-runtime-00012-f5z`, for the release freeze.
+>
+> The second review is at the end, under *Release-freeze re-review*. It found four more P0s. The
+> first review's findings are kept unedited, because a review rewritten after the fact stops being
+> evidence.
 
 Each role was asked to **reject**, not to approve. A review that starts from "does this look right"
 finds what it expects; a review that starts from "what would make me refuse to sign this" finds what
@@ -240,6 +244,124 @@ Every one of them was found by *running* the product — typing questions into a
 benchmark from the live system, asking a real model a real question. None was found by reading the
 code, and 1483 passing tests did not catch a single one. That is the finding worth carrying out of
 this phase.
+
+---
+
+## Release-freeze re-review — 2026-09-04
+
+The first review ran against a **preview** and a **local** runtime. That is the flaw in it: the two
+conditions it could not reproduce — a public URL and a process that restarts — are precisely where
+the next four P0s were.
+
+### P0-8 · Uploaded knowledge did not survive a restart · CLOSED
+
+*Found by: Chief Data Officer, re-run against the live URL.*
+
+Upload a workbook, receive a receipt reading 3 detected / 2 accepted / 1 quarantined, force a new
+revision, ask for the same source: `404`. The source was absent from the listing, quarantine was 0,
+conflicts 0. Every one of nineteen state objects lived in process memory on a service that scales to
+zero and may run three instances with no request affinity.
+
+The receipt is the product's promise that the file landed, and it was false by the next cold start.
+Closed by Firestore + Cloud Storage behind four ports, `hydrate` on start, and — the part that
+matters — **a route that refuses to return a receipt until the write has committed**, and refuses to
+ingest at all where no durable store is configured. Measured before and after in
+`docs/PHASE13_STATE_LOCATION_AUDIT.md`.
+
+### P0-9 · Anyone on the internet could ask and upload · CLOSED
+
+*Found by: CISO, re-run against the live URL.*
+
+`POST /api/session` returned a token to anyone who asked. Tokens were sequential — `ses-000001`,
+`ses-000003` — and every route accepted them. Any visitor could run Assistant compute and upload
+files that a billed service would parse.
+
+The persona mechanism *looked* like authentication and is not: it resolves what a caller may see once
+you know who they are, and it was being asked to decide whether they get in.
+
+Closed by a demo access code exchanged server-side for an HMAC-signed, expiring token with the
+persona **inside the signature**. `npm run server:check` asserts all of it: anonymous refusal on
+every route, a wrong code refused, an unknown persona refused with the identical message, and four
+forgeries — including a narrow caller's own valid token re-pointed at the widest persona.
+
+### P0-10 · The durable write race · CLOSED
+
+*Found by: measuring after the fix, which is the only way it could have been found.*
+
+The first post-fix run reported sources listed, observations intact, quarantined rows intact,
+conflict still detected — and `NOT_INGESTED`, 0 records received. An upload writes its source
+document twice, once on registration with no receipts and once with the receipt; started
+concurrently, the store applied them in either order and the empty registration often landed last.
+
+Almost everything survived, which is what made it dangerous: the surface looked nearly right. Closed
+by a serial write queue taking thunks rather than started promises.
+`tests/integration/durable-knowledge.test.ts` reproduces it with a store whose writes complete out of
+order and fails against the old implementation.
+
+### P0-11 · A documented model-assisted planner that had no caller · CLOSED
+
+*Found by: Chief Enterprise Architect, tracing §24.*
+
+`orchestrator.ts` described a step-4 model-assisted planner "consulted when the deterministic planner
+is unsure". The planner prompt existed, `readProposedPlan` existed and was unit-tested,
+`planSchemaDescription` existed, `task: 'PLAN'` existed — and **nothing in the codebase ever called
+it**. The claim that a plan validator protects the product from a model was therefore untested at the
+level it was claimed at.
+
+Closed by wiring it, narrowly: only where the grammar returned `OUT_OF_DOMAIN`, never over a
+deliberate refusal, and always through the same validator. Seven end-to-end tests now assert what was
+previously only asserted about a parser — that a proposal naming an unauthorised project is rejected,
+that an unbounded limit is rejected rather than clamped, that a `sql` field is dropped, and that a
+planner which throws degrades to the deterministic decline rather than a 500.
+
+### Findings that were fixed but were not P0
+
+- **A CSV payload that begins with a digit.** The formula-injection exemption for signed numbers
+  tested whether a value *starts* like a number, so `+1+cmd|'/c calc'!A1` passed through untouched.
+  The prefix test and the exemption were answering different questions and the gap between them was
+  the payload.
+- **Two clocks conflated.** Session expiry and rate-limit windows were measured on the frozen demo
+  clock, so a token would never expire and a caller would be blocked for the life of the process
+  after their thirtieth question. Governed time and operational time are different things.
+- **The durability check ran before durability was determined.** Any cold instance whose first
+  request was an upload refused it as "not initialised" — which is every instance a person uses.
+- **The narrowest persona could not sign in.** Vocabulary discovery reads the Command Center, which
+  a delivery manager may not read, and the denial escaped as a 500. A denial there is an *answer* —
+  an empty portfolio-level vocabulary — not a failure.
+- **"This static preview has no trusted runtime behind it"** was shown to a reader who had simply
+  declined to sign in to a runtime that was running.
+- **A shape oracle on two ingest routes.** They validated the body before the caller, so an
+  anonymous request with a malformed body got `400 malformed_request` and one with a well-formed body
+  got `401` — which tells an unauthenticated caller when they have guessed the shape correctly.
+
+### Still open, and stated rather than closed
+
+| # | Finding | Severity | Why it is not closed |
+| --- | --- | --- | --- |
+| 1 | The access code is shared, not an identity | P1 | Anyone holding it is whichever persona they choose. Correct for a synthetic demo; a blocker for real data. `docs/REAL_GL_CONNECTOR_ONBOARDING.md` §4 lists it as a precondition. |
+| 2 | Audit lineage is not durable | P1 | `AuditRepository` is implemented and wired into `DurableStores`; the assistant still writes to the in-memory log. Declared, not done, and said so in the state audit rather than counted as complete. |
+| 3 | Rate limiting is per-process | P2 | Three instances means three times the limit. The real ceiling is `--max-instances` and the $25 budget, both set. |
+| 4 | Parsers are not sandboxed | P2 | A recorded decision with its trigger conditions, in `docs/UPLOAD_THREAT_MODEL.md` §1 — not an omission. |
+| 5 | No retention or deletion path | P2 | Uploaded records and blobs accumulate. Fine for a demo; a precondition for anything else. |
+| 6 | Three sources from the pre-fix revision are still listed | P3 | Real records of real uploads whose receipts were lost to P0-10. Clearing them needs a destructive command nobody has authorised. |
+
+### Re-review summary
+
+| Role | Verdict | P0 found | P0 open | P1 open |
+| --- | --- | --- | --- | --- |
+| Global Delivery Head / CDO | PASS | 0 | 0 | 0 |
+| Data owner (upload flow) | PASS | 1 (P0-8) | 0 | 0 |
+| CFO | PASS | 0 | 0 | 0 |
+| Chief Data Officer | PASS | 1 (P0-8) | 0 | 1 |
+| Chief Enterprise Architect | PASS | 1 (P0-11) | 0 | 0 |
+| CISO | PASS | 1 (P0-9) | 0 | 1 |
+
+**Eleven P0s across the phase. Eleven closed. None open.**
+
+Four of the last five were invisible to a preview build, a local server, and a green test suite.
+They needed a public URL, a process that restarts, and someone willing to measure the same thing
+twice. That is the finding to carry forward: this codebase's tests are good at what the code does and
+were, until this week, silent about where the code *keeps things* and who is allowed to *reach* it.
 
 ## Logo-hidden differentiation test
 

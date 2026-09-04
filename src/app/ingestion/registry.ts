@@ -28,6 +28,8 @@ import {
   POC_MATERIALITY, SourceAuthorityRegistry, STATUS_MEANING, detectConflicts,
 } from '@contexts/integration';
 import type { Instant } from '@platform/time';
+import type { DurableStores } from './ports.js';
+import { InMemoryStores } from './ports.js';
 
 /** One registered source, whatever kind it is. */
 export interface RegisteredSource {
@@ -77,12 +79,118 @@ export interface KnowledgeVerification {
   readonly lastUsedFor: string | null;
   /** Questions this source can actually answer, derived from what it supplied — never invented. */
   readonly answerableExamples: readonly string[];
-  readonly verdict: 'GROUNDED' | 'INGESTED_NOT_USED' | 'INGESTED_NOT_REACHABLE' | 'NOT_INGESTED';
+  readonly verdict:
+    | 'GROUNDED'
+    | 'INGESTED_NOT_USED'
+    | 'INGESTED_NOT_REACHABLE'
+    | 'NOT_INGESTED'
+    /** Content without a receipt. Excluded from retrieval and from conflict detection (§13). */
+    | 'LEGACY_INCOMPLETE';
 }
 
 export class SourceRegistry implements KnowledgePort {
   readonly index: KnowledgeIndex = new LexicalKnowledgeIndex();
   readonly authority = new SourceAuthorityRegistry();
+
+  /**
+   * Where everything here is actually kept.
+   *
+   * In-memory by default, which is the correct store for a test and for a single-process run. A
+   * cloud deployment supplies a durable one, and the *only* difference is this field — so the path
+   * that persists and the path that does not are the same code with a different adapter, and the
+   * tests exercise the real one.
+   */
+  #stores: DurableStores;
+
+  constructor(stores: DurableStores = new InMemoryStores()) {
+    this.#stores = stores;
+  }
+
+  get stores(): DurableStores {
+    return this.#stores;
+  }
+
+  /**
+   * Switches to durable storage, deliberately **after** the deterministic seed has been built.
+   *
+   * The fixture portfolio, its connectors and its demonstration uploads are rebuilt from code on
+   * every start, so persisting them would be redundant — and worse than redundant: `hydrate()` would
+   * then read those same observations back and append them to the ones already in memory, doubling
+   * every figure they contribute to and inventing conflicts between a record and its own copy. So
+   * seeding runs against the in-memory store, this call swaps in the durable one, and everything
+   * from here — every upload a person makes — is written through.
+   *
+   * The queue is drained first. A pending in-memory write completing against the new store would
+   * write seed content durably, which is the case this method exists to prevent.
+   */
+  async useDurableStores(stores: DurableStores): Promise<void> {
+    await this.flush();
+    this.#stores = stores;
+  }
+
+  /**
+   * Rebuilds the registry from durable storage.
+   *
+   * Called once per process, at start-up. The retrieval index is **derived**, not stored: it is
+   * rebuilt from the document versions, so there is no second copy of the corpus to fall out of step
+   * with the versions it describes.
+   */
+  async hydrate(): Promise<void> {
+    for (const source of await this.#stores.sources.listSources()) {
+      this.#sources.set(source.sourceId, source);
+      this.#restoreUploadAuthority(source);
+    }
+    for (const observation of await this.#stores.sources.listObservations()) {
+      this.#observations.push(observation);
+    }
+    for (const staged of await this.#stores.sources.listStaged()) {
+      this.#staged.push(staged);
+    }
+    for (const use of await this.#stores.sources.listUses()) {
+      this.#uses.set(use.id, use.question);
+    }
+
+    const current = new Map(
+      (await this.#stores.knowledge.listCurrent()).map((c) => [c.documentId, c.versionId]),
+    );
+    const versions = await this.#stores.knowledge.listVersions();
+    // Ordered so the version a document is currently on is admitted last and therefore wins.
+    const ordered = [...versions].sort(
+      (a, b) => (current.get(a.documentId) === a.versionId ? 1 : 0)
+        - (current.get(b.documentId) === b.versionId ? 1 : 0),
+    );
+    for (const version of ordered) this.index.add(version);
+  }
+
+  /**
+   * Re-grants an uploaded source's authority over the concepts its receipts record.
+   *
+   * Grants are **derived, not stored**, and deliberately: an authority grant read back from the same
+   * store the source was read from would be a source describing its own trust level, which is the
+   * one thing ADR-0035 §4 forbids. Re-deriving them here means the rule that an upload is
+   * `SUPPLEMENTAL` over exactly the concepts it mapped is applied by the same code on a restart as
+   * on the original upload — so a restart cannot quietly widen or narrow what a source is believed
+   * for.
+   *
+   * Without this the grants simply vanished on a cold start. Conflict detection still worked, because
+   * an observation carries its own authority, but the Knowledge & Connections authority table lost
+   * every uploaded row — a source listed as ingested, with nothing recorded about what it is trusted
+   * for.
+   */
+  #restoreUploadAuthority(source: RegisteredSource): void {
+    if (source.kind !== 'FILE_UPLOAD') return;
+    const concepts = new Set(source.receipts.flatMap((r) => r.conceptsMapped));
+    for (const concept of concepts) {
+      this.authority.register({
+        sourceId: source.sourceId,
+        concept,
+        authority: 'SUPPLEMENTAL',
+        priority: 9,
+        conflictBehaviour: 'DISCLOSE',
+        rationale: 'An uploaded extract. Evidence of what someone believes, not a system of record.',
+      });
+    }
+  }
 
   readonly #sources = new Map<string, RegisteredSource>();
   readonly #observations: ConceptObservation[] = [];
@@ -94,10 +202,12 @@ export class SourceRegistry implements KnowledgePort {
 
   register(source: RegisteredSource): void {
     const existing = this.#sources.get(source.sourceId);
-    this.#sources.set(source.sourceId, existing === undefined ? source : {
+    const merged = existing === undefined ? source : {
       ...source,
       receipts: [...existing.receipts, ...source.receipts],
-    });
+    };
+    this.#sources.set(source.sourceId, merged);
+    this.#persist(() => this.#stores.sources.putSource(merged));
   }
 
   registerConnector(connector: EnterpriseConnector, status: SourceStatus): void {
@@ -131,25 +241,99 @@ export class SourceRegistry implements KnowledgePort {
     const status = source.kind === 'FILE_UPLOAD' || source.kind === 'DOCUMENT'
       ? 'INGESTED' as const
       : source.status;
-    this.#sources.set(sourceId, {
+    const updated = {
       ...source,
       status,
       receipts: [...source.receipts, receipt],
       lastUpdated: receipt.receivedAt,
-    });
+    };
+    this.#sources.set(sourceId, updated);
+    this.#persist(() => this.#stores.sources.putSource(updated));
   }
 
   addObservations(observations: readonly ConceptObservation[]): void {
     this.#observations.push(...observations);
+    this.#persist(() => this.#stores.sources.putObservations(observations.map((o) => ({
+      // Content-addressed, so a retried request rewrites the same record rather than adding one.
+      key: `${o.sourceId}|${o.projectId}|${o.concept}|${o.period}|${o.sourceVersion}`,
+      value: o,
+    }))));
+  }
+
+  /**
+   * Admits a document version to the index **and** to durable storage.
+   *
+   * The one seam through which a document becomes retrievable. `ingestDocument` writes to the index
+   * directly, which is right for a pure function; going through here is what makes the write
+   * durable, and a caller that used the index alone would produce a document that vanished on the
+   * next cold start with a receipt saying otherwise.
+   */
+  indexDocument(version: DocumentVersion): void {
+    /*
+     * `add` is idempotent on version id and `ingestDocument` has usually already called it, so this
+     * is a no-op on the index and the write is what matters. It is not conditional on the admission
+     * being new: a re-upload of identical content is reported as a duplicate, and skipping the write
+     * on that basis would mean a document first uploaded before durable storage existed — or during
+     * a failed commit — could never become durable, however many times someone re-sent it.
+     */
+    this.index.add(version);
+    this.#persist(() => this.#stores.knowledge.putVersion(version));
+    this.#persist(() => this.#stores.knowledge.putCurrent(version.documentId, version.versionId));
+  }
+
+  /** Retains the original bytes, immutable, addressed by source and version — never by filename. */
+  retainOriginal(
+    sourceId: string, versionId: string, bytes: Uint8Array, contentType: string,
+  ): string {
+    const key = `${sourceId}/${versionId}`;
+    this.#persist(() => this.#stores.blobs.put(key, bytes, contentType).then(() => undefined));
+    return this.#stores.blobs.reference(key) ?? key;
   }
 
   addStaged(staged: readonly StagedSourceRecord[]): void {
     this.#staged.push(...staged);
+    this.#persist(() => this.#stores.sources.putStaged(
+      staged.map((s) => ({ key: s.idempotencyKey, value: s })),
+    ));
   }
 
-  /** Every recorded disagreement. Recomputed rather than cached, so it cannot go stale. */
+  /**
+   * Sources whose content arrived without the receipt that describes how (§13).
+   *
+   * Derived, never stored — a flag somebody sets is a flag somebody forgets to set. The condition is
+   * structural and exact: a file or document source holding **no receipt at all**, that nonetheless
+   * has rows or chunks attributable to it. That combination is only reachable through the write-race
+   * defect closed in this phase, and it cannot be produced by any current code path.
+   *
+   * They are marked rather than deleted. Deleting them would remove the evidence that the defect
+   * happened, and this repository's whole posture is that a demo which quietly tidies its own history
+   * is a demo nobody should believe.
+   */
+  legacyIncomplete(): ReadonlySet<string> {
+    const out = new Set<string>();
+    for (const source of this.#sources.values()) {
+      if (source.kind !== 'FILE_UPLOAD' && source.kind !== 'DOCUMENT') continue;
+      if (source.receipts.length > 0) continue;
+      const hasContent = this.#observations.some((o) => o.sourceId === source.sourceId)
+        || this.#staged.some((r) => r.sourceId === source.sourceId)
+        || this.index.current().some((v) => v.metadata.sourceId === source.sourceId);
+      if (hasContent) out.add(source.sourceId);
+    }
+    return out;
+  }
+
+  /**
+   * Every recorded disagreement. Recomputed rather than cached, so it cannot go stale.
+   *
+   * Observations from a legacy-incomplete source are excluded. A conflict is a statement that two
+   * sources disagree, and it names one of them as governing — which is a claim this product should
+   * not make on behalf of a source whose ingestion it cannot account for.
+   */
   conflicts(): readonly SourceConflict[] {
-    return detectConflicts(this.#observations, POC_MATERIALITY);
+    const excluded = this.legacyIncomplete();
+    return detectConflicts(
+      this.#observations.filter((o) => !excluded.has(o.sourceId)), POC_MATERIALITY,
+    );
   }
 
   quarantined(): readonly StagedSourceRecord[] {
@@ -177,12 +361,15 @@ export class SourceRegistry implements KnowledgePort {
     readonly projectIds: readonly string[];
     readonly limit: number;
   }): readonly EvidenceSpan[] {
+    const excluded = this.legacyIncomplete();
     const hits = this.index.retrieve({
       text: query.text,
       projectIds: query.projectIds,
       documentClasses: [],
-      limit: query.limit,
-    });
+      // Over-fetch so that dropping legacy spans does not silently shorten the result. Filtering
+      // after a limit is how a page of evidence quietly becomes half a page.
+      limit: excluded.size === 0 ? query.limit : query.limit * 2,
+    }).filter((hit) => !excluded.has(hit.citation.sourceId)).slice(0, query.limit);
     return hits.map((hit) => ({
       text: hit.chunk.text,
       documentId: hit.citation.documentId,
@@ -201,12 +388,59 @@ export class SourceRegistry implements KnowledgePort {
     const trimmed = question.slice(0, 200);
     for (const versionId of versionIds) {
       this.#uses.set(versionId, trimmed);
+      this.#persist(() => this.#stores.sources.putUse(versionId, trimmed));
       const version = this.index.get(versionId);
-      if (version !== null) this.#uses.set(version.metadata.sourceId, trimmed);
+      if (version !== null) {
+        this.#uses.set(version.metadata.sourceId, trimmed);
+        this.#persist(() => this.#stores.sources.putUse(version.metadata.sourceId, trimmed));
+      }
     }
   }
 
+  /**
+   * A durable write, ordered, awaited by the caller that needs it, and never able to crash a request.
+   *
+   * The registry's methods are synchronous because every caller of them was, and rewriting that would
+   * have rippled through the whole ingestion path. Writes are therefore queued here and `flush()` is
+   * what an ingestion route awaits before reporting a receipt, so a source is never reported
+   * committed before it is (§9). A failure is recorded and surfaced by `flush` rather than thrown
+   * into a synchronous caller that cannot handle it.
+   *
+   * ## Why the queue is serial, and why the argument is a function
+   *
+   * An upload writes the same source document twice: once when it is registered, with no receipts,
+   * and again when its receipt is attached. Started concurrently, those are two `PATCH`es to one
+   * document id, and the store is entitled to apply them in either order — so roughly half the time
+   * the empty registration landed last and overwrote the receipt. The symptom was precise and
+   * misleading: after a restart the source was listed, its observations were intact, its quarantined
+   * rows were intact, its conflict was still detected — and `Verify Knowledge` said `NOT_INGESTED`,
+   * 0 records received, because the one document describing the transfer had been overwritten by its
+   * own earlier state.
+   *
+   * Ordering cannot be restored after the fact, because a promise handed to this method has already
+   * been started. So callers pass a *thunk*, and each is invoked only once the previous write has
+   * settled. Serial rather than batched: these are single-digit writes per upload, and a batch would
+   * trade an ordering bug for a partial-commit one.
+   */
+  #tail: Promise<void> = Promise.resolve();
+  #failures: string[] = [];
+
+  #persist(work: () => Promise<void>): void {
+    this.#tail = this.#tail.then(work).catch((e: unknown) => {
+      this.#failures.push(e instanceof Error ? e.message : 'unknown durable write failure');
+    });
+  }
+
+  /** Waits for every queued write. Returns the failures, so a caller can refuse to claim success. */
+  async flush(): Promise<readonly string[]> {
+    await this.#tail;
+    const failures = [...this.#failures];
+    this.#failures = [];
+    return failures;
+  }
+
   sources(): readonly SourceSummary[] {
+    const legacy = this.legacyIncomplete();
     return this.sourceList().map((s) => {
       const documents = this.index.current().filter((v) => v.metadata.sourceId === s.sourceId);
       const receiptRecords = s.receipts.reduce((n, r) => n + r.recordsAccepted, 0);
@@ -215,7 +449,9 @@ export class SourceRegistry implements KnowledgePort {
         sourceId: s.sourceId,
         displayName: s.displayName,
         kind: s.kind,
-        status: s.status,
+        // Derived where it applies, so the row says what is true of the data rather than what was
+        // last written to a field.
+        status: legacy.has(s.sourceId) ? 'LEGACY_INCOMPLETE' as const : s.status,
         /*
          * **A source does not have an authority. A source has authority over concepts.**
          *
@@ -296,6 +532,11 @@ export class SourceRegistry implements KnowledgePort {
   // Verify Knowledge (§62)
   // -------------------------------------------------------------------------
 
+  /** How many sources are excluded from governed retrieval, so a surface can say so rather than not. */
+  legacyIncompleteCount(): number {
+    return this.legacyIncomplete().size;
+  }
+
   verify(sourceId: string): KnowledgeVerification | null {
     const source = this.#sources.get(sourceId);
     if (source === undefined) return null;
@@ -343,9 +584,18 @@ export class SourceRegistry implements KnowledgePort {
         : `${String(quarantined)} of ${String(detected)} records quarantined`,
       lastUsedFor,
       answerableExamples: examplesFor(concepts, current),
-      verdict: !ingested ? 'NOT_INGESTED'
-        : !retrievable ? 'INGESTED_NOT_REACHABLE'
-          : lastUsedFor === null ? 'INGESTED_NOT_USED' : 'GROUNDED',
+      /*
+       * Checked first, because it outranks every other reading of this source.
+       *
+       * These rows previously reported `NOT_INGESTED` — literally true (no receipt) and badly
+       * misleading, because the content plainly *had* been ingested and was still feeding a conflict
+       * register. Saying "not ingested" about data that is present is the almost-right label this
+       * vocabulary exists to prevent.
+       */
+      verdict: this.legacyIncomplete().has(sourceId) ? 'LEGACY_INCOMPLETE'
+        : !ingested ? 'NOT_INGESTED'
+          : !retrievable ? 'INGESTED_NOT_REACHABLE'
+            : lastUsedFor === null ? 'INGESTED_NOT_USED' : 'GROUNDED',
     };
   }
 
