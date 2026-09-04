@@ -348,9 +348,11 @@ const assistantBody = [
         <div class="gl-suggest">
           ${SUGGESTIONS.map((s) => `<button type="button" data-ask="${esc(s)}">${esc(s)}</button>`).join('\n          ')}
         </div>
-        <p style="margin-top:14px"><span class="gl-badge" id="gl-conn">Looking for the trusted runtime…</span></p>
+        <p style="margin-top:14px"><span class="gl-badge" id="gl-conn" role="status">Looking for the trusted runtime…</span></p>
       </div>`),
-  `  <section class="gl-band gl-band--white"><div class="gl-wrap"><div id="gl-out"></div></div></section>`,
+  `  <section class="gl-band gl-band--white"><div class="gl-wrap">
+      <div id="gl-out" aria-live="polite" aria-atomic="false"></div>
+    </div></section>`,
   band('tint', `
       <h2 class="gl-h2">What this assistant will not do</h2>
       <ul class="gl-list" style="max-width:82ch">

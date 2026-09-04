@@ -137,7 +137,22 @@ export const GL_ASSISTANT_RUNTIME = `
    * a developer running \`npm run server\` gets a live page without configuring anything. Nothing
    * else is ever tried: probing further would be this page deciding where to send a question.
    */
-  var BASES = [window.location.origin + '/api', 'http://127.0.0.1:8080/api'];
+  var LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
+  var isLocalPage = window.location.protocol === 'http:'
+    && LOCAL_HOSTS.indexOf(window.location.hostname) !== -1;
+
+  /*
+   * Same origin always; loopback **only from a page that is itself local**.
+   *
+   * The loopback entry is a developer affordance: running \`npm run server\` should make this page
+   * live without configuring anything. Shipped unconditionally it meant a page served from a public
+   * HTTPS origin attempted a connection to the *visitor's own machine* — which a reviewer would
+   * reasonably read as port-scanning behaviour, and which no visitor asked for. It is exactly the
+   * kind of convenience that is invisible in development and indefensible in production.
+   */
+  var BASES = isLocalPage
+    ? [window.location.origin + '/api', 'http://127.0.0.1:8080/api']
+    : [window.location.origin + '/api'];
   var base = null;
   var token = null;
   var state = null;
@@ -185,7 +200,25 @@ export const GL_ASSISTANT_RUNTIME = `
   }
 
   function showOffline() {
+    /*
+     * An input that cannot produce an answer should not invite one.
+     *
+     * With no runtime the Ask button is disabled, and the field beside it stayed enabled — so a
+     * keyboard user could type a question, press Enter, and receive nothing. Disabling it with a
+     * placeholder that says why is the honest version: the control tells the truth about itself
+     * rather than the reader having to discover it.
+     */
+    input.disabled = true;
+    input.setAttribute('placeholder', 'Answering requires the trusted runtime, which is not deployed here');
     out.textContent = '';
+    /*
+     * Turns first, in reverse, so \`insertBefore\` leaves them in the order they were asked — and the
+     * explanation last, so it ends up **above** them. Appending the box first put the sentence
+     * explaining what a reader was looking at underneath everything it explained.
+     */
+    if (recorded && recorded.turns) {
+      for (var i = recorded.turns.length - 1; i >= 0; i -= 1) render(recorded.turns[i], true);
+    }
     var box = el('div', 'gl-offline');
     box.appendChild(el('p', null,
       'This static preview has no trusted runtime behind it, so questions cannot be answered live. '
@@ -196,10 +229,7 @@ export const GL_ASSISTANT_RUNTIME = `
     p.textContent = 'Below is a recorded run of the real engine, captured at build time. It is a '
       + 'transcript, not a simulation: every figure in it came from the governed services.';
     box.appendChild(p);
-    out.appendChild(box);
-    if (recorded && recorded.turns) {
-      for (var i = 0; i < recorded.turns.length; i += 1) render(recorded.turns[i], true);
-    }
+    out.insertBefore(box, out.firstChild);
   }
 
   function badge(label, value, warn) {
