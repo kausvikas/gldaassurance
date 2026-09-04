@@ -88,6 +88,36 @@ export interface CommandCenterProject {
    * portfolio figure by exactly the amount an executive later has to explain away (ADR-0021, C-20).
    */
   readonly riskCauses: readonly RiskCauseInput[];
+  /**
+   * The project's position at the previous governed period, where one exists (Phase 13).
+   *
+   * **Financial position and reported status only** — not a prior health assessment. That asymmetry
+   * is a property of the data, not an omission: reported RAG is a dated management declaration the
+   * portfolio holds every one of, and forecast economics can be recomputed at an earlier period end
+   * by the same engine that produced today's. A prior *system-assessed* band has neither property —
+   * health is assessed at the current as-of and no per-period band is stored — so it is absent here
+   * and every surface that reports movement says so rather than implying it covers all three.
+   *
+   * Optional. Its absence is reported, never rendered as no change: "unchanged" and "unknown" are
+   * different claims and only one of them is reassuring.
+   */
+  readonly periodMovement?: {
+    readonly priorLabel: string;
+    readonly priorForecastRevenue: Money;
+    readonly priorEstimateAtCompletion: Money;
+    /**
+     * The **same series'** latest point, not today's snapshot.
+     *
+     * Movement must be like-for-like. The governed margin trend is sampled at period ends, and its
+     * latest point is not necessarily the current as-of date. Comparing the prior point against
+     * today's economics mixes two bases and produces a different figure from the one the Command
+     * Center reports for the same question — which is a cross-surface disagreement about a number,
+     * not a rounding difference. Both endpoints therefore come from one series.
+     */
+    readonly currentForecastRevenue: Money;
+    readonly currentEstimateAtCompletion: Money;
+    readonly priorReportedRag: string | null;
+  };
 }
 
 /**
@@ -321,6 +351,17 @@ export interface ProjectContributionDto {
   /** MET-FIN-019 */ readonly gmValueAtRisk: string;
   /** Sold margin value, so as-sold portfolio margin is aggregable on the same basis. */
   readonly soldGmValue: string;
+  /**
+   * The movement basis: two endpoints of one governed margin-trend series, plus the previous dated
+   * management declaration. `null` where the project has no earlier period. See `periodMovement`
+   * for why both endpoints come from the series rather than one from today's snapshot.
+   */
+  readonly priorForecastRevenue: string | null;
+  readonly priorEstimateAtCompletion: string | null;
+  readonly currentForecastRevenue: string | null;
+  readonly currentEstimateAtCompletion: string | null;
+  readonly priorReportedRag: string | null;
+  readonly priorPeriodLabel: string | null;
 }
 
 export interface CommandCenterView {
@@ -981,6 +1022,12 @@ export function buildCommandCenter(input: CommandCenterInput): CommandCenterView
         estimateAtCompletion: e.estimateAtCompletion.toQuantity(),
         gmValueAtRisk: e.gmValueAtRisk.toQuantity(),
         soldGmValue: e.soldGmValue.toQuantity(),
+        priorForecastRevenue: p.periodMovement?.priorForecastRevenue.toQuantity() ?? null,
+        priorEstimateAtCompletion: p.periodMovement?.priorEstimateAtCompletion.toQuantity() ?? null,
+        currentForecastRevenue: p.periodMovement?.currentForecastRevenue.toQuantity() ?? null,
+        currentEstimateAtCompletion: p.periodMovement?.currentEstimateAtCompletion.toQuantity() ?? null,
+        priorReportedRag: p.periodMovement?.priorReportedRag ?? null,
+        priorPeriodLabel: p.periodMovement?.priorLabel ?? null,
       }];
     }),
     insufficientEvidence: ranking.insufficientEvidence.map((u) => ({

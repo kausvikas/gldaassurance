@@ -30,11 +30,11 @@ import { qMul, qty } from '@platform/decimal';
 import type {
   Band, DriverId, FindingId, GroupSelector, MetricSelector, PlanFilters, PlanShape, QueryPlan,
   SortSelector, ThresholdCondition, TimeSelector, TrajectoryState,
-} from './plan.js';
+} from '@contexts/ai-intelligence';
 import {
   DEFAULT_LIMIT, DRIVER_PHRASES, EMPTY_FILTERS, INDUSTRY_SYNONYMS, LIMIT_MAX, REGION_SYNONYMS,
   emptyPlan, readLimit, requiresProject,
-} from './plan.js';
+} from '@contexts/ai-intelligence';
 
 export interface PlannerVocabulary {
   /** Governed values present in the current portfolio, supplied by the caller. */
@@ -97,12 +97,26 @@ const PROBABILITY_REQUEST =
 const SYSTEM_PROBE =
   /\b(system prompt|your prompt|your instructions|api key|anthropic key|secret|credential|token|run (?:this|arbitrary) (?:sql|javascript|code)|execute (?:this|arbitrary)|drop table|select \* from|ignore (?:all )?(?:previous|prior|above) instructions)\b/;
 
-/** Refinement openers. `"Only Automotive."` is a sentence with no verb and no question. */
+/**
+ * Refinement openers. `"Only Automotive."` is a sentence with no verb and no question.
+ *
+ * Matched against the **lowercased** question. Matching the original case meant `"Only Automotive."`
+ * — the exact phrasing an executive types — was not recognised as a refinement while `"only
+ * automotive"` was, so the second turn of every conversation silently became a fresh question.
+ */
 const REFINEMENT_OPENER =
   /^\s*(?:and\s+)?(?:now\s+)?(?:just|only|restrict(?:ed)? to|narrow to|filter to|limit to|within|in)\b/;
 
+/**
+ * A reference to the previous answer's population.
+ *
+ * `which one` and `which has` belong here: *"Which one has the greatest exposure?"* carries no
+ * filter and no shape, and reads as an unanswerable fragment unless it is understood as *"of the
+ * ones you just showed me"*. That is what an executive means, and treating it as a fresh question
+ * would rank the whole portfolio while appearing to answer about the four projects on screen.
+ */
 const BACK_REFERENCE =
-  /\b(?:of (?:those|these|them)|among (?:those|these|them)|from (?:those|these|them)|which of (?:those|these|them)|that one|it|its|the same|those|these)\b/;
+  /\b(?:of (?:those|these|them)|among (?:those|these|them)|from (?:those|these|them)|which (?:of )?(?:those|these|them|one|ones)\b|which (?:one )?(?:has|have|is|are)\b|that one|the same|those|these)\b/;
 
 /** Matched in order; the first hit wins, so more specific families are listed first. */
 const SHAPE_PATTERNS: readonly (readonly [PlanShape, RegExp])[] = [
@@ -113,10 +127,10 @@ const SHAPE_PATTERNS: readonly (readonly [PlanShape, RegExp])[] = [
   ['project.acceptanceEvidence', /\b(acceptance (?:requirements?|criteria)|do we have evidence|evidence that .* met|are the acceptance|acceptance state)\b/],
   ['project.milestones', /\b(milestone|next critical|next gate|deadline|due date|acceptance milestone)\b/],
   ['population.change', /\b(what changed|what has changed|since (?:the )?(?:last|previous) (?:review|cycle|period|month)|movement since|changed since|what moved)\b/],
-  ['population.concentration', /\b(concentrat|where is .* worst|which (?:region|vertical|industry|account|group) has the most|pattern|repeating|cluster)\b/],
+  ['population.concentration', /\b(?:concentrat\w*|where is .* worst|which (?:region|vertical|industry|account|group) has the most|pattern|repeating|cluster)\b/],
   ['population.reportedGreenRisk', /\b(reported green|reported as green|says green|claiming green|reported rag|green against the evidence|status is ahead)\b/],
-  ['population.emergingRisk', /\b(emerging risk|green at risk|green-at-risk|quietly|about to turn|not yet red|expected to deteriorat|healthy today)\b/],
-  ['population.recovering', /\b(recovering|turning around|getting better|improving projects|which projects are improving|is the recovery)\b/],
+  ['population.emergingRisk', /\b(?:emerging risk|green at risk|green-at-risk|quietly|about to turn|not yet red|expected to deteriorat\w*|healthy today)\b/],
+  ['population.recovering', /\b(?:recovering|turning around|getting better|improving projects|which projects are improving|is the recovery)\b/],
   ['population.compare', /\b(compare|versus| vs |against each other|side by side|difference between)\b/],
   ['population.aggregate', /\b(portfolio (?:margin|gm|tcv|value)|total (?:contract value|tcv|margin|exposure)|overall|in aggregate|across the portfolio|how many (?:fixed|projects)|what is the portfolio)\b/],
   ['project.recovery', /\b(recover|claw back|get back|mitigat|turn .* around|what specifically improved)\b/],
@@ -130,6 +144,48 @@ const SHAPE_PATTERNS: readonly (readonly [PlanShape, RegExp])[] = [
   ['project.health', /\b(why is|health|\brag\b|status of|explain|red|amber|green)\b/],
   ['population.list', /\b(which projects|list|show me|how many|what projects|find)\b/],
 ];
+
+/**
+ * The population form of a project shape.
+ *
+ * *"Which Green projects are expected to deteriorate over the next 60 days?"* matches the
+ * forward-risk family on `next 60 days` — correctly, it **is** a forward-risk question — and then
+ * declines, because that shape needs a project and the executive named none. Declining is the wrong
+ * answer to a question that was perfectly clear: they asked about a *population*.
+ *
+ * So a project shape resolved for a question that is plainly about many projects is replaced by its
+ * population counterpart. The substitution is recorded in `recognised` and rendered, because a
+ * reader is entitled to see that the product answered a population question rather than silently
+ * reinterpreting theirs.
+ */
+const POPULATION_COUNTERPART: Readonly<Partial<Record<PlanShape, PlanShape>>> = {
+  'project.health': 'population.list',
+  'project.margin': 'population.list',
+  'project.burn': 'population.list',
+  'project.scope': 'population.list',
+  'project.confidence': 'source.dataQuality',
+  'project.forwardRisk': 'population.emergingRisk',
+  'project.recovery': 'population.recovering',
+  'project.milestones': 'population.list',
+  'evidence.lookup': 'source.provenance',
+};
+
+/**
+ * Whether the question is about many projects rather than one.
+ *
+ * Plural subjects, counting words, and the portfolio-scoped interrogatives. Deliberately *not*
+ * "contains no project name" — a question can name no project and still be about one, which is why
+ * `"why is it red?"` remains a project question resolved through the conversation's active project.
+ */
+function isPopularPluralQuestion(text: string): boolean {
+  return /\b(which|what|list|show|find|how many)\b[^?]{0,60}\bprojects?\b/.test(text)
+    || /\bprojects\b/.test(text)
+    || /\b(portfolio|across the|anywhere|everywhere|concentrat\w*|which region|which vertical|which account)\b/.test(text);
+}
+
+function isPopulationQuestion(text: string): boolean {
+  return isPopularPluralQuestion(text);
+}
 
 /** `prj-011` and `MET-FIN-008` are matched by shape. A guessed id gets the same generic not-found. */
 const PROJECT_ID = /\b(prj-\d{3,4})\b/i;
@@ -152,18 +208,30 @@ export function planQuestion(
   }
 
   const filters = readFilters(text, vocabulary, recognised);
-  const isRefinement = REFINEMENT_OPENER.test(question) || BACK_REFERENCE.test(text);
+  const isRefinement = REFINEMENT_OPENER.test(text) || BACK_REFERENCE.test(text);
 
   const shape = readShape(text);
   const projectId = readProjectId(question, vocabulary);
   if (projectId !== null) recognised.push(`project ${projectId}`);
 
   if (shape === null) {
-    // A bare refinement — "Only Automotive." — is a legitimate turn with no shape of its own. It is
-    // returned as a filter-only result and the conversation supplies the shape from the last plan.
-    if (isRefinement && hasAnyFilter(filters)) {
+    /*
+     * A bare refinement is a legitimate turn with no shape of its own, and there are two kinds.
+     *
+     * `"Only Automotive."` narrows by filter. `"Which one has the greatest exposure?"` narrows by
+     * ordering and carries no filter at all — which is why the filter test that used to guard this
+     * branch made every fourth-turn follow-up unanswerable. Both are returned as shape-less
+     * refinements and the conversation supplies the shape from the previous plan.
+     */
+    if (isRefinement) {
       return {
-        plan: { ...emptyPlan('population.list'), filters, origin: 'CONVERSATION_REFINEMENT' },
+        plan: {
+          ...emptyPlan('population.list'),
+          filters,
+          sort: readSort(text, 'population.list'),
+          limit: readLimit(text) ?? DEFAULT_LIMIT,
+          origin: 'CONVERSATION_REFINEMENT',
+        },
         declineReason: null,
         recognised,
         isRefinement: true,
@@ -173,31 +241,36 @@ export function planQuestion(
   }
   recognised.push(`shape ${shape}`);
 
-  if (requiresProject(shape) && projectId === null) {
+  const resolvedShape = requiresProject(shape) && projectId === null && isPopulationQuestion(text)
+    ? POPULATION_COUNTERPART[shape] ?? shape
+    : shape;
+
+  if (requiresProject(resolvedShape) && projectId === null) {
     if (isRefinement) {
       return {
-        plan: { ...emptyPlan(shape), filters, origin: 'CONVERSATION_REFINEMENT' },
+        plan: { ...emptyPlan(resolvedShape), filters, origin: 'CONVERSATION_REFINEMENT' },
         declineReason: null, recognised, isRefinement: true,
       };
     }
     return { plan: null, declineReason: 'PROJECT_NOT_NAMED', recognised, isRefinement };
   }
+  if (resolvedShape !== shape) recognised.push(`population form of ${shape}`);
 
   const metricId = METRIC_ID.exec(question)?.[1]?.toUpperCase() ?? null;
   const time = readTime(text);
-  const sort = readSort(text, shape);
-  const limit = readLimit(text) ?? defaultLimitFor(shape);
-  const groupBy = readGroup(text, shape);
-  const metrics = readMetrics(text, shape);
+  const sort = readSort(text, resolvedShape);
+  const limit = readLimit(text) ?? defaultLimitFor(resolvedShape);
+  const groupBy = readGroup(text, resolvedShape, filters);
+  const metrics = readMetrics(text, resolvedShape);
 
   if (time !== 'current') recognised.push(`time ${time}`);
   if (groupBy !== null) recognised.push(`grouped by ${groupBy}`);
 
   return {
     plan: {
-      shape,
+      shape: resolvedShape,
       scope: projectId !== null ? 'project' : 'portfolio',
-      filters: withShapeImpliedFilters(shape, filters),
+      filters: withShapeImpliedFilters(resolvedShape, filters),
       metrics,
       time,
       comparison: readComparison(text),
@@ -206,7 +279,7 @@ export function planQuestion(
       groupBy,
       projectId,
       metricId,
-      evidenceQuery: shape === 'knowledge.document' || shape === 'project.acceptanceEvidence'
+      evidenceQuery: resolvedShape === 'knowledge.document' || resolvedShape === 'project.acceptanceEvidence'
         ? question.trim() : null,
       origin: isRefinement ? 'CONVERSATION_REFINEMENT' : 'DETERMINISTIC',
     },
@@ -474,7 +547,9 @@ function readSort(text: string, shape: PlanShape): SortSelector {
   return shape === 'population.rank' ? 'interventionPriority' : 'economicExposure';
 }
 
-function readGroup(text: string, shape: PlanShape): GroupSelector | null {
+function readGroup(
+  text: string, shape: PlanShape, filters: PlanFilters,
+): GroupSelector | null {
   if (shape !== 'population.concentration' && shape !== 'population.compare') return null;
   if (/\bregion|geograph|where in the world\b/.test(text)) return 'region';
   if (/\bvertical|industr|sector\b/.test(text)) return 'industry';
@@ -482,7 +557,17 @@ function readGroup(text: string, shape: PlanShape): GroupSelector | null {
   if (/\bcustomer|client\b/.test(text)) return 'customer';
   if (/\bdelivery group|delivery unit|team\b/.test(text)) return 'deliveryGroup';
   if (/\bdriver|cause|reason|pattern\b/.test(text)) return 'driver';
-  return shape === 'population.concentration' ? 'driver' : 'region';
+  /*
+   * *"Where is margin erosion concentrated?"* names the condition and asks **where**.
+   *
+   * Grouping that by driver answers "margin erosion is concentrated in margin erosion" — one bucket,
+   * no information. When the question already fixes the condition, the interesting dimension is
+   * organisational, and geography is the one an executive acts on first.
+   */
+  if (shape === 'population.concentration') {
+    return filters.drivers.length > 0 || filters.findings.length > 0 ? 'region' : 'driver';
+  }
+  return 'region';
 }
 
 function readMetrics(text: string, shape: PlanShape): readonly MetricSelector[] {

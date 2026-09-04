@@ -116,3 +116,28 @@ export {
 } from './assistant/index.js';
 
 export const APPLICATION_LAYER_STATE = 'Layering contract plus the Phase 4 MetricCalculationService. Authorised use-case surfaces land Phase 5+.' as const;
+
+// --- Phase 13: the plan-driven assistant (ADR-0034) -------------------------
+export {
+  askWithPlan, type PlannedAnswer, type PlannedAskOptions, ORCHESTRATOR_STATE,
+} from './assistant/orchestrator.js';
+export { planQuestion, type PlannerVocabulary, type PlanningResult, EMPTY_VOCABULARY } from './assistant/planner.js';
+export {
+  validatePlan, readProposedPlan, planSchemaDescription,
+  type PlanRejection, type PlanRejectionCode, type PlanVerdict,
+} from './assistant/plan-validator.js';
+export {
+  refine, advance, readState, NEW_CONVERSATION, type ConversationState,
+} from './assistant/conversation.js';
+export { executePlan, SHAPE_TOOLS, type ExecutionResult } from './assistant/executor.js';
+export {
+  classify as classifyAnswerability, profile as evidenceProfile, UNSUPPORTED_STATEMENTS,
+  type Answerability, type AnswerabilityVerdict, type EvidenceProfile,
+} from './assistant/answerability.js';
+export { vocabularyFrom } from './assistant/population-tools.js';
+export {
+  buildProvider, buildRouter, providerNarration, ProviderRouter, NoProvider,
+  AnthropicClaudeProvider, LocalLLMProvider, POC_EXTERNAL_AI_POLICY,
+  evaluateExternalTransmission, type LLMProvider, type ProviderHealth, type ProviderMetadata,
+  type RoutingDecision, type MaterialInventory, type ExternalAiPolicy,
+} from './llm/index.js';

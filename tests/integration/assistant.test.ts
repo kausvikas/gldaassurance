@@ -77,9 +77,12 @@ describe('the assistant has no write path (G-AI-3)', () => {
     expect(reachable).not.toContain('audit.events');
   });
 
-  it('exposes exactly the twelve tools ADR-0029 enumerates', () => {
-    expect(ALL_TOOLS).toHaveLength(12);
-    expect(new Set(ALL_TOOLS).size).toBe(12);
+  it('exposes exactly the tools ADR-0029 and ADR-0034 enumerate, with no duplicates', () => {
+    // Twelve from ADR-0029, eleven added by ADR-0034. The union is closed and each member maps to
+    // exactly one existing view, so none of the additions is a new data path.
+    expect(ALL_TOOLS).toHaveLength(23);
+    expect(new Set(ALL_TOOLS).size).toBe(23);
+    for (const tool of ALL_TOOLS) expect(TOOL_VIEW[tool], tool).toBeDefined();
   });
 });
 

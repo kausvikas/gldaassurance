@@ -28,11 +28,11 @@
 import type {
   Band, GroupSelector, MetricSelector, PlanShape, QueryPlan, SortSelector, TimeSelector,
   TrajectoryState,
-} from './plan.js';
+} from '@contexts/ai-intelligence';
 import {
   ALL_BANDS, ALL_COMPARISONS, ALL_DRIVERS, ALL_FINDINGS, ALL_GROUPS, ALL_METRICS, ALL_SHAPES,
   ALL_SORTS, ALL_TIMES, ALL_TRAJECTORIES, LIMIT_MAX, LIMIT_MIN, requiresProject,
-} from './plan.js';
+} from '@contexts/ai-intelligence';
 import type { PlannerVocabulary } from './planner.js';
 
 /** Stable codes. Audited, so they may not be renamed casually. */

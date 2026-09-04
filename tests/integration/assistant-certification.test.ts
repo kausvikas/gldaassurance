@@ -81,8 +81,17 @@ function requireNonEmpty<T>(items: readonly T[], what: string): readonly T[] {
 // ---------------------------------------------------------------------------
 
 describe('entry conditions hold', () => {
-  it('keeps the governed allowlist at twelve read-only tools', () => {
-    expect(ALL_TOOLS).toHaveLength(12);
+  /*
+   * Phase 13 grew the allow-list from twelve to twenty-three, and the count is still asserted.
+   *
+   * The number is not the property — closure is. But keeping a count means adding a tool has to be
+   * done in two places by someone who noticed, which is what stops the allow-list growing by
+   * accident. The properties below are the ones that actually matter, and they are unchanged: every
+   * tool maps to a declared view or the metric registry, and every one of those views is a GET.
+   */
+  it('keeps the governed allowlist closed and read-only', () => {
+    expect(ALL_TOOLS).toHaveLength(23);
+    expect(new Set(ALL_TOOLS).size).toBe(ALL_TOOLS.length);
     for (const t of ALL_TOOLS) {
       const view = TOOL_VIEW[t];
       if (view === 'REGISTRY') continue;

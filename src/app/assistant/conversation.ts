@@ -29,8 +29,8 @@
  * re-validates and re-authorises it every turn — which is strictly safer than a server session
  * store, because a forged state can only ever request reads the caller's own scope already permits.
  */
-import type { PlanFilters, QueryPlan, TimeSelector } from './plan.js';
-import { EMPTY_FILTERS, emptyPlan, requiresProject } from './plan.js';
+import type { PlanFilters, QueryPlan, TimeSelector } from '@contexts/ai-intelligence';
+import { EMPTY_FILTERS, emptyPlan, requiresProject } from '@contexts/ai-intelligence';
 
 /**
  * What survives between turns.

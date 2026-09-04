@@ -29,6 +29,7 @@
 import type { EpistemicLayer, RecordRef, ValueReference } from '@platform/provenance';
 import type { SignalState } from '@platform/explainability';
 import type { Instant } from '@platform/time';
+import type { QueryPlan } from './internal/plan.js';
 
 export const CONTEXT_ID = 'ai-intelligence' as const;
 
@@ -89,13 +90,31 @@ export type AssistantToolId =
   | 'project.recoveryOptions.get'
   | 'project.lateDetection.get'
   | 'evidence.get'
-  | 'metric.definition.get';
+  | 'metric.definition.get'
+  // Phase 13 (ADR-0034). The allow-list grows; its closure does not change. Each new tool is still
+  // exactly one bounded projection over exactly one existing `ViewId`, so none of them is a new
+  // data path and none of them authorises anything.
+  | 'portfolio.population.query'
+  | 'portfolio.population.aggregate'
+  | 'portfolio.concentration.get'
+  | 'portfolio.change.get'
+  | 'portfolio.recovery.list'
+  | 'project.milestones.get'
+  | 'project.acceptanceEvidence.get'
+  | 'projects.compare'
+  | 'knowledge.evidence.get'
+  | 'source.provenance.get'
+  | 'source.dataQuality.get';
 
 export const ALL_TOOLS: readonly AssistantToolId[] = [
   'portfolio.summary.get', 'portfolio.ranking.list', 'portfolio.reportedGreenRisk.list',
   'portfolio.systemGreenAtRisk.list', 'portfolio.segments.compare', 'project.executiveHealth.get',
   'project.marginDrivers.get', 'project.forwardRisk.get', 'project.recoveryOptions.get',
   'project.lateDetection.get', 'evidence.get', 'metric.definition.get',
+  'portfolio.population.query', 'portfolio.population.aggregate', 'portfolio.concentration.get',
+  'portfolio.change.get', 'portfolio.recovery.list', 'project.milestones.get',
+  'project.acceptanceEvidence.get', 'projects.compare', 'knowledge.evidence.get',
+  'source.provenance.get', 'source.dataQuality.get',
 ] as const;
 
 /**
@@ -110,6 +129,20 @@ export interface ToolArgs {
   readonly metricId?: string;
   readonly segmentIds?: readonly string[];
   readonly limit?: number;
+  /**
+   * The validated plan (Phase 13, ADR-0034).
+   *
+   * This is the one addition that could have re-opened what ADR-0029 closed, so it is worth being
+   * precise about why it does not. The original comment above says a tool takes "no predicate, no
+   * expression, no field list" — and a `QueryPlan` is, in effect, a predicate. The difference is
+   * that every field of it is drawn from a **closed vocabulary declared in this context**, and
+   * `validatePlan` has rejected anything outside it *before* this argument exists. So a tool still
+   * cannot be handed something it must interpret: it is handed a finite selection over values this
+   * surface already enumerates.
+   *
+   * Optional, because the twelve Phase 11 tools neither need it nor read it.
+   */
+  readonly plan?: QueryPlan;
 }
 
 // ---------------------------------------------------------------------------
@@ -336,9 +369,87 @@ export interface NarrationPort {
   }): Promise<string>;
 }
 
+/**
+ * The evidence plane, as the assistant is allowed to see it (ADR-0035 §2, ADR-0036).
+ *
+ * Declared structurally rather than by importing `@contexts/knowledge`, because this context may
+ * import no other (`forbidAllContexts: true`) — and that restriction is doing real work here, not
+ * getting in the way. The assistant must not be able to reach a document object, only the *sentences
+ * a retrieval returned and the provenance to check them*. A port typed in terms of the knowledge
+ * context's own model would have handed it the document.
+ *
+ * Note what is absent: no numeric accessor, no field extraction, no "what does the SOW say the
+ * acceptance date is" that returns a date. A document can produce a **quotation and a citation**;
+ * turning that into a governed fact is a promotion workflow this POC deliberately does not implement.
+ */
+export interface EvidenceSpan {
+  /** Untrusted document text. Data, never instruction (`SECURITY_MODEL.md` §2 B4). */
+  readonly text: string;
+  readonly documentId: string;
+  readonly versionId: string;
+  readonly title: string;
+  readonly documentClass: string;
+  readonly statedVersion: string | null;
+  /** `page 14`, or `section 3 of 9` where the parser did not preserve pages. Never inferred. */
+  readonly locationLabel: string;
+  readonly authority: string;
+  readonly dataContext: string;
+  readonly sourceId: string;
+}
+
+export interface SourceSummary {
+  readonly sourceId: string;
+  readonly displayName: string;
+  readonly kind: string;
+  readonly status: string;
+  readonly authority: string;
+  readonly dataContext: string;
+  readonly recordCount: number;
+  readonly lastUpdated: string | null;
+  readonly conflicts: number;
+  readonly isFixture: boolean;
+}
+
+export interface DataQualitySummary {
+  readonly completeness: string;
+  readonly freshness: string;
+  readonly authority: string;
+  readonly conflicts: string;
+  readonly mappingStatus: string;
+  readonly validationStatus: string;
+  readonly identityResolution: string;
+  readonly notes: readonly string[];
+}
+
+/**
+ * Optional. When absent, evidence questions answer *"no contract evidence has been indexed"* — which
+ * is the correct answer, and is the "before" half of the before/after knowledge proof (§63).
+ */
+export interface KnowledgePort {
+  retrieve(query: {
+    readonly text: string;
+    readonly projectIds: readonly string[];
+    readonly limit: number;
+  }): readonly EvidenceSpan[];
+  sources(): readonly SourceSummary[];
+  dataQuality(projectId: string | null): DataQualitySummary;
+  /** Records that a retrieval actually informed an answer — the third leg of "grounded" (§7). */
+  recordUse(versionIds: readonly string[], question: string): void;
+}
+
 export interface AssistantService {
   ask(question: string, asOf: Instant, tools: AuthorisedToolPort): Promise<AssistantResponse>;
 }
+
+export {
+  type PlanShape, type Band, type TrajectoryState, type DriverId, type FindingId,
+  type MetricSelector, type TimeSelector, type ComparisonSelector, type SortSelector,
+  type GroupSelector, type ThresholdCondition, type PlanFilters, type PlanScope, type QueryPlan,
+  ALL_SHAPES, ALL_BANDS, ALL_TRAJECTORIES, ALL_DRIVERS, ALL_FINDINGS, ALL_METRICS, ALL_TIMES,
+  ALL_COMPARISONS, ALL_SORTS, ALL_GROUPS, DRIVER_LABEL, METRIC_LABEL, EMPTY_FILTERS,
+  LIMIT_MIN, LIMIT_MAX, DEFAULT_LIMIT, REGION_SYNONYMS, INDUSTRY_SYNONYMS, DRIVER_PHRASES,
+  emptyPlan, requiresProject, readLimit, describeScope,
+} from './internal/plan.js';
 
 export const IMPLEMENTATION_STATE: string =
   'IMPLEMENTED (Phase 11B) — contract and ports here; orchestration, tools, composer, validator '

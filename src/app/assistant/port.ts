@@ -23,8 +23,9 @@
  * `correlationId`. This record does not duplicate them.
  */
 import type {
-  AssistantResponse, AssistantToolId, AuthorisedToolPort, ToolArgs, ToolResult,
+  AssistantResponse, AssistantToolId, AuthorisedToolPort, KnowledgePort, ToolArgs, ToolResult,
 } from '@contexts/ai-intelligence';
+import { emptyPlan } from '@contexts/ai-intelligence';
 import type { Instant } from '@platform/time';
 import type { RequestContext } from '../authorization/enforcement.js';
 import type { ApplicationGateway } from '../gateway.js';
@@ -33,6 +34,13 @@ import {
   evidence, executiveHealth, forwardRisk, lateDetection, marginDrivers, metricDefinition,
   recoveryOptions,
 } from './project-tools.js';
+import {
+  applyFilters, applySort, compareProjects, concentration, periodChange, populationAggregate,
+  populationQuery, recovering,
+} from './population-tools.js';
+import {
+  acceptanceEvidence, dataQuality, knowledgeEvidence, milestones, sourceProvenance,
+} from './knowledge-tools.js';
 
 /** A stable, non-reversible digest of the question. Enough to correlate, not enough to disclose. */
 export function questionDigest(question: string): string {
@@ -43,6 +51,44 @@ export function questionDigest(question: string): string {
     h = Math.imul(h, 0x01000193) >>> 0;
   }
   return `q:${h.toString(16).padStart(8, '0')}:${String(question.length)}`;
+}
+
+/**
+ * The plan a tool was given, or a shape-only fallback.
+ *
+ * The fallback exists so a tool invoked without a plan — from a test, or from the Phase 11 path —
+ * behaves as an unfiltered request for that shape rather than throwing. It cannot widen anything:
+ * an empty plan carries no project id and no filters, and the enforcement point has already
+ * resolved the caller's scope by the time any of this runs.
+ */
+function plan(args: ToolArgs, shape: Parameters<typeof emptyPlan>[0]): NonNullable<ToolArgs['plan']> {
+  if (args.plan !== undefined) return args.plan;
+  const base = emptyPlan(shape);
+  return {
+    ...base,
+    ...(args.projectId !== undefined ? { projectId: args.projectId } : {}),
+    ...(args.metricId !== undefined ? { metricId: args.metricId } : {}),
+    ...(args.limit !== undefined ? { limit: args.limit } : {}),
+  };
+}
+
+/**
+ * A narrowing function built from the plan, or `undefined` when there is no plan to narrow by.
+ *
+ * Returning `undefined` rather than an identity function matters: the tools distinguish "no
+ * narrowing was requested" from "narrowing was requested and matched everything", and only the
+ * first is entitled to quote the portfolio-wide governed count.
+ */
+function narrowBy(args: ToolArgs): ((rows: readonly Record<string, unknown>[]) => readonly Record<string, unknown>[]) | undefined {
+  const p = args.plan;
+  if (p === undefined) return undefined;
+  const hasNarrowing = p.filters.regions.length > 0 || p.filters.industries.length > 0
+    || p.filters.accounts.length > 0 || p.filters.customers.length > 0
+    || p.filters.deliveryGroups.length > 0 || p.filters.projectIds.length > 0
+    || p.filters.drivers.length > 0 || p.filters.thresholds.length > 0
+    || p.filters.trajectory.length > 0;
+  if (!hasNarrowing) return undefined;
+  return (rows) => applySort(applyFilters(rows, p), p);
 }
 
 export interface ToolInvocation {
@@ -61,13 +107,24 @@ export class GatewayToolPort implements AuthorisedToolPort {
   readonly #tc: ToolContext;
   readonly #trace: ToolInvocation[] = [];
 
+  /**
+   * The evidence plane, injected.
+   *
+   * Optional, and its absence is a governed answer rather than a failure: a deployment with no
+   * indexed document answers evidence questions with *"no contract evidence has been indexed"*,
+   * which is the "before" half of the before/after knowledge proof (§63).
+   */
+  readonly #knowledge: KnowledgePort | undefined;
+
   constructor(
     ctx: RequestContext,
     gateway: ApplicationGateway,
     asOf: Instant,
     readonly authorisedProjectIds: readonly string[],
+    knowledge?: KnowledgePort,
   ) {
     this.#tc = { ctx, gateway, asOf, authorisedProjectIds };
+    this.#knowledge = knowledge;
   }
 
   /** What was invoked, and what it reached. Read by the audit record; never by the model. */
@@ -100,8 +157,12 @@ export class GatewayToolPort implements AuthorisedToolPort {
     switch (tool) {
       case 'portfolio.summary.get': return summary(this.#tc);
       case 'portfolio.ranking.list': return ranking(this.#tc);
-      case 'portfolio.reportedGreenRisk.list': return greenAtRisk(this.#tc, 'reported');
-      case 'portfolio.systemGreenAtRisk.list': return greenAtRisk(this.#tc, 'system');
+      // The plan's filters narrow the population the finding is counted over. Without a plan the
+      // narrowing function is absent and the tool behaves exactly as it did in Phase 11.
+      case 'portfolio.reportedGreenRisk.list':
+        return greenAtRisk(this.#tc, 'reported', narrowBy(args));
+      case 'portfolio.systemGreenAtRisk.list':
+        return greenAtRisk(this.#tc, 'system', narrowBy(args));
       case 'portfolio.segments.compare': return compare(this.#tc, args);
       case 'project.executiveHealth.get': return executiveHealth(this.#tc, args.projectId);
       case 'project.marginDrivers.get': return marginDrivers(this.#tc, args.projectId);
@@ -110,6 +171,23 @@ export class GatewayToolPort implements AuthorisedToolPort {
       case 'project.lateDetection.get': return lateDetection(this.#tc, args.projectId);
       case 'evidence.get': return evidence(this.#tc, args.projectId);
       case 'metric.definition.get': return Promise.resolve(metricDefinition(this.#tc, args.metricId));
+      // Phase 13. A plan-driven tool with no plan is a caller defect, not a data question: the
+      // empty plan below is a shape that selects nothing, so it declines rather than returning the
+      // whole portfolio to a caller who forgot to pass one.
+      case 'portfolio.population.query': return populationQuery(this.#tc, plan(args, 'population.list'));
+      case 'portfolio.population.aggregate': return populationAggregate(this.#tc, plan(args, 'population.aggregate'));
+      case 'portfolio.concentration.get': return concentration(this.#tc, plan(args, 'population.concentration'));
+      case 'portfolio.change.get': return periodChange(this.#tc, plan(args, 'population.change'));
+      case 'portfolio.recovery.list': return recovering(this.#tc, plan(args, 'population.recovering'));
+      case 'projects.compare': return compareProjects(this.#tc, plan(args, 'project.compare'));
+      case 'project.milestones.get': return milestones(this.#tc, plan(args, 'project.milestones'));
+      case 'project.acceptanceEvidence.get': return acceptanceEvidence(this.#tc, plan(args, 'project.acceptanceEvidence'));
+      case 'knowledge.evidence.get':
+        return Promise.resolve(knowledgeEvidence(this.#tc, plan(args, 'knowledge.document'), this.#knowledge));
+      case 'source.provenance.get':
+        return sourceProvenance(this.#tc, plan(args, 'source.provenance'), this.#knowledge);
+      case 'source.dataQuality.get':
+        return Promise.resolve(dataQuality(this.#tc, plan(args, 'source.dataQuality'), this.#knowledge));
       default: throw new ToolDenied();
     }
   }

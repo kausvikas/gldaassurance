@@ -53,6 +53,24 @@ export const TOOL_VIEW: Readonly<Record<AssistantToolId, ViewId | 'REGISTRY'>> =
   'project.lateDetection.get': 'project.forwardRisk',
   'evidence.get': 'project.lineage',
   'metric.definition.get': 'REGISTRY',
+  // Phase 13. Every population tool reads the *same* command-centre view the Portfolio surface
+  // reads, then filters, orders and aggregates it. That is what makes cross-surface reconciliation
+  // (§70) a structural property rather than a coincidence two code paths have to maintain: there is
+  // one path, and the Assistant is a second caller of it.
+  'portfolio.population.query': 'portfolio.commandCenter',
+  'portfolio.population.aggregate': 'portfolio.commandCenter',
+  'portfolio.concentration.get': 'portfolio.commandCenter',
+  'portfolio.change.get': 'portfolio.commandCenter',
+  'portfolio.recovery.list': 'portfolio.commandCenter',
+  'projects.compare': 'portfolio.commandCenter',
+  'project.milestones.get': 'project.executiveHealth',
+  'project.acceptanceEvidence.get': 'project.executiveHealth',
+  // The evidence plane is not a ViewId: it is not part of the governed fact model, and giving it
+  // one would have implied it was (ADR-0035 §2). It is reached through the knowledge port the
+  // application injects, and it can return citations and never a metric.
+  'knowledge.evidence.get': 'REGISTRY',
+  'source.provenance.get': 'project.lineage',
+  'source.dataQuality.get': 'REGISTRY',
 };
 
 /** Bounded by construction. A list tool cannot ask for "everything and I will filter". */
@@ -247,27 +265,47 @@ async function ranking(tc: ToolContext): Promise<ToolResult> {
  * Merging them produces "Green-at-Risk" with no subject, which is already open debt as DR-052.
  * `reported` selects the organisation-says-GREEN finding; `system` selects the outlook finding.
  */
-async function greenAtRisk(tc: ToolContext, which: 'reported' | 'system'): Promise<ToolResult> {
+async function greenAtRisk(
+  tc: ToolContext, which: 'reported' | 'system', narrow?: (rows: readonly Row[]) => readonly Row[],
+): Promise<ToolResult> {
   const row = await portfolioRow(tc);
   const panel = sub(row, 'greenAtRisk');
-  const ranked = list(row, 'ranked');
+  const allRanked = list(row, 'ranked');
   const flag = which === 'reported' ? 'isReportedGreenRisk' : 'isSystemGreenAtRisk';
   const countKey = which === 'reported' ? 'reportedGreenRiskCount' : 'systemGreenAtRiskCount';
   const metricId = which === 'reported' ? 'MET-PORT-006' : 'MET-PORT-005';
-  const count = panel?.[countKey];
+
+  /*
+   * **The count must describe the population the caller asked about.**
+   *
+   * This tool used to answer with the panel's portfolio-wide count regardless of any filter the
+   * question carried. Asked *"which Green projects should I worry about?"* and then *"only
+   * Automotive"* and then *"only North America"*, it rendered a scope line that narrowed correctly
+   * on every turn and an answer that said "10 projects" on every turn. Every sentence was true and
+   * the reader was being told the wrong thing — the exact defect class this product exists to catch,
+   * committed by the product itself.
+   *
+   * With no narrowing the count is the panel's, unchanged, so the Phase 11 behaviour is untouched.
+   * With narrowing it is a count of the narrowed set, and the sentence says which.
+   */
+  const matching = allRanked.filter((x) => x[flag] === true);
+  const ranked = narrow === undefined ? matching : narrow(matching);
+  const narrowed = narrow !== undefined && ranked.length !== matching.length;
+  const count = narrow === undefined ? panel?.[countKey] ?? 0 : ranked.length;
+
   const claims: MaterialClaim[] = [];
   claims.push(claim({
     id: `gar:${which}:count`,
     text: which === 'reported'
-      ? `${String(count ?? 0)} projects are reported GREEN by the delivery line while the evidence disagrees.`
-      : `${String(count ?? 0)} projects are System-Assessed GREEN today with an AMBER or RED outlook at 30 or 60 days.`,
-    display: String(count ?? 0),
+      ? `${String(count)} projects${narrowed ? ' in this population' : ''} are reported GREEN by the delivery line while the evidence disagrees.`
+      : `${String(count)} projects${narrowed ? ' in this population' : ''} are System-Assessed GREEN today with an AMBER or RED outlook at 30 or 60 days.`,
+    display: String(count),
     metricId, layer: 'L3',
     entityType: 'portfolio', entityId: 'authorised-set',
     asOf: tc.asOf, sourceDomain: 'portfolio',
     refs: refsFrom(sub(panel, 'evidence'), 'portfolio'),
   }));
-  for (const r of ranked.filter((x) => x[flag] === true).slice(0, MAX_TOOL_ROWS)) {
+  for (const r of ranked.slice(0, MAX_TOOL_ROWS)) {
     claims.push(claim({
       id: `gar:${which}:${str(r, 'projectId') ?? ''}`,
       text: `${str(r, 'name') ?? ''} — Reported ${str(r, 'reportedRag') ?? '?'}, System-Assessed ${str(r, 'systemAssessedRag') ?? '?'}, 30-day outlook ${str(r, 'outlook30') ?? '?'}, 60-day outlook ${str(r, 'outlook60') ?? '?'}.`,
