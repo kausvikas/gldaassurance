@@ -102,6 +102,7 @@ interface PersonaState {
 }
 
 interface Session extends PersonaState {
+  readonly capability: 'ask' | 'full';
   readonly persona: string;
   /** Identifies the sitting, for rate limiting and audit. Never an IP address. */
   readonly callerId: string;
@@ -255,7 +256,9 @@ async function callerFor(request: RouteRequest): Promise<Session | null> {
   const caller: Caller = outcome.caller;
   if (!(caller.persona in PERSONAS)) return null;
   const state = await personaState(caller.persona);
-  return { ...state, persona: caller.persona, callerId: caller.callerId };
+  return {
+    ...state, capability: caller.capability, persona: caller.persona, callerId: caller.callerId,
+  };
 }
 
 /** The refusal a caller sees when they have no valid session. */
@@ -264,6 +267,22 @@ const unauthorised: RouteResponse = {
   body: {
     error: 'unauthenticated',
     detail: 'This API requires a session. Exchange the demo access code at POST /api/session.',
+  },
+};
+
+/**
+ * What an `ask` session gets from a route that writes.
+ *
+ * 403 rather than 401: the caller is authenticated perfectly well, and telling them to sign in again
+ * would send them round a loop. They are authenticated and not permitted, which is what 403 means.
+ */
+const needsCode: RouteResponse = {
+  status: 403,
+  body: {
+    error: 'access_code_required',
+    detail: 'Asking a question is open on this deployment; adding data is not. Adding knowledge '
+      + 'parses a file on the server and writes to durable storage, so it needs the demo access '
+      + 'code.',
   },
 };
 
@@ -364,6 +383,40 @@ export function buildRuntime(): Runtime {
     }
 
     const body = request.body as { persona?: unknown; accessCode?: unknown } | null;
+
+    /*
+     * An open deployment answers questions without a code, and writes nothing without one.
+     *
+     * The distinction is what the two halves actually cost. Asking is bounded read-only work over a
+     * fixed synthetic portfolio; uploading is unbounded work over bytes the caller chose, plus
+     * durable storage that accumulates. So an anonymous visitor gets an `ask` session — enough to
+     * use the Assistant, and refused by every route that writes.
+     *
+     * The persona is not negotiable here: an anonymous caller is `exec.cdo`, because letting an
+     * unauthenticated request name its own persona would be choosing its own scope. With no code
+     * there is nothing to distinguish one anonymous visitor from another, so they all get the same
+     * one, and it is the one the demo is about.
+     */
+    if (access.openAssistant && body?.accessCode === undefined) {
+      const state = await personaState('exec.cdo');
+      const issued = access.issue('exec.cdo', 'ask');
+      return envelope({
+        token: issued.token,
+        persona: 'exec.cdo',
+        capability: 'ask',
+        expiresAt: new Date(issued.caller.expiresAtMs).toISOString(),
+        authorisedProjectCount: state.authorised.length,
+        knowledgeDurable: durability.durable,
+        // Said plainly, so a surface can tell a visitor what they cannot do before they try.
+        addKnowledge: false,
+        filters: {
+          regions: state.vocabulary.regions,
+          industries: state.vocabulary.industries,
+          deliveryGroups: state.vocabulary.deliveryGroups,
+        },
+      });
+    }
+
     if (!access.verifyCode(body?.accessCode)) {
       /*
        * One refusal for a wrong code and for an unknown persona alike, and no hint which it was.
@@ -384,6 +437,8 @@ export function buildRuntime(): Runtime {
     return envelope({
       token: issued.token,
       persona,
+      capability: 'full',
+      addKnowledge: true,
       expiresAt: new Date(issued.caller.expiresAtMs).toISOString(),
       authorisedProjectCount: state.authorised.length,
       // Whether an upload made in this session will still be here tomorrow. Surfaced on the session
@@ -603,6 +658,7 @@ export function buildRuntime(): Runtime {
        */
       const session = await callerFor(request);
       if (session === null) return unauthorised;
+      if (session.capability !== 'full') return needsCode;
       if (!ingestLimit.allow(session.callerId, 'ingest')) return rateLimited;
 
       const body = request.body as { fileName?: unknown; contentBase64?: unknown } | null;
@@ -658,6 +714,7 @@ export function buildRuntime(): Runtime {
       // Caller before body, for the reason given on the profile route above.
       const session = await callerFor(request);
       if (session === null) return unauthorised;
+      if (session.capability !== 'full') return needsCode;
       if (!ingestLimit.allow(session.callerId, 'ingest')) return rateLimited;
       const closed = await refuseWhenNotDurable();
       if (closed !== null) return closed;
@@ -767,6 +824,7 @@ export function buildRuntime(): Runtime {
   runtime.route('POST', '/api/ingest/document', async (request) => {
     const session = await callerFor(request);
     if (session === null) return unauthorised;
+    if (session.capability !== 'full') return needsCode;
     if (!ingestLimit.allow(session.callerId, 'ingest')) return rateLimited;
     const closed = await refuseWhenNotDurable();
     if (closed !== null) return closed;

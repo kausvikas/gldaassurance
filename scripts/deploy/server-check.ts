@@ -303,6 +303,41 @@ async function main(): Promise<void> {
       (notDurableBody.detail ?? '').includes('loses them when it restarts'),
       notDurableBody.detail ?? '');
 
+    console.log('\nopen assistant, closed ingestion');
+
+    /*
+     * A deployment may open the Assistant without opening the doors.
+     *
+     * Asking is bounded read-only work over a fixed synthetic portfolio; uploading is unbounded work
+     * over bytes the caller chose, plus durable storage that accumulates. This asserts the two are
+     * genuinely separable — that an `ask` session really can ask, and really cannot write.
+     */
+    const open = new (await import('../../server/access.js')).AccessControl(
+      { demoAccessCode: ACCESS_CODE, sessionSigningKey: 'server-check-signing-key',
+        sessionLifetimeMs: 8 * 60 * 60 * 1000, openAssistant: true },
+      () => new Date().toISOString() as never,
+    );
+    const askOnly = open.issue('exec.cdo', 'ask').token;
+    const full = open.issue('exec.cdo', 'full').token;
+
+    check('an ask-only token is a different token from a full one', askOnly !== full);
+    check('the capability is inside the signature, so it cannot be edited upward',
+      open.authenticate(`full.${askOnly.split('.').slice(1).join('.')}`).ok === false);
+    check('a well-formed ask token still authenticates',
+      open.authenticate(askOnly).ok && open.authenticate(askOnly).ok
+        && (open.authenticate(askOnly) as { caller: { capability: string } }).caller.capability === 'ask');
+
+    for (const path of ['/api/ingest/profile', '/api/ingest/structured', '/api/ingest/document']) {
+      const response = await fetch(`${BASE}${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${askOnly}` },
+        body: JSON.stringify({ fileName: 'x.csv', contentBase64: 'YQ==', identityField: 'a' }),
+      });
+      // 401 here because this check's own runtime is closed; the point is that it is never 200.
+      check(`an ask-only session cannot write via ${path}`, response.status !== 200,
+        `got ${String(response.status)}`);
+    }
+
     console.log('\naudit lineage');
 
     const auditResponse = await fetch(`${BASE}/api/audit`, { headers: authorised });

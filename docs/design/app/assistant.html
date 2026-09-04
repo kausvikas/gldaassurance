@@ -1626,10 +1626,34 @@ footer.gl-foot p{max-width:78ch}
    * Resolves with a token, or with null when the visitor closes the panel — which is a legitimate
    * choice and leaves the page in its recorded-transcript mode rather than in a broken one.
    */
-  function session(base) {
+  function session(base, need) {
     var saved = stored(base);
     if (saved) return Promise.resolve(saved);
-    return prompt_(base);
+    /*
+     * Ask the deployment whether it will issue a session without a code, before asking a person.
+     *
+     * There is no client-side flag for "is this deployment open" — the client cannot know, and a
+     * flag baked into the bundle would be a second source of truth that drifts from the server's.
+     * So it simply asks: a deployment that answers with a token is open, one that answers 401 is
+     * not, and only then is a person interrupted.
+     *
+     * `need` is 'full' where the surface needs to write, so Data Sources prompts immediately
+     * rather than accepting a read-only session and failing at the receipt.
+     */
+    if (need === 'full') return prompt_(base);
+    return fetch(base + '/session', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({})
+    }).then(function (r) {
+      if (!r.ok) return prompt_(base);
+      return r.json().then(function (payload) {
+        var token = payload && payload.data ? payload.data.token : null;
+        if (!token) return prompt_(base);
+        remember(base, token);
+        return token;
+      });
+    }).catch(function () { return prompt_(base); });
   }
 
   function prompt_(base) {

@@ -152,7 +152,9 @@ export const GL_UPLOAD_RUNTIME = `
     base = BASES[index];
     return fetch(base + '/health')
       .then(function (r) { if (!r.ok) throw new Error('unhealthy'); return r.json(); })
-      .then(function () { return window.GLAccess.session(base); })
+      // Data Sources writes, so it needs a full session; asking for a read-only one and failing at
+      // the receipt would be the worse of the two experiences.
+      .then(function () { return window.GLAccess.session(base, 'full'); })
       .then(function (issued) {
         if (!issued) {
           disable('Adding knowledge requires a signed-in session. Reload this page to sign in.');

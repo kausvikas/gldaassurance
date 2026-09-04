@@ -45,9 +45,31 @@ export interface AccessConfig {
   readonly sessionSigningKey: string;
   /** How long a session lasts. Short: a demo session is a sitting, not a subscription. */
   readonly sessionLifetimeMs: number;
+  /**
+   * Whether asking a question needs the code.
+   *
+   * Off by default, and the default is the safe one: a deployment that has not said "open this"
+   * is closed. When on, an anonymous visitor receives an `ask` session — enough to use the
+   * Assistant, never enough to write. Ingestion is unaffected and always needs the code, because
+   * an upload consumes parser CPU and durable storage that somebody is paying for.
+   */
+  readonly openAssistant: boolean;
 }
 
+/**
+ * What a session is allowed to do, carried **inside the signature**.
+ *
+ * `full` is what an access code buys. `ask` is what an anonymous visitor gets when the deployment
+ * has opened the Assistant: questions, and nothing that writes.
+ *
+ * It lives in the token rather than in a check beside it for the same reason the persona does — a
+ * capability the caller could state per request is a capability the caller could raise per request.
+ * The routes ask the token what it may do; there is no other answer available to them.
+ */
+export type Capability = 'ask' | 'full';
+
 export interface Caller {
+  readonly capability: Capability;
   readonly persona: string;
   readonly issuedAtMs: number;
   readonly expiresAtMs: number;
@@ -83,6 +105,7 @@ export function loadAccessConfig(
      */
     sessionSigningKey: key === '' ? randomBytes(32).toString('hex') : key,
     sessionLifetimeMs: 8 * 60 * 60 * 1000,
+    openAssistant: (source['GLDI_OPEN_ASSISTANT'] ?? '').trim().toLowerCase() === 'true',
   };
 }
 
@@ -131,17 +154,24 @@ export class AccessControl {
    * The nonce makes two sessions for the same persona distinguishable, so a rate limit attributes to
    * a sitting rather than to everyone who chose the same persona.
    */
-  issue(persona: string): { readonly token: string; readonly caller: Caller } {
+  issue(
+    persona: string, capability: Capability = 'full',
+  ): { readonly token: string; readonly caller: Caller } {
     const issuedAtMs = Date.parse(String(this.now()));
     const expiresAtMs = issuedAtMs + this.config.sessionLifetimeMs;
     const nonce = randomBytes(9).toString('base64url');
     const encoded = Buffer.from(persona, 'utf8').toString('base64url');
-    const body = `${encoded}.${String(issuedAtMs)}.${String(expiresAtMs)}.${nonce}`;
+    const body = `${capability}.${encoded}.${String(issuedAtMs)}.${String(expiresAtMs)}.${nonce}`;
     const token = `${body}.${this.#sign(body)}`;
     return {
       token,
-      caller: { persona, issuedAtMs, expiresAtMs, callerId: `${persona}:${nonce}` },
+      caller: { capability, persona, issuedAtMs, expiresAtMs, callerId: `${persona}:${nonce}` },
     };
+  }
+
+  /** Whether this deployment issues sessions to callers who have no code. */
+  get openAssistant(): boolean {
+    return this.config.openAssistant;
   }
 
   /**
@@ -153,19 +183,20 @@ export class AccessControl {
   authenticate(token: string | null): AuthOutcome {
     if (token === null || token === '') return { ok: false, reason: 'MISSING' };
     const parts = token.split('.');
-    if (parts.length !== 5) return { ok: false, reason: 'MALFORMED' };
-    const [encoded, issued, expires, nonce, signature] = parts;
-    if (encoded === undefined || issued === undefined || expires === undefined
-      || nonce === undefined || signature === undefined) {
+    if (parts.length !== 6) return { ok: false, reason: 'MALFORMED' };
+    const [capability, encoded, issued, expires, nonce, signature] = parts;
+    if (capability === undefined || encoded === undefined || issued === undefined
+      || expires === undefined || nonce === undefined || signature === undefined) {
       return { ok: false, reason: 'MALFORMED' };
     }
+    if (capability !== 'ask' && capability !== 'full') return { ok: false, reason: 'MALFORMED' };
     /*
      * The signature covers the encoded form, and is checked before the encoded form is decoded.
      *
      * Decoding first would mean running a parser over attacker-supplied bytes on every request,
      * including every unauthenticated one. Here nothing but an HMAC touches an unverified token.
      */
-    const body = `${encoded}.${issued}.${expires}.${nonce}`;
+    const body = `${capability}.${encoded}.${issued}.${expires}.${nonce}`;
     if (!equal(signature, this.#sign(body))) return { ok: false, reason: 'BAD_SIGNATURE' };
 
     const persona = Buffer.from(encoded, 'base64url').toString('utf8');
@@ -178,7 +209,7 @@ export class AccessControl {
 
     return {
       ok: true,
-      caller: { persona, issuedAtMs, expiresAtMs, callerId: `${persona}:${nonce}` },
+      caller: { capability, persona, issuedAtMs, expiresAtMs, callerId: `${persona}:${nonce}` },
     };
   }
 
