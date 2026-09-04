@@ -48,7 +48,7 @@ async function main(): Promise<void> {
   const vocabulary: PlannerVocabulary = { ...discovered, accounts: [], customers: [] };
 
   const demo = knowledgeDemo(authorised, discovered.projects[0]?.id ?? 'prj-001');
-  await syncFixtures(demo.registry);
+  await syncFixtures(demo.registry, authorised);
   const sowReceipt = demo.addAtlasSow();
   const supplemental = demo.addSupplementalFinancials();
   const bad = demo.addBadRows();

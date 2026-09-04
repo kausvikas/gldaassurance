@@ -200,7 +200,30 @@ describe('structured ingestion accepts what is valid and quarantines what is not
 // ---------------------------------------------------------------------------
 
 describe('a supplemental source cannot move a governed number', () => {
-  it('records the disagreement and keeps the authoritative value', () => {
+  it('records a real disagreement, and the authoritative value governs', async () => {
+    const { syncFixtures } = await import('../../scripts/fixtures/demo-knowledge.js');
+    const demo = knowledgeDemo(ctx.authorised, atlas.id);
+    // Both sides have to be present for a conflict to exist. Recording a connector's receipt and
+    // discarding its records left a conflict register that could never fire, beside a paragraph
+    // explaining what it would do.
+    await syncFixtures(demo.registry, ctx.authorised);
+    demo.addSupplementalFinancials();
+
+    const conflicts = demo.registry.conflicts();
+    expect(conflicts.length).toBeGreaterThan(0);
+    const revenue = conflicts.find((c) => c.concept === 'financial.forecastRevenue');
+    expect(revenue).toBeDefined();
+    // The authoritative source governs; the disagreement is disclosed rather than merged.
+    expect(revenue?.governedSourceId).toBe('src-finance');
+    expect(revenue?.governedAuthority).toBe('AUTHORITATIVE');
+    expect(revenue?.entries.map((e) => e.sourceId)).toContain('src-upload-financials');
+    expect(revenue?.unresolvedAuthority).toBe(false);
+    // And the losing value is preserved, not discarded — the disclosure needs both numbers.
+    const supplemental = revenue?.entries.find((e) => e.sourceId === 'src-upload-financials');
+    expect(supplemental?.value).not.toBe(revenue?.governedValue);
+  }, 60_000);
+
+  it('keeps the authoritative source for a concept', () => {
     const demo = knowledgeDemo(ctx.authorised, atlas.id);
     demo.addSupplementalFinancials();
 
@@ -356,5 +379,97 @@ describe('a fixture is never presented as a connection', () => {
         expect(typeof connector[forbidden], `${source.displayName}.${forbidden}`).toBe('undefined');
       }
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// §47, §48, §89 — the upload flow a person actually operates
+// ---------------------------------------------------------------------------
+
+describe('an upload is mapped by a person, not guessed', () => {
+  it('suggests EXACT for a column whose name matches, and LIKELY for one that resembles', async () => {
+    const { suggestMappings } = await import('@app');
+    const suggestions = suggestMappings([
+      'actual_cost', 'Actual-Cost', 'finance_project_id', 'something_else',
+    ]);
+    const byField = new Map(suggestions.map((s) => [s.sourceField, s]));
+    expect(byField.get('actual_cost')?.confidence).toBe('EXACT');
+    expect(byField.get('actual_cost')?.concept).toBe('financial.actualCost');
+    // Two states, because the decision they drive is binary: EXACT may be pre-selected, LIKELY
+    // must be confirmed. A percentage would imply a calibration nobody performed.
+    expect(byField.get('Actual-Cost')?.confidence).toBe('EXACT');
+    expect(byField.get('something_else')?.concept).toBeNull();
+    expect(byField.get('something_else')?.confidence).toBe('NONE');
+    for (const s of suggestions) expect(['EXACT', 'LIKELY', 'NONE']).toContain(s.confidence);
+  });
+
+  it('reads a date concept as a date, not as a number', async () => {
+    // Mapping a period column as numeric quarantined every row of a good file, because 2026-08-31
+    // is not a decimal. The validator was right and the mapping was wrong.
+    const { ingestStructured } = await import('@app');
+    const { supplementalFinancials, identityHub, authorityRegistry } =
+      await import('../../scripts/fixtures/enterprise.js');
+    const result = ingestStructured({
+      sourceId: 'src-test-date',
+      sourceName: 'dated.xlsx',
+      fileName: 'dated.xlsx',
+      bytes: supplementalFinancials(),
+      mapping: {
+        mappingVersion: 'test-v1',
+        identityField: 'finance_project_id',
+        identitySystem: 'UPLOAD',
+        periodField: 'period',
+        fields: [
+          { sourceField: 'actual_cost', concept: 'financial.actualCost', required: true, kind: 'NUMERIC' },
+        ],
+      },
+      identity: identityHub(),
+      registry: authorityRegistry(),
+      authority: 'SUPPLEMENTAL',
+      dataContext: 'SANDBOX',
+      receivedAt: DEMO_NOW,
+      effectiveDate: '2026-08-31',
+      declaredRecordCount: null,
+      knownProjectIds: ctx.authorised,
+    });
+    expect(result.receipt.recordsAccepted).toBe(2);
+    expect(result.receipt.recordsQuarantined).toBe(1);
+    expect(result.quarantined[0]?.findings.map((f) => f.code)).toContain('UNRESOLVED_IDENTITY');
+  });
+
+  it('ingests a connector\'s records through the same pipeline as a file', async () => {
+    const { ingestConnectorRecords } = await import('@app');
+    const { financeFixture, identityHub, authorityRegistry } =
+      await import('../../scripts/fixtures/enterprise.js');
+    const connector = financeFixture();
+    const { records } = await connector.sync({ mode: 'INITIAL', since: null, maxRecords: 10 });
+    const mapping = connector.mapSchema();
+    expect(mapping).not.toBeNull();
+
+    const result = ingestConnectorRecords({
+      sourceId: 'src-finance',
+      sourceName: 'Finance / ERP',
+      records: records.map((r) => ({
+        naturalKey: r.naturalKey, observedAt: r.observedAt, fields: r.fields,
+      })),
+      mapping: {
+        mappingVersion: 'test', identityField: 'finance_project_id', identitySystem: 'FINANCE_ERP',
+        periodField: 'period',
+        fields: [
+          { sourceField: 'actual_cost', concept: 'financial.actualCost', required: true, kind: 'NUMERIC' },
+        ],
+      },
+      identity: identityHub(),
+      registry: authorityRegistry(),
+      authority: 'AUTHORITATIVE',
+      dataContext: 'SANDBOX',
+      receivedAt: DEMO_NOW,
+      effectiveDate: '2026-08-31',
+      declaredRecordCount: null,
+      knownProjectIds: ctx.authorised,
+    });
+    // Same rules, same quarantine: FIN-1003 has no declared identity mapping here either.
+    expect(result.receipt.recordsAccepted).toBe(2);
+    expect(result.observations.length).toBeGreaterThan(0);
   });
 });

@@ -16,6 +16,7 @@
  * a webfont would be the only external request in an otherwise self-contained build.
  */
 import { GL_ASSISTANT_CSS } from './gl-assistant.js';
+import { GL_UPLOAD_CSS } from './gl-upload.js';
 
 const GL_BASE_CSS = `
 :root{
@@ -183,6 +184,6 @@ footer.gl-foot p{max-width:78ch}
  * on the Command Center looks that way in the Assistant, which is most of what makes a product feel
  * like one product.
  */
-export const GL_CSS = `${GL_BASE_CSS}${GL_ASSISTANT_CSS}`;
+export const GL_CSS = `${GL_BASE_CSS}${GL_ASSISTANT_CSS}${GL_UPLOAD_CSS}`;
 
 

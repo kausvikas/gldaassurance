@@ -236,6 +236,64 @@ footer.gl-foot p{max-width:78ch}
   .gl-ask button{margin-top:12px;width:100%}
   .gl-prov,.gl-srcgrid{font-size:13px}
 }
+
+.gl-upload{margin-top:26px;border-top:2px solid var(--steel-100);padding-top:24px}
+.gl-steps{display:flex;flex-wrap:wrap;gap:0;margin:0 0 24px;padding:0;list-style:none;
+  counter-reset:step}
+.gl-steps li{counter-increment:step;font-size:12.5px;color:var(--steel-50);padding:0 16px 0 0;
+  position:relative;display:flex;align-items:center;gap:7px}
+.gl-steps li::before{content:counter(step);width:20px;height:20px;border-radius:50%;flex:none;
+  display:grid;place-items:center;font-size:11px;font-weight:600;
+  background:var(--steel-05);color:var(--steel-50);border:1px solid var(--rule-strong)}
+.gl-steps li[data-state="done"]{color:var(--steel-100)}
+.gl-steps li[data-state="done"]::before{background:var(--steel-100);color:var(--white);
+  border-color:var(--steel-100)}
+.gl-steps li[data-state="active"]{color:var(--orange-deep);font-weight:600}
+.gl-steps li[data-state="active"]::before{background:var(--orange);color:var(--white);
+  border-color:var(--orange)}
+
+.gl-drop{display:block;padding:26px;border:1px dashed var(--rule-strong);border-radius:12px;
+  background:var(--white);cursor:pointer}
+.gl-drop:hover{border-color:var(--orange)}
+.gl-drop:focus-within{outline:2px solid var(--orange);outline-offset:2px}
+.gl-drop b{display:block;font-size:16px}
+.gl-drop span{display:block;margin-top:5px;font-size:13.5px;color:var(--steel-50)}
+.gl-drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.gl-drop[aria-disabled="true"]{opacity:.55;cursor:not-allowed;border-style:solid}
+
+.gl-maprow{display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:center;
+  padding:11px 0;border-bottom:1px solid var(--rule)}
+.gl-maprow b{font-weight:600;font-size:14px}
+.gl-maprow .gl-why{margin:3px 0 0;padding:0;font-size:12.5px;color:var(--steel-50);border:0}
+.gl-maprow select{padding:8px 10px;font:inherit;font-size:13.5px;border-radius:8px;
+  border:1px solid var(--rule-strong);background:var(--white);max-width:100%}
+.gl-conf{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;
+  padding:3px 9px;border-radius:999px;white-space:nowrap}
+.gl-conf--EXACT{color:var(--green);background:var(--rag-green-bg)}
+.gl-conf--LIKELY{color:var(--orange-deep);background:var(--white);border:1px solid var(--orange)}
+.gl-conf--NONE{color:var(--steel-50);background:var(--steel-05)}
+
+.gl-actions{margin-top:20px;display:flex;gap:12px;flex-wrap:wrap}
+.gl-actions button{padding:12px 22px;font:inherit;font-weight:600;font-size:14.5px;border:0;
+  border-radius:10px;background:var(--steel-100);color:var(--white);cursor:pointer}
+.gl-actions button.gl-secondary{background:transparent;color:var(--steel-75);
+  border:1px solid var(--rule-strong)}
+.gl-actions button:hover{background:var(--orange-deep);color:var(--white)}
+.gl-actions button:disabled{background:var(--steel-25);cursor:not-allowed}
+
+.gl-receipt{margin-top:22px;padding:20px 22px;background:var(--white);border-radius:12px;
+  border-left:3px solid var(--green)}
+.gl-receipt h3{font-size:12px;letter-spacing:.11em;text-transform:uppercase;color:var(--steel-50)}
+.gl-receipt dl{margin:14px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:14px 22px}
+.gl-receipt dt{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-50);
+  font-weight:600}
+.gl-receipt dd{margin:3px 0 0;font-size:17px;font-weight:600}
+.gl-receipt dd small{display:block;font-size:12px;font-weight:400;color:var(--steel-50);
+  word-break:break-all}
+.gl-receipt--warn{border-left-color:var(--orange)}
+
+@media (max-width:720px){ .gl-maprow{grid-template-columns:1fr} }
 </style>
 </head>
 <body>

@@ -14,15 +14,18 @@
  */
 import {
   GatewayToolPort, NEW_CONVERSATION, askWithPlan, buildRouter, ingestDocument, ingestStructured,
-  providerNarration, readState, vocabularyFrom,
+  providerNarration, readState, suggestMappings, vocabularyFrom,
 } from '@app';
-import type { PlannerVocabulary, SourceRegistry } from '@app';
+import type { ApprovedMapping, PlannerVocabulary, SourceRegistry } from '@app';
+import { ALL_CONCEPTS } from '@contexts/integration';
+import { detectFormat, parseCsv, parseXlsx, profile } from '@platform/parse';
+import type { TabularSheet } from '@platform/parse';
+import { fingerprint, fromBase64, utf8 } from '@platform/bytes';
 import { loadAiConfig, loadConfig } from '@platform/config';
 import type { Instant } from '@platform/time';
-import { fromBase64 } from '@platform/bytes';
+
 import { DEMO_NOW, createDemoApi } from '../scripts/security/demo-api.js';
 import { knowledgeDemo } from '../scripts/fixtures/demo-knowledge.js';
-import { SUPPLEMENTAL_MAPPING } from '../scripts/fixtures/demo-knowledge.js';
 import { DEFAULT_RUNTIME, Runtime } from './runtime.js';
 import type { RouteRequest, RouteResponse } from './runtime.js';
 
@@ -302,59 +305,157 @@ export function buildRuntime(): Runtime {
   // -------------------------------------------------------------------------
 
   /**
-   * A structured upload.
+   * **Phase one of two: profile, do not ingest.**
+   *
+   * §47 puts a preview and a user confirmation between parsing and ingestion, and the reason is not
+   * ceremony. A mapping decides which column becomes which governed concept, and a wrong one is
+   * invisible afterwards: the rows all load, the counts all look right, and a cost column has
+   * quietly become an estimate. So this route parses, profiles and *suggests* — and writes nothing.
    *
    * Bytes arrive base64-encoded in JSON rather than as multipart. Multipart parsing is a notoriously
-   * fiddly, historically vulnerable surface, and writing one by hand in the process that holds the
+   * fiddly, historically vulnerable surface, and hand-writing one in the process that holds the
    * credential would undo the reason this runtime has no dependencies. Base64 costs a third more
    * bytes and removes the parser entirely.
    */
-  runtime.route('POST', '/api/ingest/structured', async (request) => {
-    const session = await sessionFor(request);
-    if (session === null) return notFound;
+  runtime.route('POST', '/api/ingest/profile', (request) => {
+    const body = request.body as { fileName?: unknown; contentBase64?: unknown } | null;
+    if (typeof body?.contentBase64 !== 'string' || typeof body.fileName !== 'string') {
+      return Promise.resolve({ status: 400, body: { error: 'malformed_request' } });
+    }
+    return (async () => {
+      const session = await sessionFor(request);
+      if (session === null) return notFound;
+      const bytes = fromBase64(body.contentBase64 as string);
+      try {
+        const sheet = profileUpload(bytes, body.fileName as string);
+        return envelope({
+          fileName: body.fileName,
+          sheetName: sheet.name,
+          headers: sheet.headers,
+          rowsDetected: sheet.rows.length,
+          rowsTruncated: sheet.rowsTruncated,
+          fingerprint: fingerprint(bytes),
+          byteLength: bytes.length,
+          profile: profile(sheet),
+          suggestions: suggestMappings(sheet.headers),
+          concepts: ALL_CONCEPTS,
+          // The first few rows, so a person confirming a mapping can see what they are confirming.
+          preview: sheet.rows.slice(0, 5).map((r) => r.cells),
+        });
+      } catch (e) {
+        return {
+          status: 422,
+          body: {
+            error: 'unreadable_upload',
+            detail: e instanceof Error ? e.message : 'The file could not be read.',
+          },
+        };
+      }
+    })();
+  }, true);
+
+  /**
+   * **Phase two: ingest the mapping a person confirmed.**
+   *
+   * The mapping arrives from the caller and is checked field by field against the closed concept
+   * vocabulary. This route previously ignored what the caller sent and applied a fixed mapping,
+   * which made the confirmation step decorative — the user could approve one thing and the pipeline
+   * would apply another, with a receipt describing the mapping that ran rather than the one they
+   * saw.
+   *
+   * Authority is **not** taken from the request. An upload is `SUPPLEMENTAL`, decided here; a source
+   * that could assert its own authority could promote itself above Finance by sending one field
+   * (ADR-0035 §4).
+   */
+  runtime.route('POST', '/api/ingest/structured', (request) => {
     const body = request.body as {
       fileName?: unknown; contentBase64?: unknown; sourceName?: unknown;
+      identityField?: unknown; periodField?: unknown; fields?: unknown;
     } | null;
-    if (typeof body?.contentBase64 !== 'string' || typeof body.fileName !== 'string') {
-      return { status: 400, body: { error: 'malformed_request' } };
+    if (typeof body?.contentBase64 !== 'string' || typeof body.fileName !== 'string'
+      || typeof body.identityField !== 'string') {
+      return Promise.resolve({ status: 400, body: { error: 'malformed_request' } });
     }
-    const registry = await knowledgeRegistry();
-    const sourceId = `src-upload-${Date.now().toString(36)}`;
-    registry.register({
-      sourceId,
-      displayName: typeof body.sourceName === 'string' ? body.sourceName : body.fileName,
-      kind: 'FILE_UPLOAD', domain: 'FILE_UPLOAD', status: 'CONFIGURED_UNVERIFIED',
-      isFixture: false, receipts: [], lastUpdated: null,
-    });
+    return (async () => {
+      const session = await sessionFor(request);
+      if (session === null) return notFound;
 
-    const result = ingestStructured({
-      sourceId,
-      sourceName: typeof body.sourceName === 'string' ? body.sourceName : body.fileName,
-      fileName: body.fileName,
-      bytes: fromBase64(body.contentBase64),
-      mapping: SUPPLEMENTAL_MAPPING,
-      identity: (await knowledgeDemoIdentity()),
-      registry: registry.authority,
-      authority: 'SUPPLEMENTAL',
-      dataContext: 'SANDBOX',
-      receivedAt: DEMO_NOW,
-      effectiveDate: '2026-08-31',
-      declaredRecordCount: null,
-      knownProjectIds: session.authorised,
-    });
-    registry.addReceipt(sourceId, result.receipt);
-    registry.addObservations(result.observations);
-    registry.addStaged(result.staged);
+      const mapping = readMapping(
+        body.identityField as string,
+        typeof body.periodField === 'string' && body.periodField !== '' ? body.periodField : null,
+        body.fields,
+      );
+      if (mapping === null) {
+        return {
+          status: 400,
+          body: {
+            error: 'unmapped_upload',
+            detail: 'No column was mapped to a governed concept, so there is nothing to ingest. A '
+              + 'mapping is confirmed by a person; nothing here guesses one.',
+          },
+        };
+      }
 
-    return envelope({
-      receipt: result.receipt,
-      profile: result.profile,
-      suggestions: result.suggestions,
-      headers: result.headers,
-      quarantined: result.quarantined.map((r) => ({
-        rowNumber: r.rowNumber, naturalKey: r.naturalKey, findings: r.findings,
-      })),
-    });
+      const registry = await knowledgeRegistry();
+      const sourceId = `src-upload-${Date.now().toString(36)}`;
+      const displayName = typeof body.sourceName === 'string' && body.sourceName !== ''
+        ? body.sourceName : body.fileName as string;
+      registry.register({
+        sourceId, displayName,
+        kind: 'FILE_UPLOAD', domain: 'FILE_UPLOAD', status: 'CONFIGURED_UNVERIFIED',
+        isFixture: false, receipts: [], lastUpdated: null,
+      });
+
+      // The uploaded source is granted SUPPLEMENTAL authority over exactly the concepts it maps —
+      // never more, and never AUTHORITATIVE, whatever the request said.
+      for (const field of mapping.fields) {
+        registry.authority.register({
+          sourceId, concept: field.concept, authority: 'SUPPLEMENTAL', priority: 9,
+          conflictBehaviour: 'DISCLOSE',
+          rationale: 'An uploaded extract. Evidence of what someone believes, not a system of record.',
+        });
+      }
+
+      try {
+        const result = ingestStructured({
+          sourceId,
+          sourceName: displayName,
+          fileName: body.fileName as string,
+          bytes: fromBase64(body.contentBase64 as string),
+          mapping,
+          identity: await knowledgeDemoIdentity(),
+          registry: registry.authority,
+          authority: 'SUPPLEMENTAL',
+          dataContext: 'SANDBOX',
+          receivedAt: DEMO_NOW,
+          effectiveDate: '2026-08-31',
+          declaredRecordCount: null,
+          knownProjectIds: session.authorised,
+        });
+        registry.addReceipt(sourceId, result.receipt);
+        registry.addObservations(result.observations);
+        registry.addStaged(result.staged);
+
+        return envelope({
+          receipt: result.receipt,
+          conflicts: registry.conflicts().filter(
+            (c) => c.entries.some((e) => e.sourceId === sourceId),
+          ),
+          verification: registry.verify(sourceId),
+          quarantined: result.quarantined.map((r) => ({
+            rowNumber: r.rowNumber, naturalKey: r.naturalKey, findings: r.findings,
+          })),
+        });
+      } catch (e) {
+        return {
+          status: 422,
+          body: {
+            error: 'unreadable_upload',
+            detail: e instanceof Error ? e.message : 'The file could not be read.',
+          },
+        };
+      }
+    })();
   }, true);
 
   runtime.route('POST', '/api/ingest/document', async (request) => {
@@ -409,6 +510,89 @@ export function buildRuntime(): Runtime {
   }, true);
 
   return runtime;
+}
+
+/**
+ * Parses an upload for profiling, without ingesting it.
+ *
+ * The format is decided by the file's own bytes, never by its name (§80): an `.xlsx` that is really
+ * a PDF is a routine mistake and an obvious attack, and either way the correct behaviour is to read
+ * what it is or refuse.
+ */
+function profileUpload(bytes: Uint8Array, fileName: string): TabularSheet {
+  const format = detectFormat(bytes);
+  if (format === 'XLSX') {
+    const workbook = parseXlsx(bytes);
+    const first = workbook.sheets[0];
+    if (first === undefined) throw new Error('The workbook contains no readable sheet.');
+    return first;
+  }
+  if (format === 'TEXT') return parseCsv(utf8(bytes), fileName);
+  throw new Error(
+    `${fileName} is not a workbook or a delimited text file. The file's own bytes decide this, not `
+    + 'its extension.',
+  );
+}
+
+/**
+ * Concepts whose values are not numbers.
+ *
+ * Every concept was previously treated as numeric, so mapping a date column to
+ * `financial.financialPeriod` quarantined every row of a perfectly good file: `2026-08-31` is not a
+ * decimal, the validator said so on all three rows, and the receipt reported nothing accepted. The
+ * validator was right and the mapping was wrong — a defect found by running the upload through a
+ * browser, which is where a person would map exactly that column to exactly that concept.
+ */
+const NON_NUMERIC_CONCEPTS: ReadonlySet<string> = new Set([
+  'status.reportedRag',
+  'financial.financialPeriod',
+  'financial.invoiceStatus',
+  'assurance.reviewDate',
+  'assurance.actionStatus',
+  'commercial.opportunity',
+  'commercial.accountOwnership',
+  'delivery.milestoneStatus',
+  'delivery.releaseEvent',
+  'contract.paymentMilestone',
+  'document.contractTerm',
+  'document.acceptanceCriteria',
+]);
+
+/**
+ * Reads a caller-confirmed mapping, keeping only what the closed vocabulary admits.
+ *
+ * A concept the registry does not define is dropped rather than passed through, so a mapping cannot
+ * introduce a concept by naming one. Everything numeric is marked non-negative by default because
+ * every governed money and effort concept is; a caller wanting a signed value states it.
+ */
+function readMapping(
+  identityField: string, periodField: string | null, raw: unknown,
+): ApprovedMapping | null {
+  if (!Array.isArray(raw)) return null;
+  const fields: ApprovedMapping['fields'] = raw.flatMap((entry) => {
+    if (typeof entry !== 'object' || entry === null) return [];
+    const e = entry as Record<string, unknown>;
+    const sourceField = typeof e['sourceField'] === 'string' ? e['sourceField'] : null;
+    const concept = typeof e['concept'] === 'string' ? e['concept'] : null;
+    if (sourceField === null || concept === null) return [];
+    if (!(ALL_CONCEPTS as readonly string[]).includes(concept)) return [];
+    const kind = NON_NUMERIC_CONCEPTS.has(concept) ? 'CATEGORICAL' as const : 'NUMERIC' as const;
+    return [{
+      sourceField,
+      concept: concept as ApprovedMapping['fields'][number]['concept'],
+      required: e['required'] === true,
+      kind,
+      ...(kind === 'NUMERIC' ? { nonNegative: true } : {}),
+    }];
+  });
+  if (fields.length === 0) return null;
+  return {
+    mappingVersion: `upload-${String(Date.now().toString(36))}`,
+    identityField,
+    identitySystem: 'UPLOAD',
+    periodField,
+    fields,
+  };
 }
 
 /** The identity hub the demo registry was built with. */

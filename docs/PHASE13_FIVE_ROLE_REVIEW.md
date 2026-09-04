@@ -125,11 +125,13 @@ than not, and a single "indexed" status conceals the case that matters.
 - An unmapped source identifier quarantines rather than joining. There is no similarity function in
   the identity hub to be tuned.
 
-**Open P1, accepted:** the conflict register is exercised by construction and by test, but the demo
-fixtures currently produce zero *material* conflicts at the configured threshold, because the one
-disagreeing row is also the one that quarantines on identity. The machinery is proven by
-`tests/integration/knowledge-and-sources.test.ts`; the Knowledge surface would be more convincing
-with a conflict a reviewer can see on screen.
+**P1 raised in this review, now closed.** The conflict register rendered empty: connector syncs
+recorded a receipt and *discarded the records*, so only one side of any disagreement ever reached the
+engine. A register that could never fire, beside a paragraph explaining what it would do. Connector
+records now go through the **same** pipeline an uploaded file does — same mapping, same identity
+resolution, same quarantine — and a real conflict is on the surface:
+`prj-002 · financial.forecastRevenue · 2026-08-31`, Finance authoritative at 3,600,000, the uploaded
+extract supplemental at 5,100,000, governed value unchanged and the disagreement shown beside it.
 
 ---
 
@@ -218,12 +220,21 @@ synthetic POC does not prove production authorization, and the footer says so on
 | Role | Verdict | P0 found | P0 open | P1 open |
 | --- | --- | --- | --- | --- |
 | Global Delivery Head / CDO | PASS | 2 | 0 | 0 |
+| Data owner (upload flow) | PASS | 1 | 0 | 0 |
 | CFO | PASS | 2 | 0 | 0 |
-| Chief Data Officer | PASS | 0 | 0 | 1 |
+| Chief Data Officer | PASS | 1 | 0 | 0 |
 | Chief Enterprise Architect | PASS | 1 | 0 | 0 |
 | CISO | PASS | 0 | 0 | 1 |
 
-**Six P0s found, six closed. No P0 remains open.**
+**Seven P0s found, seven closed. No P0 remains open.**
+
+The seventh arrived after the first promotion, when the question *"where is the data upload
+functionality?"* had the honest answer: **nowhere**. The pipeline, the API and the tests existed; no
+file picker did. Three defects sat behind that gap and none could have been found without a screen —
+the server ignored any caller-supplied mapping and applied a fixed one, making a confirmation step
+decorative; a date column mapped to a date concept was validated as a number and quarantined every
+row of a good file; and the identity and period columns were offered twice, so one column could be
+answered two ways.
 
 Every one of them was found by *running* the product — typing questions into a browser, generating a
 benchmark from the live system, asking a real model a real question. None was found by reading the

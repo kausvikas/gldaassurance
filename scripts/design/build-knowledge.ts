@@ -73,7 +73,7 @@ export async function buildKnowledge(): Promise<KnowledgeBuild> {
   const demo = knowledgeDemo(authorised, first?.id ?? authorised[0] ?? 'prj-001');
   // The three uploads the Knowledge surface renders: a contract, a supplemental extract, and a file
   // of deliberately bad rows whose quarantine is the point.
-  await syncFixtures(demo.registry);
+  await syncFixtures(demo.registry, authorised);
   demo.addAtlasSow();
   demo.addSupplementalFinancials();
   demo.addBadRows();
@@ -182,6 +182,41 @@ export function verificationTable(build: KnowledgeBuild): string {
         <thead><tr>
           <th>Source</th><th>Verification</th><th>Received</th><th>Accepted</th>
           <th>Quarantined</th><th>Indexed</th><th>Last used for</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+}
+
+/**
+ * The conflict register.
+ *
+ * Two sources, one project, one concept, one period, materially different values — with the
+ * governed answer and the disagreement side by side. The losing value is shown deliberately: the
+ * disclosure needs both numbers, and a register that showed only the winner would be indistinguishable
+ * from a system that had silently merged them.
+ */
+export function conflictTable(registry: SourceRegistry): string {
+  const conflicts = registry.conflicts();
+  if (conflicts.length === 0) {
+    return '<p class="gl-note" style="margin-top:18px">No source disagreement has been recorded.</p>';
+  }
+  const rows = conflicts.slice(0, 20).map((c) => {
+    const others = c.entries.filter((e) => e.sourceId !== c.governedSourceId);
+    return `
+        <tr>
+          <td><b>${esc(c.projectId)}</b></td>
+          <td>${esc(c.concept)}<div class="gl-note" style="font-size:12.5px;margin-top:3px">as at ${esc(c.period)}</div></td>
+          <td class="gl-num">${esc(c.governedValue)}<div class="gl-note" style="font-size:12.5px;margin-top:3px">${esc(c.governedSourceId)} · ${esc(c.governedAuthority.toLowerCase().replace(/_/g, ' '))}</div></td>
+          <td class="gl-num">${others.map((e) => `${esc(e.value)}<div class="gl-note" style="font-size:12.5px;margin-top:3px">${esc(e.sourceId)} · ${esc(e.authority.toLowerCase().replace(/_/g, ' '))}</div>`).join('')}</td>
+          <td>${c.unresolvedAuthority
+    ? 'No source outranks the other. This is a governance defect, not a data one — the registry should have made the tie impossible.'
+    : 'The higher authority governs. The disagreement is disclosed and neither value was changed.'}</td>
+        </tr>`;
+  }).join('');
+  return `
+      <div style="overflow-x:auto"><table class="gl-srcgrid">
+        <thead><tr>
+          <th>Project</th><th>Concept</th><th>Governed value</th><th>Also reported</th><th>Resolution</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table></div>`;

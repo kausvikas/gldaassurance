@@ -13,8 +13,9 @@ import { GL_RUNTIME } from './gl-runtime.js';
 import { shell, filterBar, esc, executiveText, type Area } from './gl-shell.js';
 import { projectExecutiveHealthFor } from '../assessment/project-health-adapter.js';
 import { GL_ASSISTANT_RUNTIME } from './gl-assistant.js';
+import { GL_UPLOAD_RUNTIME } from './gl-upload.js';
 import {
-  authorityTable, buildKnowledge, quarantineTable, sourcesTable, verificationTable,
+  authorityTable, buildKnowledge, conflictTable, quarantineTable, sourcesTable, verificationTable,
 } from './build-knowledge.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -372,6 +373,26 @@ const assistantBody = [
 const assistant = page('Assistant', 'assistant', assistantBody);
 
 // ---------------------------------------------------------------- knowledge ----
+const addKnowledge = band('white', `
+      <h2 class="gl-h2">Add knowledge</h2>
+      <p class="gl-sub">A workbook or a delimited file, parsed on the server and mapped to governed
+        concepts by you. Nothing is guessed: a suggestion marked <em>likely</em> is left unselected,
+        because accepting it should be something you did rather than something you failed to undo.</p>
+      <p class="gl-note" style="margin-top:12px;max-width:78ch">Every accepted record enters the
+        sandbox data context as supplemental evidence. There is no control on this screen that raises
+        it, because there is no path in the product that raises it — an uploaded extract is one
+        person's export, and the executive figures continue to come from the governed portfolio.</p>
+      <div class="gl-upload" id="gl-upload">
+        <ol class="gl-steps" id="gl-steps" aria-label="Ingestion steps"></ol>
+        <label class="gl-drop" id="gl-drop" for="gl-file">
+          <b>Choose a data file</b>
+          <span>Workbook or delimited text. The file's own bytes decide how it is read, not its name.</span>
+          <input type="file" id="gl-file" accept=".xlsx,.xls,.csv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+        </label>
+        <p style="margin-top:14px"><span class="gl-badge" id="gl-upnote" role="status">Looking for the trusted runtime…</span></p>
+        <div id="gl-stage" aria-live="polite"></div>
+      </div>`);
+
 const knowledgePage = page('Knowledge & Connections', 'assistant', [
   band('tint', `
       <p class="gl-eyebrow">Assistant · Knowledge &amp; Connections</p>
@@ -383,18 +404,28 @@ const knowledgePage = page('Knowledge & Connections', 'assistant', [
         executive figures. Uploaded material enters a sandbox data context, and this proof of concept
         implements no path that promotes it to canonical. The synthetic portfolio remains the only
         governed source.</p>`),
-  band('white', `
+  addKnowledge,
+  band('tint', `
       <h2 class="gl-h2">Sources</h2>
       <p class="gl-sub">Six enterprise connectors are present as clearly-labelled synthetic fixtures.
         A fixture is never shown as a connection: reaching <em>connected and verified</em> requires a
         live endpoint to have answered, and a fixture has none.</p>
       ${sourcesTable(knowledge.registry)}`),
-  band('tint', `
+  band('white', `
       <h2 class="gl-h2">Verify knowledge</h2>
       <p class="gl-sub">A successful upload is not evidence that anything was learned. A source counts
         as grounded only when it has been ingested, is retrievable, <em>and</em> an answer has actually
         used it — reported here as three separate facts, because they disagree more often than not.</p>
       ${verificationTable(knowledge)}`),
+  band('tint', `
+      <h2 class="gl-h2">Source conflicts</h2>
+      <p class="gl-sub">The same project, the same concept, the same period, materially different
+        values. The higher authority governs and the disagreement is shown beside it — never merged,
+        never averaged, and never resolved by whichever source arrived last.</p>
+      <p class="gl-note" style="margin-bottom:6px">Materiality is half a percentage point with an
+        absolute floor, so rounding noise does not fill this register and bury the real ones. Both
+        thresholds are POC configuration.</p>
+      ${conflictTable(knowledge.registry)}`),
   band('white', `
       <h2 class="gl-h2">Quarantine</h2>
       <p class="gl-sub">Records that failed validation. They keep their values so they can be
@@ -514,6 +545,11 @@ function withAssistantRuntime(html: string): string {
   return html.replace('</body>', `${recording}\n<script>${GL_ASSISTANT_RUNTIME}</script>\n</body>`);
 }
 
+/** The upload client, on the one route that needs it. */
+function withUploadRuntime(html: string): string {
+  return html.replace('</body>', `<script>${GL_UPLOAD_RUNTIME}</script>\n</body>`);
+}
+
 function word(t: string): string {
   return ({ IMPROVING: 'Improving', STABLE: 'Stable', DETERIORATING: 'Deteriorating',
     RAPIDLY_DETERIORATING: 'Deteriorating fast' } as Record<string, string>)[t] ?? t;
@@ -527,7 +563,9 @@ writeFileSync(join(OUT, 'forward-risk.html'), forwardRisk, 'utf8');
 writeFileSync(join(OUT, 'interventions.html'), interventions, 'utf8');
 writeFileSync(join(OUT, 'assistant.html'), withAssistantRuntime(assistant), 'utf8');
 mkdirSync(join(OUT, 'assistant'), { recursive: true });
-writeFileSync(join(OUT, 'assistant', 'knowledge.html'), knowledgePage, 'utf8');
+writeFileSync(
+  join(OUT, 'assistant', 'knowledge.html'), withUploadRuntime(knowledgePage), 'utf8',
+);
 for (const f of facts) writeFileSync(join(OUT, 'projects', `${f.id}.html`), projectPage(f), 'utf8');
 
 process.stdout.write(

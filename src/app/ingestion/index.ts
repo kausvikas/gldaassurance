@@ -7,7 +7,7 @@
  */
 export {
   type MappingSuggestion, type ApprovedMapping, type StructuredIngestionRequest,
-  type StructuredIngestionResult, UnreadableUpload, ingestStructured, suggestMappings,
+  type StructuredIngestionResult, UnreadableUpload, ingestStructured, ingestConnectorRecords, suggestMappings,
 } from './structured.js';
 
 export {

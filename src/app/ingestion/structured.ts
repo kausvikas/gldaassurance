@@ -160,6 +160,48 @@ export function suggestMappings(headers: readonly string[]): readonly MappingSug
 export function ingestStructured(request: StructuredIngestionRequest): StructuredIngestionResult {
   const format = detectFormat(request.bytes);
   const sheet = readSheet(request, format);
+  return ingestSheet(request, sheet);
+}
+
+/**
+ * Ingests records a connector supplied, through the **same** pipeline a file goes through.
+ *
+ * Not a parallel path. A connector's rows meet the same mapping, the same identity resolution, the
+ * same validation and the same quarantine as an uploaded workbook, because a second pipeline is a
+ * second set of rules that will eventually disagree with the first — and the one that runs against
+ * enterprise data would be the less exercised of the two.
+ */
+export function ingestConnectorRecords(
+  request: Omit<StructuredIngestionRequest, 'bytes' | 'fileName'> & {
+    readonly sourceName: string;
+    readonly records: readonly {
+      readonly naturalKey: string;
+      readonly observedAt: string | null;
+      readonly fields: Readonly<Record<string, string>>;
+    }[];
+  },
+): StructuredIngestionResult {
+  const headers = [...new Set(request.records.flatMap((r) => Object.keys(r.fields)))];
+  const sheet: TabularSheet = {
+    name: request.sourceName,
+    headers,
+    rows: request.records.map((record, i) => ({
+      rowNumber: i + 2,
+      cells: record.fields,
+      formulaLike: [],
+      uncachedFormula: [],
+    })),
+    rowsTruncated: 0,
+  };
+  return ingestSheet(
+    { ...request, bytes: new Uint8Array(), fileName: request.sourceName } as StructuredIngestionRequest,
+    sheet,
+  );
+}
+
+function ingestSheet(
+  request: StructuredIngestionRequest, sheet: TabularSheet,
+): StructuredIngestionResult {
   const columnProfile = profile(sheet);
   const suggestions = suggestMappings(sheet.headers);
 

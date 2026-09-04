@@ -148,5 +148,5 @@ export {
   type StructuredIngestionResult, type DocumentIngestionRequest, type DocumentIngestionResult,
   type RegisteredSource, type KnowledgeVerification,
   UnreadableUpload, UnreadableDocument, SourceRegistry,
-  ingestStructured, ingestDocument, suggestMappings,
+  ingestStructured, ingestConnectorRecords, ingestDocument, suggestMappings,
 } from './ingestion/index.js';

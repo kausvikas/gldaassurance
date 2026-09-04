@@ -8,7 +8,7 @@
  * the G-ORACLE gate forbids production source from importing it.
  */
 import type { ApprovedMapping } from '@app';
-import { SourceRegistry, ingestDocument, ingestStructured } from '@app';
+import { SourceRegistry, ingestConnectorRecords, ingestDocument, ingestStructured } from '@app';
 import type { StructuredIngestionResult, DocumentIngestionResult } from '@app';
 import { ProjectIdentityHub } from '@contexts/integration';
 import type { Instant } from '@platform/time';
@@ -52,7 +52,17 @@ export interface KnowledgeDemo {
  * governed figure, which is the property §8 and §29 of the Phase 13 contract require and which this
  * function is where it becomes true.
  */
-export async function syncFixtures(registry: SourceRegistry): Promise<void> {
+/** Concepts whose values are not numbers. Shared with the runtime's mapping reader. */
+const NON_NUMERIC: ReadonlySet<string> = new Set([
+  'status.reportedRag', 'financial.financialPeriod', 'financial.invoiceStatus',
+  'assurance.reviewDate', 'assurance.actionStatus', 'commercial.opportunity',
+  'commercial.accountOwnership', 'delivery.milestoneStatus', 'delivery.releaseEvent',
+  'contract.paymentMilestone', 'document.contractTerm', 'document.acceptanceCriteria',
+]);
+
+export async function syncFixtures(
+  registry: SourceRegistry, knownProjectIds: readonly string[],
+): Promise<void> {
   /*
    * An initial sync of every fixture.
    *
@@ -61,10 +71,53 @@ export async function syncFixtures(registry: SourceRegistry): Promise<void> {
    * that never runs a connector demonstrates a diagram. This exercises the real `sync` path, real
    * idempotency keys included, so the counts on the page are counts of records that actually moved.
    */
+  const identity = identityHub();
   for (const source of registry.sourceList().filter((s) => s.kind === 'CONNECTOR')) {
     const connector = registry.connector(source.sourceId);
     if (connector === undefined) continue;
-    const { result } = await connector.sync({ mode: 'INITIAL', since: null, maxRecords: 500 });
+    const { result, records } = await connector.sync({ mode: 'INITIAL', since: null, maxRecords: 500 });
+
+    /*
+     * Stage what the connector returned, so the conflict engine has both sides.
+     *
+     * Recording a receipt and discarding the records made the Knowledge surface report six
+     * connectors and zero conflicts — a conflict register that could never fire, next to a
+     * paragraph explaining what it would do. The one demonstration §66 asks for was structurally
+     * unreachable.
+     */
+    const mapping = connector.mapSchema();
+    if (mapping !== null && records.length > 0) {
+      const staged = ingestConnectorRecords({
+        sourceId: source.sourceId,
+        sourceName: source.displayName,
+        records: records.map((r) => ({
+          naturalKey: r.naturalKey, observedAt: r.observedAt, fields: r.fields,
+        })),
+        mapping: {
+          mappingVersion: mapping.mappingVersion,
+          identityField: mapping.identityField,
+          identitySystem: connector.provenance.system,
+          periodField: mapping.periodField,
+          fields: mapping.fields.map((f) => ({
+            sourceField: f.sourceField,
+            concept: f.concept,
+            required: f.required,
+            kind: NON_NUMERIC.has(f.concept) ? 'CATEGORICAL' as const : 'NUMERIC' as const,
+          })),
+        },
+        identity,
+        registry: registry.authority,
+        authority: 'GOVERNED_REFERENCE',
+        dataContext: 'SANDBOX',
+        receivedAt: KNOWLEDGE_NOW,
+        effectiveDate: result.watermark,
+        declaredRecordCount: null,
+        knownProjectIds,
+      });
+      registry.addObservations(staged.observations);
+      registry.addStaged(staged.staged);
+    }
+
     registry.addReceipt(source.sourceId, {
       receiptId: `rcpt-${source.sourceId}`,
       sourceId: source.sourceId,
