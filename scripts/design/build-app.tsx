@@ -47,14 +47,22 @@ const page = (title: string, active: Area, body: string, context?: string): stri
 // ---------------------------------------------------------------- command centre ----
 const commandCenter = page('Command Center', 'command-center', [
   band('tint', `
-      <p class="gl-eyebrow">Fixed-bid portfolio · Chief Delivery Officer</p>
-      <h1 class="gl-lede">Where the portfolio stands, and <em>where to intervene first</em>.</h1>
-      <p class="gl-sub">Every figure below is the governed assessment over the projects you are
-        authorised for. Filters change the population, not the arithmetic.</p>
-      <p class="gl-note" style="margin-top:10px;max-width:74ch">Portfolio margin is calculated from
-        aggregate forecast revenue and aggregate cost at completion — not as an average of project
-        margins, which would let small projects move a portfolio figure. Margin at risk is the sum of
-        each project's exposure; it does not net off risks that share a root cause.</p>
+      <p class="gl-eyebrow" id="gl-lens-eyebrow">Fixed-bid portfolio · Chief Delivery Officer</p>
+      <h1 class="gl-lede" id="gl-lens-h1">Where the portfolio stands, and <em>where to intervene first</em>.</h1>
+      <p class="gl-sub" id="gl-lens-lead">Every figure below is the governed assessment over the
+        projects you are authorised for. Filters change the population, not the arithmetic.</p>
+      <!--
+        The methodology note is real and it is not the first thing a CDO needs.
+
+        It occupied four lines above the fold on every visit, pushing the economic consequence below
+        it. Behind a disclosure it is one line until someone wants it, which is the right ratio for a
+        statement that changes on no schedule and that a reader needs exactly once.
+      -->
+      <details class="gl-method"><summary>How these figures are calculated</summary>
+        <p class="gl-note" style="max-width:74ch">Portfolio margin is calculated from aggregate
+        forecast revenue and aggregate cost at completion — not as an average of project margins,
+        which would let small projects move a portfolio figure. Margin at risk is the sum of each
+        project's exposure; it does not net off risks that share a root cause.</p></details>
       ${filterBar(DIMS)}
       <dl class="gl-figs">
         <div class="gl-fig"><dt>Contract value</dt><dd id="gl-tcv">—</dd>
@@ -67,6 +75,7 @@ const commandCenter = page('Command Center', 'command-center', [
           <div class="gl-vs">projects awaiting a decision</div></div>
       </dl>`),
   band('white', `
+      <div data-section="health">
       <h2 class="gl-h2">Current health, by count and by economic weight</h2>
       <p class="gl-note">A portfolio can look healthy by project count while most of its contract
         value sits in the projects that are not. Both readings are shown because only one of them pays.</p>
@@ -85,27 +94,35 @@ const commandCenter = page('Command Center', 'command-center', [
             <span><span class="gl-rag gl-rag--GREEN">GREEN</span> <b id="gl-weight-legend-g">—</b></span>
             <span><span class="gl-rag gl-rag--AMBER">AMBER</span> <b id="gl-weight-legend-a">—</b></span>
             <span><span class="gl-rag gl-rag--RED">RED</span> <b id="gl-weight-legend-r">—</b></span></p></div>
-      </div>`),
+      </div></div>`),
   band('tint', `
+      <div data-section="green">
       <h2 class="gl-h2">Green projects requiring attention</h2>
       <p class="gl-note">Two findings, counted apart because they mean different things. One is a
         disagreement about today; the other is a warning about what is coming. They cannot overlap:
         the first requires the assessment to differ from the report, the second requires it to agree.
         A project the system also calls Green is never described as evidence disagreeing.</p>
       <div class="gl-split">
-        <div><p class="gl-eyebrow" style="margin-top:26px">Reported Green — evidence disagrees</p>
+        <div data-count="gl-disagree"
+          data-zero="No project in this view is reported Green while the evidence disagrees.">
+          <p class="gl-eyebrow" style="margin-top:26px">Reported Green — evidence disagrees</p>
           <p style="font-size:44px;font-weight:600;letter-spacing:-.02em" id="gl-disagree">—</p>
-          <p class="gl-note">Delivery management reports these Green for the period; the governed
-            assessment of current evidence says Amber or Red. Nobody is necessarily wrong — reporting
-            runs on a cycle and evidence does not — but the gap is the finding.</p>
-          <p class="gl-note" style="margin-top:12px"><a class="gl-arrow" href="/projects?view=disagree">See these projects →</a></p></div>
-        <div><p class="gl-eyebrow" style="margin-top:26px">System Green — emerging risk</p>
+          <p class="gl-note" data-when="nonzero">Delivery management reports these Green for the
+            period; the governed assessment of current evidence says Amber or Red. Nobody is
+            necessarily wrong — reporting runs on a cycle and evidence does not — but the gap is the
+            finding.</p>
+          <p class="gl-note" style="margin-top:12px" data-when="nonzero"><a class="gl-arrow" href="/projects?view=disagree">See these projects →</a></p></div>
+        <div data-count="gl-emerging"
+          data-zero="None of these is System Green. Every one is a live disagreement about today rather than a warning about what is coming.">
+          <p class="gl-eyebrow" style="margin-top:26px">System Green — emerging risk</p>
           <p style="font-size:44px;font-weight:600;letter-spacing:-.02em" id="gl-emerging">—</p>
-          <p class="gl-note">Healthy on today's evidence, with a governed 30- or 60-day outlook that
-            turns. Nothing has failed yet, which is exactly why these are worth an hour now.</p>
-          <p class="gl-note" style="margin-top:12px"><a class="gl-arrow" href="/projects?view=emerging">See these projects →</a></p></div>
-      </div>`),
+          <p class="gl-note" data-when="nonzero">Healthy on the evidence today, with a governed 30-
+            or 60-day outlook that turns. Nothing has failed yet, which is exactly why these are
+            worth an hour now.</p>
+          <p class="gl-note" style="margin-top:12px" data-when="nonzero"><a class="gl-arrow" href="/projects?view=emerging">See these projects →</a></p></div>
+      </div></div>`),
   band('white', `
+      <div data-section="heading">
       <h2 class="gl-h2">Where the portfolio is heading</h2>
       <p class="gl-note">The governed outlook moves a band by trajectory and the number of signals
         moving adversely at once. Rule outputs, not probabilities — nothing here is trained, fitted
@@ -117,8 +134,9 @@ const commandCenter = page('Command Center', 'command-center', [
         <div><h3>Recovering</h3><p style="font-size:38px;font-weight:600;letter-spacing:-.02em" id="gl-improving">—</p>
           <p class="gl-note">Improving across successive observations — a trend, not a label.</p>
           <p class="gl-note" style="margin-top:10px"><a class="gl-arrow" href="/interventions?view=recovering">Inspect recovery →</a></p></div>
-      </div>`),
+      </div></div>`),
   band('tint', `
+      <div data-section="queue">
       <h2 class="gl-h2">Where intervention still changes the outcome</h2>
       <p class="gl-note">Ordered by the governed intervention ranking, which is not "most Red first".
         A loss already crystallised may need oversight; it is not necessarily where an hour of
@@ -127,22 +145,31 @@ const commandCenter = page('Command Center', 'command-center', [
         <th class="gl-sticky">Project</th><th>Reported</th><th>Assessed</th><th>Trajectory</th>
         <th>60-day</th><th class="num">Margin at risk</th><th>Time to act</th><th>Executive action</th>
       </tr></thead><tbody id="gl-queue-body"></tbody></table></div>
-      <p class="gl-note" style="margin-top:18px"><a class="gl-arrow" href="/interventions">Full intervention and recovery view →</a></p>`),
+      <p class="gl-note" style="margin-top:18px"><a class="gl-arrow" href="/interventions">Full intervention and recovery view →</a></p></div>`),
   band('white', `
+      <div data-section="drivers">
       <h2 class="gl-h2">Where the same problem is repeating</h2>
       <p class="gl-note">Governed drivers across the selected population, by the margin they put at
         risk. Concentration tells you where to look; it does not reduce the exposure — correlation
         does not net off, only allocation evidence does.</p>
       <ul class="gl-list" id="gl-drivers"></ul>
-      <p class="gl-note" style="margin-top:22px">Scope delivered without commercial cover across
-        <b id="gl-scopecount">—</b> projects, worth <b id="gl-scope">—</b>.</p>`),
+      <p class="gl-note" style="margin-top:22px" id="gl-scopeline2">Scope delivered without
+        commercial cover across <b id="gl-scopecount">—</b> projects, worth <b id="gl-scope">—</b>.</p></div>`),
   band('tint', `
       <h2 class="gl-h2">What changed</h2>
       <p class="gl-note">Changes shown from governed financial history and formal reported-status
         history. What is not yet reconstructable is named in the list rather than left to inference.</p>
+      <!--
+        The first four are the ones a CDO acts on; the rest are the audit trail behind them. Showing
+        all nine put 656px of list at the foot of the page, most of it read once.
+      -->
       <ul class="gl-list">
-        ${whatChanged()}
-      </ul>`),
+        ${whatChanged(0, 4)}
+      </ul>
+      <details class="gl-method" style="margin-top:18px">
+        <summary>The rest of the governed change record</summary>
+        <ul class="gl-list" style="margin-top:14px">${whatChanged(4)}</ul>
+      </details>`),
 ].join('\n'));
 
 
@@ -154,7 +181,7 @@ const commandCenter = page('Command Center', 'command-center', [
  * honest message about a comparison the surface had not been built to make; it is not an acceptable
  * answer for a product whose second executive question is "what changed since my last review".
  */
-function whatChanged(): string {
+function whatChanged(from = 0, to?: number): string {
   const withHistory = facts.filter((f) => f.priorForecastGm !== null && f.forecastGmNow !== null);
   const money = (n: number): string => {
     const sign = n < 0 ? '\u2212' : '+';
@@ -213,7 +240,7 @@ function whatChanged(): string {
     unavailable('System health band, milestone risk and acceptance movement',
       'the portfolio stores no per-period system band, milestone forecast snapshot or acceptance state, so these cannot be reconstructed without re-running the engines at an earlier as-of — which this build does not do'),
   ];
-  return rows.join('\n        ');
+  return rows.slice(from, to).join('\n        ');
 }
 
 // ---------------------------------------------------------------- projects ----
@@ -447,7 +474,11 @@ const knowledgePage = page('Knowledge & Connections', 'assistant', [
 function projectPage(f: ExecutiveFact): string {
   const h = projectExecutiveHealthFor(portfolio, f.id) as unknown as {
     summary: { status: string; cause: string; outlook: string; economicImpact: string; action: string };
-    progressBurn: { plannedCompletion: string; actualCompletion: string; costConsumed: string; narrative: string };
+    progressBurn: {
+      plannedCompletion: string; actualCompletion: string; costConsumed: string; narrative: string;
+      progressVariance: string; requiredVelocityRatio: string | null;
+      requiredVelocityUnavailable: string | null;
+    };
     financial: { label: string; value: string }[];
     confidence: { dataBand: string; forecastBand: string; greenClaimHeadline: string };
   };
@@ -482,16 +513,53 @@ function projectPage(f: ExecutiveFact): string {
           .map(([label, body]) => `<li><span class="v"><b>${label}</b><br>${esc(executiveText(body))}</span></li>`)
           .join('\n        ')}
       </ul>`),
+    /*
+     * Two questions, asked separately, because they have different answers.
+     *
+     * These four figures used to sit in one undifferentiated row under one narrative, and a project
+     * could read *"progress is on or ahead of plan and cost is tracking progress. No burn concern is
+     * indicated."* while the section above it said *"the plan now needs 4.65× the delivery rate the
+     * team has demonstrated"*. A reader has no way to reconcile that, and the natural reading — one
+     * of these must be wrong — is the wrong reading. Both are correct.
+     *
+     * They are correct because they measure different things. Completion-to-date against plan-to-date
+     * is a statement about **where the project is now**. Required-over-demonstrated velocity is a
+     * statement about **whether the plan that remains is deliverable at the rate so far shown**, and
+     * a back-loaded plan can be ahead on the first and alarming on the second at the same time.
+     *
+     * Measured before writing this: across the portfolio the ratio is not an artefact of being early
+     * — projects under 10% complete average 2.99× and projects over 40% average 2.26×, and the
+     * highest single ratio (6.13×) belongs to a project 62% complete. It is a real signal, so the
+     * page states it as a figure rather than burying it in a sentence.
+     */
     band('tint', `
       <h2 class="gl-h2">Performance against commitment</h2>
-      <p class="gl-note" style="max-width:78ch">${esc(executiveText(h.progressBurn.narrative))}</p>
-      <dl class="gl-figs">
-        <div class="gl-fig"><dt>Planned completion</dt><dd>${esc(h.progressBurn.plannedCompletion)}</dd></div>
-        <div class="gl-fig"><dt>Actual completion</dt><dd>${esc(h.progressBurn.actualCompletion)}</dd></div>
-        <div class="gl-fig"><dt>Cost consumed</dt><dd>${esc(h.progressBurn.costConsumed)}</dd></div>
-        <div class="gl-fig"><dt>Scope uncovered</dt><dd>${esc(f.scopeExposureDisplay)}</dd>
-          <div class="gl-vs">delivered without a change request</div></div>
-      </dl>`),
+      <div class="gl-split" style="margin-top:22px">
+        <div>
+          <p class="gl-eyebrow">Current position</p>
+          <dl class="gl-figs" style="margin-top:14px">
+            <div class="gl-fig"><dt>Actual completion</dt><dd>${esc(h.progressBurn.actualCompletion)}</dd>
+              <div class="gl-vs">plan today ${esc(h.progressBurn.plannedCompletion)} · ${esc(h.progressBurn.progressVariance)}</div></div>
+            <div class="gl-fig"><dt>Cost consumed</dt><dd>${esc(h.progressBurn.costConsumed)}</dd>
+              <div class="gl-vs">of budget at completion</div></div>
+          </dl>
+          <p class="gl-note" style="max-width:44ch;margin-top:14px">${esc(executiveText(h.progressBurn.narrative))}</p>
+        </div>
+        <div>
+          <p class="gl-eyebrow">Remaining plan realism</p>
+          <dl class="gl-figs" style="margin-top:14px">
+            <div class="gl-fig"><dt>Required future delivery rate</dt>
+              <dd>${h.progressBurn.requiredVelocityRatio === null
+                ? '—' : esc(h.progressBurn.requiredVelocityRatio)}</dd>
+              <div class="gl-vs">${h.progressBurn.requiredVelocityRatio === null
+                ? esc(h.progressBurn.requiredVelocityUnavailable ?? 'not computable')
+                : 'of the rate demonstrated over the governed window'}</div></div>
+            <div class="gl-fig"><dt>Scope uncovered</dt><dd>${esc(f.scopeExposureDisplay)}</dd>
+              <div class="gl-vs">delivered without a change request</div></div>
+          </dl>
+          <p class="gl-note" style="max-width:44ch;margin-top:14px">${esc(remainingPlanReading(h.progressBurn))}</p>
+        </div>
+      </div>`),
     band('white', `
       <h2 class="gl-h2">Economics</h2>
       <dl class="gl-figs">
@@ -511,6 +579,37 @@ function projectPage(f: ExecutiveFact): string {
   ].join('\n');
 
   return shell({ title: f.name, active: 'projects', body, context });
+}
+
+/**
+ * What the remaining-plan figure means, in the reader's terms and nobody's more than that.
+ *
+ * Every branch here is a restatement of two governed figures and their comparison. There is no
+ * causal claim — the page does not say *why* the remaining plan is steep, because the engines do not
+ * know and inventing a reason would be exactly the fabricated explanation this product refuses
+ * elsewhere. What it does say is which of the two readings the reader is looking at, so the pair
+ * stops looking like a contradiction.
+ */
+function remainingPlanReading(pb: {
+  requiredVelocityRatio: string | null;
+  requiredVelocityUnavailable: string | null;
+  progressVariance: string;
+}): string {
+  if (pb.requiredVelocityRatio === null) {
+    return 'The remaining plan cannot be tested against demonstrated delivery here: '
+      + `${pb.requiredVelocityUnavailable ?? 'the ratio is not computable'}. `
+      + 'That is a gap in the evidence, not a clean bill of health.';
+  }
+  const ratio = globalThis.Number.parseFloat(pb.requiredVelocityRatio);
+  const ahead = pb.progressVariance.trim().startsWith('+');
+  if (!globalThis.Number.isFinite(ratio) || ratio <= 1.05) {
+    return 'The work outstanding, spread across the weeks that remain, needs no more than the rate '
+      + 'this team has already demonstrated.';
+  }
+  return `${ahead ? 'Ahead today, but the' : 'The'} remaining plan requires a delivery rate `
+    + `${pb.requiredVelocityRatio} the one demonstrated over the governed window. `
+    + 'Completion against plan measures where the project is; this measures whether what is left is '
+    + 'deliverable at the rate so far shown.';
 }
 
 /*

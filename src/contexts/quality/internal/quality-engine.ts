@@ -17,6 +17,7 @@
  * draft-dependency audit would fail the build if it appeared.
  */
 import { type Money, type Quantity, qAdd, qDiv, qIsNegative, qSub, qty } from '@platform/decimal';
+import { countOf } from '@platform/language';
 import type { NotEvaluatedReasonCode, SignalState } from '@platform/explainability';
 import type { CalendarDate, Instant } from '@platform/time';
 import { daysBetween, dateOf } from '@platform/time';
@@ -216,7 +217,7 @@ export function evaluateQuality(input: QualityEvaluationInput): QualityEvaluatio
   const defectBacklogTrend = trendValue === null
     ? nc<Quantity>(
       'MET-QUA-009',
-      `${String(input.openDefectHistory.length)} weekly defect snapshot(s), below the `
+      `${countOf(input.openDefectHistory.length, 'weekly defect snapshot')}, below the `
       + `${String(input.backlogWindowWeeks)} the registered trailing window requires`,
     )
     : ok('MET-QUA-009', trendValue);

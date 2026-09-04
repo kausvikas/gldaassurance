@@ -185,6 +185,120 @@ footer.gl-foot p{max-width:78ch}
  * on the Command Center looks that way in the Assistant, which is most of what makes a product feel
  * like one product.
  */
-export const GL_CSS = `${GL_BASE_CSS}${GL_ASSISTANT_CSS}${GL_UPLOAD_CSS}${GL_ACCESS_CSS}`;
+/* ---- the executive glimpse ----
+ *
+ * A white panel with a hairline and editorial type, not a black chart tooltip. The distinction is
+ * not decoration: a chart-library tooltip reads as an artefact of a charting widget, and this panel
+ * is a governed statement about a population — the same register as the rest of the page.
+ */
+const GL_LENS_CSS = `
+/* ---- executive lenses and decision density ----
+ *
+ * A section a lens has nothing to say about is dimmed and tightened rather than deleted: the page
+ * keeps its shape, so a reader who switches lenses is not re-learning the layout each time.
+ */
+.gl-quiet{opacity:.62}
+.gl-quiet .gl-h2{font-size:20px}
+.gl-band:has(> .gl-wrap > .gl-quiet){padding-top:34px;padding-bottom:34px}
+.gl-zero{margin:14px 0 0;max-width:70ch;font-size:14px;color:var(--steel-75)}
+
+/* The methodology note: one line until asked for. */
+.gl-method{margin:14px 0 0;max-width:74ch}
+.gl-method summary{cursor:pointer;font-size:13px;color:var(--steel-50);
+  list-style:none;display:inline-flex;align-items:center;gap:6px}
+.gl-method summary::-webkit-details-marker{display:none}
+.gl-method summary::before{content:'+';font-size:14px;color:var(--orange)}
+.gl-method[open] summary::before{content:'\u2212'}
+.gl-method summary:hover{color:var(--steel-75)}
+.gl-method summary:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:3px}
+.gl-method p{margin-top:10px}
+
+/*
+ * Decision density.
+ *
+ * Measured, not guessed: the hero was 750px of a 723px viewport, so the economic consequence sat
+ * below the fold on every visit. 165px of that was a wall of scope dropdowns above the figures.
+ * Folding those, tightening the band rhythm and capping the change log reclaims roughly a third of
+ * the page's vertical travel while leaving the type scale, the rules and the white space philosophy
+ * exactly where they were. The target is editorial calm at executive density.
+ */
+.gl-band{padding-top:44px;padding-bottom:44px}
+.gl-band .gl-h2{margin-bottom:6px}
+.gl-figs{margin-top:22px}
+
+/* Executive lenses: questions, in the open. */
+.gl-lenses{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 0}
+.gl-lenses button{font:inherit;font-size:13px;color:var(--steel-75);background:var(--white);
+  border:1px solid var(--rule-strong);border-radius:999px;padding:7px 14px;cursor:pointer;
+  transition:background .12s ease,color .12s ease,border-color .12s ease}
+.gl-lenses button:hover{border-color:var(--steel-50);color:var(--steel-100)}
+.gl-lenses button[aria-pressed="true"]{background:var(--steel-100);border-color:var(--steel-100);
+  color:var(--white)}
+.gl-lenses button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+/* Scope filters: folded, and honest about what they hold. */
+.gl-scopefilters{margin:14px 0 0}
+.gl-scopefilters summary{cursor:pointer;list-style:none;display:inline-flex;align-items:baseline;
+  gap:8px;font-size:13px;padding:4px 0}
+.gl-scopefilters summary::-webkit-details-marker{display:none}
+.gl-scopefilters__k{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel-50)}
+.gl-scopefilters__v{color:var(--steel-75);border-bottom:1px dashed var(--rule-strong)}
+.gl-scopefilters summary:hover .gl-scopefilters__v{color:var(--steel-100);border-color:var(--steel-50)}
+.gl-scopefilters__v.is-set{color:var(--steel-100);font-weight:600;border-bottom-style:solid;
+  border-color:var(--orange)}
+.gl-scopefilters summary:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:3px}
+.gl-scopefilters .gl-filters{padding:12px 0 4px}
+
+@media (max-width: 900px){ .gl-band{padding-top:34px;padding-bottom:34px} }
+@media (prefers-reduced-motion: reduce){ .gl-lenses button{transition:none} }
+`;
+
+const GL_GLIMPSE_CSS = `
+.gl-glimpse{position:absolute;z-index:80;width:290px;padding:16px 18px 14px;background:var(--white);
+  border:1px solid var(--rule);border-radius:10px;
+  box-shadow:0 1px 2px rgba(24,26,36,.05),0 12px 32px rgba(24,26,36,.14);
+  font-size:13px;line-height:1.45;pointer-events:none}
+.gl-glimpse__t{margin:0 0 12px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--steel-75);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.gl-glimpse__f{margin:0 0 12px;display:flex;flex-direction:column;gap:9px}
+.gl-glimpse__f div{display:grid;grid-template-columns:1fr auto;column-gap:12px;align-items:baseline}
+.gl-glimpse__f dt{font-size:12px;color:var(--steel-75)}
+.gl-glimpse__f dd{margin:0;font-size:16px;font-weight:600;letter-spacing:-.01em;color:var(--steel-100);
+  font-variant-numeric:tabular-nums}
+.gl-glimpse__f span{grid-column:1/-1;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--steel-50)}
+.gl-glimpse__l{margin:0 0 5px;padding-top:11px;border-top:1px solid var(--rule);
+  font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel-50)}
+.gl-glimpse__p{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.gl-glimpse__p li{display:flex;justify-content:space-between;gap:14px}
+.gl-glimpse__p span{color:var(--steel-100);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gl-glimpse__p b{font-variant-numeric:tabular-nums;font-weight:600;flex:0 0 auto}
+.gl-glimpse__m{margin:5px 0 0;font-size:12px;color:var(--steel-50)}
+.gl-glimpse__a{margin:12px 0 0;padding-top:10px;border-top:1px solid var(--rule);
+  font-size:12.5px;font-weight:600;color:var(--orange-deep)}
+
+/* Restrained affordance: a tonal shift and a cursor, never a button. A health band that looked like
+ * a giant button would dominate a page whose whole argument is editorial calm. */
+.gl-investigable{cursor:pointer;transition:filter .12s var(--ease,ease),outline-color .12s ease}
+.gl-investigable:hover{filter:brightness(1.07)}
+.gl-investigable:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.gl-bar .gl-investigable:hover{filter:brightness(1.12)}
+
+/* Transition rows: two labelled figures, never one ambiguous number. */
+.gl-moves li[data-move]{cursor:pointer;border-radius:8px;padding:10px 12px;margin:0 -12px;
+  transition:background .12s ease}
+.gl-moves li[data-move]:hover{background:var(--steel-05)}
+.gl-moves li[data-move]:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.gl-movefig{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}
+.gl-movefig b{font-variant-numeric:tabular-nums}
+.gl-moveval{font-size:12px;color:var(--steel-50);font-variant-numeric:tabular-nums}
+.gl-moveval i{font-style:normal;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase}
+
+@media (prefers-reduced-motion: reduce){
+  .gl-investigable,.gl-moves li[data-move]{transition:none}
+}
+`;
+
+export const GL_CSS = `${GL_BASE_CSS}${GL_ASSISTANT_CSS}${GL_UPLOAD_CSS}${GL_ACCESS_CSS}${GL_GLIMPSE_CSS}${GL_LENS_CSS}`;
 
 

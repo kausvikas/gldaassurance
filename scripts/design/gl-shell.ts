@@ -157,13 +157,29 @@ export function filterBar(dims: { id: string; label: string; options: string[] }
     ['erosion', 'Margin erosion'],
     ['scope', 'Scope leakage'],
   ];
+  /*
+   * Two different kinds of control, told apart (§34).
+   *
+   * The scope filters and the executive lenses were one undifferentiated wall of controls 165px
+   * tall, sitting above the figures the reader came for — a controls-first experience on a page
+   * whose job is to state a consequence. They are not the same kind of thing: geography and vertical
+   * narrow *who is in the population*, and a lens changes *which question the page answers*.
+   *
+   * So the lenses stay in the open, as the questions they are. The scope filters fold behind a
+   * summary that names the current scope, because a reader who has not changed them does not need to
+   * look at six dropdowns set to All. Nothing is removed, and the collapsed state says what it holds.
+   */
   return `
-      <div class="gl-filters" role="group" aria-label="Portfolio filters">
-        ${dims.map(sel).join('')}
-        <button type="button" class="gl-reset" id="gl-reset">Reset all</button>
-      </div>
-      <div class="gl-quick" role="group" aria-label="Quick views">
+      <div class="gl-lenses" role="group" aria-label="Executive lenses">
         ${QUICK.map(([k, l]) => `<button type="button" data-quick="${k}" aria-pressed="false">${esc(l)}</button>`).join('\n        ')}
       </div>
+      <details class="gl-scopefilters">
+        <summary><span class="gl-scopefilters__k">Portfolio scope</span>
+          <span class="gl-scopefilters__v" id="gl-scopesummary">all geographies, verticals and accounts</span></summary>
+        <div class="gl-filters" role="group" aria-label="Portfolio scope filters">
+          ${dims.map(sel).join('')}
+          <button type="button" class="gl-reset" id="gl-reset">Reset all</button>
+        </div>
+      </details>
       <p class="gl-scope" id="gl-scopeline" aria-live="polite"></p>`;
 }

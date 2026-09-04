@@ -69,6 +69,7 @@ const published = [
 ];
 
 let shells = 0;
+let scripts = 0;
 for (const path of published) {
   const html = readFileSync(path, 'utf8');
   const marker = LEGACY.find((m) => html.includes(m));
@@ -77,6 +78,31 @@ for (const path of published) {
   if (navs !== 1) throw new Error(`${path} renders ${String(navs)} application shells, expected exactly 1`);
   if (!html.includes('aria-current="page"')) throw new Error(`${path} marks no active navigation state`);
   shells += navs;
+
+  /*
+   * Every inline script must parse.
+   *
+   * The client runtime is authored inside a TypeScript template literal, so an escape that is
+   * correct in the source can be wrong in the emitted JavaScript — `\'` inside a template literal
+   * becomes a bare apostrophe and terminates the string it was meant to sit inside. That shipped
+   * once: a one-character error silently broke the whole runtime, and the deployed Command Center
+   * rendered every governed figure as an em dash. No test caught it, because no test parses the
+   * artefact the browser actually receives.
+   *
+   * `new Function` compiles without executing, which is the exact question being asked: is what we
+   * are about to publish syntactically a program?
+   */
+  for (const [i, block] of [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].entries()) {
+    try {
+      // eslint-disable-next-line no-new-func
+      new Function(block[1]);
+      scripts += 1;
+    } catch (e) {
+      throw new Error(
+        `${path} inline script ${String(i)} does not parse: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
 }
 
 writeFileSync(join(OUT, 'robots.txt'), 'User-agent: *\nDisallow: /\n', 'utf8');
@@ -87,3 +113,4 @@ console.log(
   + `${String(projectPages.length)} project pages`,
 );
 console.log(`  one shell per page verified across ${String(shells)} pages · no legacy shell markers`);
+console.log(`  ${String(scripts)} inline scripts parse`);

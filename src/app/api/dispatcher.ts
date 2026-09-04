@@ -20,6 +20,7 @@
  * calls `dispatch()` and applies `SECURITY_HEADERS`; every decision above is already made.
  */
 import type { AuditRecord } from '@platform/audit';
+import { countOf } from '@platform/language';
 import { METRIC_NAMES } from '@platform/observability';
 import {
   type AuthorisedRequest, type CapabilityDeclaration, type RequestContext,
@@ -236,8 +237,8 @@ export class Dispatcher {
       fields,
       decision: 'GRANT',
       reason: telemetry.length === 0
-        ? `${shaped.length} record(s) returned`
-        : `${shaped.length} record(s) returned | securityTelemetry=${telemetry.join(',')}`,
+        ? `${countOf(shaped.length, 'record')} returned`
+        : `${countOf(shaped.length, 'record')} returned | securityTelemetry=${telemetry.join(',')}`,
       correlationId: ctx.auth.correlationId,
       sourceIp: ctx.sourceIp,
       userAgent: ctx.userAgent,

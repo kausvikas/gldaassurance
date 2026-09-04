@@ -43,6 +43,7 @@ import type { RuleVersion } from '@platform/provenance';
 import type { RuleCoverage } from '@contexts/health';
 import type { NotEvaluatedReasonCode, SignalState } from '@platform/explainability';
 import type { CalendarDate, Instant, WeekId } from '@platform/time';
+import { countIs } from '@platform/language';
 import type { DeliveryEvaluation } from '@contexts/delivery';
 import type { ProjectAssessment } from '../metrics/metric-calculation-service.js';
 import {
@@ -335,6 +336,23 @@ export interface ProjectExecutiveHealthView {
     readonly progressVariance: string;
     readonly burnGap: string;
     readonly narrative: string;
+    /**
+     * The remaining plan's realism, stated as a figure rather than left inside prose.
+     *
+     * `MET-DEL-018` — required future velocity over demonstrated velocity, both in completion per
+     * week over the governed window. It appeared only inside the CAUSE sentence, so a project could
+     * say *"progress is on or ahead of plan and cost is tracking progress; no burn concern"* in one
+     * section and *"the plan now needs 4.65\u00d7 the delivery rate the team has demonstrated"* in
+     * another, with nothing on the page relating the two. Both statements are true and they answer
+     * different questions: one is about **the position today**, the other about **the plan that
+     * remains**. Surfacing the ratio beside the completion figures is what lets the page say so.
+     *
+     * `null` where it is not computable — fewer observations than the velocity window, or a baseline
+     * date already passed. Not computable is reported, never rendered as a reassuring absence.
+     */
+    readonly requiredVelocityRatio: string | null;
+    /** Why the ratio is absent, when it is. Governed text from the engine, never composed here. */
+    readonly requiredVelocityUnavailable: string | null;
     readonly plannedValue: number;
     readonly actualValue: number;
     readonly costValue: number;
@@ -795,6 +813,13 @@ export function buildProjectExecutiveHealth(
     progressVariance: formatPercentagePoints(e.progressVariance),
     burnGap: formatPercentagePoints(e.burnGap),
     narrative: burnNarrative(e.progressVariance, e.burnGap),
+    requiredVelocityRatio: d.requiredVelocityRatio.value === null
+      ? null : `${qFixed(d.requiredVelocityRatio.value, 2)}\u00d7`,
+    requiredVelocityUnavailable: d.requiredVelocityRatio.value === null
+      ? (d.requiredVelocityRatio.adverseState === 'UNBOUNDED'
+        ? 'work remains and no delivery rate has been demonstrated'
+        : d.requiredVelocityRatio.notComputableReason ?? 'not computable')
+      : null,
     plannedValue: plotValue(input.observed, plannedPct),
     actualValue: plotValue(input.observed, actualPct),
     costValue: plotValue(input.observed, costPct),
@@ -977,8 +1002,10 @@ export function buildProjectExecutiveHealth(
         ? `This project is reported GREEN and the evidence supports presenting it at ${dc.band} data confidence.`
         : 'No Green claim is being made, so the evidence rule does not bind here.')
       : `This project is reported GREEN while its data confidence is ${dc.band}`
-        + (dc.staleCriticalDomains.length > 0 ? ` and ${String(dc.staleCriticalDomains.length)} critical domain(s) are stale` : '')
-        + (dc.silentCriticalDomains.length > 0 ? ` and ${String(dc.silentCriticalDomains.length)} critical domain(s) have never reported` : '')
+        + (dc.staleCriticalDomains.length > 0
+          ? ` and ${countIs(dc.staleCriticalDomains.length, 'critical domain', 'is stale')}` : '')
+        + (dc.silentCriticalDomains.length > 0
+          ? ` and ${countIs(dc.silentCriticalDomains.length, 'critical domain', 'has never reported')}` : '')
         + '. **No evidence means no high confidence in Green** — the claim is not supported and should be challenged.',
     evidence: ev('Data and assurance confidence', 'MET-DQ-005', [
       { label: 'Data confidence band (MET-DQ-005)', value: dc.band, treatment: 'computed' },
@@ -1132,10 +1159,10 @@ function buildSummary(
     );
   }
   if ((d.milestonesAtRisk.value ?? 0) > 0) {
-    causes.push(`${String(d.milestonesAtRisk.value)} milestone(s) are forecast past baseline`);
+    causes.push(countIs(d.milestonesAtRisk.value ?? 0, 'milestone', 'is forecast past baseline'));
   }
   if (input.observed.acceptanceBlockers > 0) {
-    causes.push(`${String(input.observed.acceptanceBlockers)} acceptance blocker(s) are unresolved`);
+    causes.push(countIs(input.observed.acceptanceBlockers, 'acceptance blocker', 'is unresolved'));
   }
   const cause = causes.length === 0
     ? 'No individual signal is breaching its threshold; the position is carried by the composite.'

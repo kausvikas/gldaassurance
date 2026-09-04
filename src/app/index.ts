@@ -152,3 +152,13 @@ export {
   UnreadableUpload, UnreadableDocument, SourceRegistry, InMemoryStores,
   ingestStructured, ingestConnectorRecords, ingestDocument, suggestMappings,
 } from './ingestion/index.js';
+
+/**
+ * Count grammar, re-exported for the presentation layer.
+ *
+ * `@presentation` may depend on `@app` and on nothing below it, which is the rule that keeps a React
+ * component from reaching into a domain engine. A shared sentence helper is exactly the kind of thing
+ * that tempts an exception — and the exception is not needed: app already depends on platform, so
+ * passing it through costs one line and leaves the rule intact.
+ */
+export { countIs, countOf, pluralise } from '@platform/language';

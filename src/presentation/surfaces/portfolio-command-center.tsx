@@ -30,6 +30,7 @@
  * the next one — because "trust the ranking" is not a thing an executive should be asked to do.
  */
 import type { JSX } from 'react';
+import { countIs, pluralise } from '@app';
 import type {
   BubbleDto, BubbleMatrixViewModel, CellViewModel, CommandCenterView, ColumnViewModel,
   DeltaViewModel, EvidenceViewModel, ExecutiveRowDto, FilterViewModel, InsightViewModel,
@@ -444,7 +445,7 @@ export function PortfolioCommandCenter(
                 <div className="gl-stack" style={{ gap: 'var(--gl-space-xxs)' }}>
                   <span className="gl-card-title">Listed separately — insufficient evidence</span>
                   <p className="gl-body-sm" style={{ margin: 0 }}>
-                    {`${String(view.insufficientEvidence.length)} project(s) could not be placed in the ordering and are not ranked last. An unmeasured project is not a safe one.`}
+                    {`${countIs(view.insufficientEvidence.length, 'project', 'could not be placed in the ordering')} and ${pluralise('is', view.insufficientEvidence.length)} not ranked last. An unmeasured project is not a safe one.`}
                   </p>
                 </div>
               </div>

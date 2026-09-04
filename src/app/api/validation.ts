@@ -11,6 +11,7 @@
  */
 
 import { parseBoundedCount } from '@platform/decimal';
+import { countOf } from '@platform/language';
 
 export class ValidationError extends Error {
   constructor(readonly issues: readonly string[]) {
@@ -85,7 +86,7 @@ export function rejectUnknownFields(
   const record = input as Record<string, unknown>;
   const unknown = Object.keys(record).filter((k) => !allowed.includes(k));
   if (unknown.length > 0) {
-    throw new ValidationError([`unknown field(s): ${unknown.sort().join(', ')}`]);
+    throw new ValidationError([`${countOf(unknown.length, 'unknown field')}: ${unknown.sort().join(', ')}`]);
   }
   // Prototype-pollution keys are rejected explicitly: `Object.keys` does not report `__proto__`
   // when it arrives via `JSON.parse`, so the allow-list above would not catch it.
