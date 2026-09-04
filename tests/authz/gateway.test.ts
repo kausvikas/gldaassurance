@@ -65,19 +65,49 @@ describe('DR-041 is closed without introducing a transport (DR-029 stays closed)
     }
   });
 
-  it('opens no network listener and makes no network call from src', () => {
-    // `node:http`, `node:net` and `fetch` are each how a transport arrives quietly.
+  /*
+   * **Phase 13 changed this test, and the change is the point.**
+   *
+   * Until Phase 12 this asserted that `src/` made no network call at all, which is what kept DR-029
+   * closed while no transport existed. ADR-0032 accepts ADR-0006 and introduces one, so the
+   * assertion moves from *"no outbound call anywhere"* to the two properties that still matter:
+   *
+   *   1. **`src/` opens no listener.** The server is `server/`, outside the layered source, so a
+   *      surface or a context cannot start one. A listener inside `src/` would mean the trust
+   *      boundary had moved somewhere nobody decided to put it.
+   *   2. **Outbound calls are confined to `platform/net`.** One file makes requests, and it is the
+   *      one with the host allow-list, the timeout, the response cap and the redirect refusal. A
+   *      `fetch` anywhere else is a call with none of those.
+   *
+   * Weakening the first would be a security regression. Weakening the second would put an unbounded
+   * remote call in a context, which is the failure this replacement exists to keep catching.
+   */
+  it('opens no network listener anywhere in src', () => {
     for (const file of listFiles('src')) {
       const source = readFileSync(file, 'utf8');
       expect(source, `${file} imports node:http`).not.toMatch(/from\s+['"]node:(http|https|net)['"]/);
-      expect(source, `${file} calls fetch`).not.toMatch(/\bfetch\s*\(/);
       expect(source, `${file} creates a server`).not.toMatch(/createServer\s*\(|\.listen\s*\(/);
     }
   });
 
-  it('leaves ADR-0006 Proposed, so nothing has been implemented against it', () => {
+  it('confines every outbound call to the one bounded HTTP module', () => {
+    const permitted = 'src/platform/net/index.ts';
+    for (const file of listFiles('src')) {
+      if (file.split('\\').join('/').endsWith(permitted)) continue;
+      const source = readFileSync(file, 'utf8');
+      expect(source, `${file} calls fetch outside ${permitted}`).not.toMatch(/\bfetch\s*\(/);
+    }
+  });
+
+  it('records ADR-0006 as Accepted, with ADR-0032 discharging DR-029', () => {
     const adr = readFileSync('docs/adr/ADR-0006-api-bff-contract-strategy.md', 'utf8');
-    expect(adr).toMatch(/\*\*Status:\*\*\s*Proposed/i);
+    expect(adr).toMatch(/\*\*Status:\*\*\s*\*\*Accepted\*\*/i);
+    const runtime = readFileSync('docs/adr/ADR-0032-trusted-server-runtime.md', 'utf8');
+    // The obligations that activate the moment a transport exists. Named in the ADR, so a future
+    // edit that quietly drops one fails here rather than in a penetration test.
+    for (const obligation of ['CSRF', 'CORS', 'TLS', 'HSTS', 'rate']) {
+      expect(runtime, `ADR-0032 no longer addresses ${obligation}`).toContain(obligation);
+    }
   });
 });
 

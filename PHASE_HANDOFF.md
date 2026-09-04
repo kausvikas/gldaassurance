@@ -966,3 +966,51 @@ fourteen-check list at the foot of the page. **None of those checks has been per
 was never connected, so no page in this product has ever been viewed (DR-042). The Phase 7 landing
 surface is `docs/design/portfolio-command-center.html`; the design system is
 `docs/design/component-gallery.html`.
+
+---
+
+## Phase 13 — Enterprise conversational intelligence (2026-09-03)
+
+**State:** complete on branch `assistant-2-enterprise-intelligence`. Preview deployed; the frozen
+production URL is untouched and the Phase 12 baseline remains independently recoverable at `6b162c3`.
+
+**What exists that did not before**
+
+- A **trusted server runtime** (`server/`): `node:http`, zero dependencies, task-shaped per ADR-0006.
+  DR-029 discharged in code. Verified by `npm run server:check` (29/29). **Not deployed** — Cloud Run
+  requires a billing-enabled project and the target project has billing disabled.
+- A **typed query plan** (ADR-0034) replacing single-intent routing, with a deterministic planner, an
+  unconditional validator, conversation refinement and answerability classification.
+- An **LLM provider boundary** (ADR-0033) with Anthropic and local providers, an external-AI policy,
+  and no silent fallback — verified live with a valid credential present.
+- An **evidence plane** (`contexts/knowledge`) with versioned documents, page-anchored chunks and
+  first-party BM25 retrieval; and an **integration context** with the connector contract, the
+  per-concept authority registry, the identity hub, staging, quarantine and the conflict engine.
+- **First-party bounded parsers** for XLSX, CSV and PDF in `platform/parse`. No third-party parser,
+  no formula evaluation, no XML entity resolution, no PDF action resolution.
+- An **Assistant workspace** and **Knowledge & Connections**, replacing six hard-coded question-and-
+  answer pairs.
+
+**Corrections to the frozen baseline**
+
+- **ADR-0039** — the published portfolio contract value was the as-sold baseline (**$451.28M**) where
+  `MET-PORT-001` is the sum of contractual revenue (**$453.47M**). The application KPI was already
+  correct; the two surfaces disagreed under one label. Corrected by catalogue precedence; the three
+  baseline documents are annotated in place.
+
+**What Phase 14 inherits**
+
+- Deploy the container when billing is available. Nothing in the code changes; `Dockerfile` and
+  `.env.example` are committed.
+- One open P1: the Knowledge surface would be more convincing with a **visible** source conflict. The
+  machinery is proven by test; the demo fixture's disagreeing row also quarantines on identity, so
+  the register renders empty.
+- One open P1: the synthetic identity provider is a demo fixture, so static access does not exercise
+  production authorization. Stated on every page.
+- `HistoricalOutcomeLearningService` is declared and deliberately unimplemented (ADR-0038), with its
+  eight-part acceptance gate recorded before there is a model anyone wants to ship.
+
+**Evidence** — `docs/PHASE13_FIVE_ROLE_REVIEW.md`, `docs/ENTERPRISE_INTEGRATION_MATRIX.md`,
+`docs/SOURCE_AUTHORITY_MATRIX.md`, `docs/ASSISTANT_GOLDEN_TRUTH_RESULTS.md`,
+`docs/INGESTION_VALIDATION_RESULTS.md`. All four generate from the running system via
+`npm run report:phase13`.

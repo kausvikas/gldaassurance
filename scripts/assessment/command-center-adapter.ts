@@ -26,6 +26,7 @@ import { assessProject, buildCommandCenter } from '@app';
 import type { ActionabilityEvidence, PriorityPolicy } from '@contexts/portfolio';
 import type { GreenAtRiskReason } from '@contexts/forecast';
 import { computeEconomics } from '@contexts/financial';
+import { marginTrendFor } from './margin-adapter.js';
 import { evaluateCommercial } from '@contexts/commercial';
 import { evaluateQuality } from '@contexts/quality';
 import { type DeliveryEvaluation, evaluateDelivery } from '@contexts/delivery';
@@ -205,9 +206,67 @@ export function commandCenterProject(
         probability: qty(r.probability),
         costImpact: Money.of(r.costImpact.amount, USD),
       })),
+    /*
+     * The previous governed period (Phase 13).
+     *
+     * Two histories the portfolio genuinely holds: forecast economics recomputed at the previous
+     * period end by the same engine that produced today's, and the previous dated management
+     * declaration. A prior *system-assessed* band is deliberately absent — health is assessed at the
+     * current as-of and no per-period band is stored — and every surface that reports movement says
+     * so rather than implying it covers all three.
+     *
+     * This is what closed a cross-surface gap: the built site reported "what changed" from these
+     * same two histories while the application view had no prior period at all, so the Assistant
+     * answered "no prior period is loaded" to a question the Command Center answered in detail.
+     */
+    ...periodMovementFor(p, projectId),
   };
   cache.set(projectId, built);
   return built;
+}
+
+
+/**
+ * The project's movement basis: two endpoints of one governed margin-trend series.
+ *
+ * Returns an empty object rather than a null field when there is no earlier period, so the optional
+ * property is genuinely absent and `exactOptionalPropertyTypes` keeps "no prior period" and "a prior
+ * period whose values are null" distinguishable — the same absence-versus-zero distinction ADR-0027
+ * makes about observed data.
+ *
+ * **Both endpoints come from the same series.** `marginTrendFor` samples at period ends, and its
+ * latest point is not necessarily the current as-of date; comparing it against today's economics
+ * would report a different movement from the one the Command Center reports for the same question.
+ */
+function periodMovementFor(
+  p: SyntheticPortfolio, projectId: string,
+): { periodMovement?: NonNullable<CommandCenterProject['periodMovement']> } {
+  const series = marginTrendFor(p, projectId);
+  if (series.length < 2) return {};
+  const prior = series[series.length - 2];
+  const current = series[series.length - 1];
+  if (prior === undefined || current === undefined) return {};
+
+  const reports = p.facts.statusReports
+    .filter((r) => r.projectId === projectId)
+    .sort((a, b) => a.reportedOn.localeCompare(b.reportedOn));
+  const priorReport = reports.length >= 2 ? reports[reports.length - 2] : undefined;
+
+  // A trend point carries margin and cost; the aggregate also needs revenue, so economics is
+  // re-run at each of the two dates by the engine that produced the trend point itself.
+  const priorEconomics = computeEconomics(economicsInputFor(p, projectId, prior.period));
+  const currentEconomics = computeEconomics(economicsInputFor(p, projectId, current.period));
+
+  return {
+    periodMovement: {
+      priorLabel: prior.period,
+      priorForecastRevenue: priorEconomics.forecastRevenue,
+      priorEstimateAtCompletion: prior.estimateAtCompletion,
+      currentForecastRevenue: currentEconomics.forecastRevenue,
+      currentEstimateAtCompletion: current.estimateAtCompletion,
+      priorReportedRag: priorReport?.reportedRag ?? null,
+    },
+  };
 }
 
 /**

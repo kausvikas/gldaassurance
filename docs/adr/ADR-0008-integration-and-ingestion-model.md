@@ -1,6 +1,6 @@
 # ADR-0008 — Integration and ingestion model
 
-- **Status:** Proposed
+- **Status:** **Accepted** — 2026-09-03 (promoted from Proposed by ADR-0035; Phase 13 supplies the first sources)
 - **Date proposed:** 2026-08-29
 - **Approver:** *pending — surfaced in the Phase 1 report*
 - **Phase:** 1

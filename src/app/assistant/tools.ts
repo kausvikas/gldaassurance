@@ -53,6 +53,24 @@ export const TOOL_VIEW: Readonly<Record<AssistantToolId, ViewId | 'REGISTRY'>> =
   'project.lateDetection.get': 'project.forwardRisk',
   'evidence.get': 'project.lineage',
   'metric.definition.get': 'REGISTRY',
+  // Phase 13. Every population tool reads the *same* command-centre view the Portfolio surface
+  // reads, then filters, orders and aggregates it. That is what makes cross-surface reconciliation
+  // (§70) a structural property rather than a coincidence two code paths have to maintain: there is
+  // one path, and the Assistant is a second caller of it.
+  'portfolio.population.query': 'portfolio.commandCenter',
+  'portfolio.population.aggregate': 'portfolio.commandCenter',
+  'portfolio.concentration.get': 'portfolio.commandCenter',
+  'portfolio.change.get': 'portfolio.commandCenter',
+  'portfolio.recovery.list': 'portfolio.commandCenter',
+  'projects.compare': 'portfolio.commandCenter',
+  'project.milestones.get': 'project.executiveHealth',
+  'project.acceptanceEvidence.get': 'project.executiveHealth',
+  // The evidence plane is not a ViewId: it is not part of the governed fact model, and giving it
+  // one would have implied it was (ADR-0035 §2). It is reached through the knowledge port the
+  // application injects, and it can return citations and never a metric.
+  'knowledge.evidence.get': 'REGISTRY',
+  'source.provenance.get': 'project.lineage',
+  'source.dataQuality.get': 'REGISTRY',
 };
 
 /** Bounded by construction. A list tool cannot ask for "everything and I will filter". */
@@ -107,6 +125,14 @@ export function claim(args: {
   readonly refs: readonly RecordRef[];
   readonly signalState?: SignalState;
   readonly overrides?: Partial<ClaimEnvelope>;
+  /**
+   * Set only where the caller composed every word from governed values and fixed wording.
+   *
+   * Opt-in by design: the default is that a claim may carry record text, which is the conservative
+   * reading and the one ADR-0031 requires. A tool that assembles its sentence from a DTO's free-text
+   * field must not set this, and none of the Phase 11 tools does.
+   */
+  readonly composedFromGovernedValues?: boolean;
 }): MaterialClaim {
   const env = envelope({
     metricId: args.metricId,
@@ -127,6 +153,7 @@ export function claim(args: {
     epistemicLayer: args.layer,
     envelope: env,
     groundedBy: args.refs,
+    ...(args.composedFromGovernedValues === true ? { composedFromGovernedValues: true } : {}),
   };
 }
 
@@ -200,9 +227,33 @@ async function summary(tc: ToolContext): Promise<ToolResult> {
   return { tool: 'portfolio.summary.get', claims, untrustedContent: [] };
 }
 
-async function ranking(tc: ToolContext): Promise<ToolResult> {
+async function ranking(
+  tc: ToolContext, narrow?: (rows: readonly Row[]) => readonly Row[], limit?: number,
+): Promise<ToolResult> {
   const row = await portfolioRow(tc);
-  const ranked = list(row, 'ranked').slice(0, MAX_TOOL_ROWS);
+  /*
+   * **The ranking must be of the population the caller asked about.**
+   *
+   * This tool ignored the plan's filters, so a conversation that had narrowed to two Automotive
+   * projects and then asked *"which one has the greatest exposure?"* was answered with the
+   * portfolio-wide rank 1 — a project in a different vertical — underneath a scope line that still
+   * read *Mobility*. The answer contradicted its own scope, which is worse than being merely wrong:
+   * the disclosure that exists to make interpretation checkable was itself the thing being
+   * contradicted.
+   *
+   * With no narrowing this is the Phase 11 behaviour exactly: the governed portfolio ranking,
+   * unchanged.
+   */
+  const all = list(row, 'ranked');
+  /*
+   * The plan's limit is honoured, bounded by the tool's own ceiling.
+   *
+   * A singular question — *"which one has the greatest exposure?"* — plans a limit of one, and
+   * returning five made the next turn's *"why?"* ambiguous: the conversation had five things in
+   * focus and could not answer a question about one.
+   */
+  const ceiling = Math.min(limit ?? MAX_TOOL_ROWS, MAX_TOOL_ROWS);
+  const ranked = (narrow === undefined ? all : narrow(all)).slice(0, Math.max(1, ceiling));
   const claims: MaterialClaim[] = ranked.map((r, i) => claim({
     id: `rank:${str(r, 'projectId') ?? String(i)}`,
     // One sentence, not two fragments. The deciding tier is a subordinate clause here because it
@@ -210,7 +261,15 @@ async function ranking(tc: ToolContext): Promise<ToolResult> {
     // "GM at risk $5.55M. more gross margin is at risk" on the rendered page (Phase 12A).
     text: ((): string => {
       const tier = trimDecidingTier(str(r, 'outranksBecause') ?? '');
-      const head = `Rank ${String(r['rank'] ?? i + 1)}: ${str(r, 'name') ?? ''} — System-Assessed ${str(r, 'systemAssessedRag') ?? 'unknown'}, GM at risk ${str(r, 'gmValueAtRisk') ?? 'not computable'}`;
+      /*
+       * "Portfolio rank 16" rather than "Rank 16".
+       *
+       * The number is the governed intervention rank across the whole portfolio, which is the fact
+       * worth carrying. Presented as "Rank 16" at the top of a three-row filtered answer it reads as
+       * a position in *this* list, which it is not — and a reader counting down from 16 has been
+       * quietly misled by a figure that is entirely correct.
+       */
+      const head = `Portfolio rank ${String(r['rank'] ?? i + 1)} — ${str(r, 'name') ?? ''} — System-Assessed ${str(r, 'systemAssessedRag') ?? 'unknown'}, GM at risk ${str(r, 'gmValueAtRisk') ?? 'not computable'}`;
       return tier === '' ? `${head}.` : `${head}; it outranks the next project because ${tier}.`;
     })(),
     display: String(r['rank'] ?? ''),
@@ -247,27 +306,89 @@ async function ranking(tc: ToolContext): Promise<ToolResult> {
  * Merging them produces "Green-at-Risk" with no subject, which is already open debt as DR-052.
  * `reported` selects the organisation-says-GREEN finding; `system` selects the outlook finding.
  */
-async function greenAtRisk(tc: ToolContext, which: 'reported' | 'system'): Promise<ToolResult> {
+async function greenAtRisk(
+  tc: ToolContext, which: 'reported' | 'system',
+  narrow?: (rows: readonly Row[]) => readonly Row[], limit?: number,
+): Promise<ToolResult> {
   const row = await portfolioRow(tc);
   const panel = sub(row, 'greenAtRisk');
-  const ranked = list(row, 'ranked');
+  const allRanked = list(row, 'ranked');
   const flag = which === 'reported' ? 'isReportedGreenRisk' : 'isSystemGreenAtRisk';
   const countKey = which === 'reported' ? 'reportedGreenRiskCount' : 'systemGreenAtRiskCount';
   const metricId = which === 'reported' ? 'MET-PORT-006' : 'MET-PORT-005';
-  const count = panel?.[countKey];
+
+  /*
+   * **The count must describe the population the caller asked about.**
+   *
+   * This tool used to answer with the panel's portfolio-wide count regardless of any filter the
+   * question carried. Asked *"which Green projects should I worry about?"* and then *"only
+   * Automotive"* and then *"only North America"*, it rendered a scope line that narrowed correctly
+   * on every turn and an answer that said "10 projects" on every turn. Every sentence was true and
+   * the reader was being told the wrong thing — the exact defect class this product exists to catch,
+   * committed by the product itself.
+   *
+   * With no narrowing the count is the panel's, unchanged, so the Phase 11 behaviour is untouched.
+   * With narrowing it is a count of the narrowed set, and the sentence says which.
+   */
+  /*
+   * **The executive taxonomy, not the legacy metric — and both are reported.**
+   *
+   * `MET-HLTH-033` is `reportedGreen && (systemDisagreesNow || materialDeterioration)`. Its second
+   * arm admits projects that are reported Green, *assessed* Green, and merely deteriorating — which
+   * is not a management/system discrepancy at all. Phase 12 corrected the executive category to the
+   * discrepancy itself, and every surface reports that. This tool still read the legacy panel count,
+   * so the Assistant answered "18 projects" to a question every screen answers with "9". One label,
+   * two numbers, and a Chief Delivery Officer told the delivery line was misreporting nine more
+   * projects than it is.
+   *
+   * The population below is the executive category. The governed metric is not hidden: where the two
+   * differ, a second claim states the metric's own value under its own definition, so nothing is
+   * suppressed and no two numbers share a name.
+   */
+  const inCategory = (row: Row): boolean => (which === 'reported'
+    ? str(row, 'reportedRag') === 'GREEN' && str(row, 'systemAssessedRag') !== 'GREEN'
+    : str(row, 'systemAssessedRag') === 'GREEN'
+      && (str(row, 'outlook30') !== 'GREEN' || str(row, 'outlook60') !== 'GREEN'));
+
+  const matching = allRanked.filter(inCategory);
+  const ranked = narrow === undefined ? matching : narrow(matching);
+  const narrowed = narrow !== undefined && ranked.length !== matching.length;
+  const count = ranked.length;
+  const legacyCount = allRanked.filter((x) => x[flag] === true).length;
+
   const claims: MaterialClaim[] = [];
   claims.push(claim({
     id: `gar:${which}:count`,
     text: which === 'reported'
-      ? `${String(count ?? 0)} projects are reported GREEN by the delivery line while the evidence disagrees.`
-      : `${String(count ?? 0)} projects are System-Assessed GREEN today with an AMBER or RED outlook at 30 or 60 days.`,
-    display: String(count ?? 0),
+      ? `${String(count)} projects${narrowed ? ' in this population' : ''} are reported GREEN by the delivery line while the system assesses them worse.`
+      : `${String(count)} projects${narrowed ? ' in this population' : ''} are System-Assessed GREEN today with an AMBER or RED outlook at 30 or 60 days.`,
+    display: String(count),
     metricId, layer: 'L3',
     entityType: 'portfolio', entityId: 'authorised-set',
     asOf: tc.asOf, sourceDomain: 'portfolio',
     refs: refsFrom(sub(panel, 'evidence'), 'portfolio'),
+    signalState: 'OBSERVED',
   }));
-  for (const r of ranked.filter((x) => x[flag] === true).slice(0, MAX_TOOL_ROWS)) {
+
+  if (!narrowed && legacyCount !== count) {
+    claims.push(claim({
+      id: `gar:${which}:metric`,
+      text: `The governed metric ${metricId} counts ${String(legacyCount)} for this population under a `
+        + 'wider definition that also admits projects the system agrees are Green but which are '
+        + 'materially deteriorating. The figure above is the management/system discrepancy itself, '
+        + 'which is what the executive surfaces report.',
+      display: String(legacyCount),
+      metricId, layer: 'L3',
+      entityType: 'portfolio', entityId: 'authorised-set',
+      asOf: tc.asOf, sourceDomain: 'portfolio',
+      refs: refsFrom(sub(panel, 'evidence'), 'portfolio'),
+      signalState: 'OBSERVED',
+    }));
+  }
+  // The **count** is of the whole matching population; the **list** is bounded by the plan's limit.
+  // Bounding the count would report a truncated population as the finding, which is the defect the
+  // count claim exists to prevent.
+  for (const r of ranked.slice(0, Math.max(1, Math.min(limit ?? MAX_TOOL_ROWS, MAX_TOOL_ROWS)))) {
     claims.push(claim({
       id: `gar:${which}:${str(r, 'projectId') ?? ''}`,
       text: `${str(r, 'name') ?? ''} — Reported ${str(r, 'reportedRag') ?? '?'}, System-Assessed ${str(r, 'systemAssessedRag') ?? '?'}, 30-day outlook ${str(r, 'outlook30') ?? '?'}, 60-day outlook ${str(r, 'outlook60') ?? '?'}.`,

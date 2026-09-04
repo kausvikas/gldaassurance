@@ -117,6 +117,16 @@ export const COMMAND_CENTER_FIELDS = classify([
   ['bubbles', 'DELIVERY_SENSITIVE'],
   ['whatChanged', 'DELIVERY_SENSITIVE'],
   ['kpis', 'COMMERCIAL_CONFIDENTIAL'],
+  /*
+   * The governed aggregation components (Phase 13).
+   *
+   * COMMERCIAL_CONFIDENTIAL and deliberately **not** nested inside `ranked`: forecast revenue and
+   * cost at completion are commercial figures, `ranked` is classified DELIVERY_SENSITIVE, and
+   * folding them in would have widened what a delivery-only caller receives through a field
+   * classified for a different audience. Separated, a caller without the commercial grant does not
+   * receive the array at all, and `shape()` enforces that rather than a comment.
+   */
+  ['contributions', 'COMMERCIAL_CONFIDENTIAL'],
 ]);
 
 /**

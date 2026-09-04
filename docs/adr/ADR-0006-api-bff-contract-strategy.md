@@ -1,6 +1,6 @@
 # ADR-0006 — Task-shaped BFF and three-axis versioning
 
-- **Status:** Proposed
+- **Status:** **Accepted** — 2026-09-03 (promoted from Proposed by ADR-0032; the Phase 13 trusted runtime is this BFF)
 - **Date proposed:** 2026-08-29
 - **Date accepted:** —
 - **Approver:** *pending — surfaced in the Phase 1 report*

@@ -7,6 +7,8 @@
  * secrets out of domain code.
  */
 
+import { Secret } from '@platform/secrets';
+
 export type Environment = 'dev' | 'test' | 'staging' | 'prod';
 
 export interface AppConfig {
@@ -96,6 +98,123 @@ export const SECURITY_POLICY_PROVENANCE =
  * default that would be dangerous if wrong, and no secret is ever read into a value that is
  * logged or serialised.
  */
+// --- AI provider and external-processing policy (Phase 13, ADR-0033) -------
+
+export type AiProviderId = 'claude' | 'local' | 'none';
+export type LocalProtocol = 'openai-compatible' | 'ollama';
+
+/**
+ * Everything the assistant needs to know about where a question may be sent.
+ *
+ * The provider is selected **once, here**, from the environment. There is deliberately no
+ * per-request provider field anywhere in the product: a caller cannot choose where their question
+ * goes, and neither can a prompt (ADR-0033 §2). A user-controlled provider switch would be a
+ * user-controlled data-egress switch, reachable from untrusted text through the planner.
+ */
+export interface AiConfig {
+  readonly provider: AiProviderId;
+  readonly anthropic: {
+    readonly apiKey: Secret | null;
+    readonly model: string;
+    readonly baseUrl: string;
+  };
+  readonly local: {
+    readonly baseUrl: string | null;
+    readonly model: string | null;
+    readonly protocol: LocalProtocol;
+  };
+  /**
+   * Whether any material may leave this deployment for a hosted model at all.
+   *
+   * Defaults to **false**. A deployment that has not said yes has said no — the opposite default
+   * would mean an operator who configured a key and nothing else had silently authorised egress.
+   */
+  readonly externalAiAllowed: boolean;
+  /**
+   * The narrow, explicit local-to-external fallback of ADR-0033 §4. Defaults to false and is
+   * meaningless unless `externalAiAllowed` is also true. There is no configuration that produces a
+   * silent fallback; this one is audited and rendered.
+   */
+  readonly localToExternalFallback: boolean;
+  /** CORS allow-list for the trusted runtime. Empty means same-origin only (ADR-0032 §6). */
+  readonly allowedOrigins: readonly string[];
+}
+
+/**
+ * The default narration model.
+ *
+ * A *default*, not a hard-code: `ANTHROPIC_MODEL` overrides it, and the configured value is what is
+ * rendered on the AI configuration surface and recorded in every answer's lineage. Narration is a
+ * constrained rewriting task over claims the domain already licensed, so the mid-tier model is the
+ * right default; nothing about the product's correctness depends on which model is chosen, which is
+ * the point of ADR-0033.
+ */
+export const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-5' as const;
+export const DEFAULT_ANTHROPIC_BASE_URL = 'https://api.anthropic.com' as const;
+
+function boolFlag(source: Readonly<Record<string, string | undefined>>, key: string): boolean {
+  const raw = (source[key] ?? '').trim().toLowerCase();
+  if (raw === '') return false;
+  if (raw === 'true' || raw === '1' || raw === 'yes') return true;
+  if (raw === 'false' || raw === '0' || raw === 'no') return false;
+  throw new ConfigError(`${key} must be true or false; received "${raw}".`);
+}
+
+/**
+ * Reads AI configuration. Fails at start-up on anything ambiguous, with no dangerous default
+ * (ADR-0010 §5): a provider selected but not configured is a start-up error, not a runtime surprise
+ * discovered by an executive mid-demonstration.
+ */
+export function loadAiConfig(source: Readonly<Record<string, string | undefined>>): AiConfig {
+  const requested = (source['AI_PROVIDER'] ?? 'none').trim().toLowerCase();
+  if (requested !== 'claude' && requested !== 'local' && requested !== 'none') {
+    throw new ConfigError(`AI_PROVIDER must be claude, local or none; received "${requested}".`);
+  }
+  const apiKey = Secret.from(source['ANTHROPIC_API_KEY'], 'anthropic');
+  const localBaseUrl = (source['LOCAL_LLM_BASE_URL'] ?? '').trim() || null;
+  const localModel = (source['LOCAL_LLM_MODEL'] ?? '').trim() || null;
+  const protocolRaw = (source['LOCAL_LLM_PROTOCOL'] ?? 'openai-compatible').trim();
+  if (protocolRaw !== 'openai-compatible' && protocolRaw !== 'ollama') {
+    throw new ConfigError(
+      `LOCAL_LLM_PROTOCOL must be openai-compatible or ollama; received "${protocolRaw}".`,
+    );
+  }
+
+  if (requested === 'claude' && apiKey === null) {
+    throw new ConfigError('AI_PROVIDER=claude requires ANTHROPIC_API_KEY to be present.');
+  }
+  if (requested === 'local' && (localBaseUrl === null || localModel === null)) {
+    throw new ConfigError(
+      'AI_PROVIDER=local requires LOCAL_LLM_BASE_URL and LOCAL_LLM_MODEL. A local provider that is '
+      + 'selected but unreachable must fail here, not fall back to a hosted model (ADR-0033 §3).',
+    );
+  }
+
+  const externalAiAllowed = boolFlag(source, 'GLDI_EXTERNAL_AI_ALLOWED');
+  const localToExternalFallback = boolFlag(source, 'GLDI_LOCAL_TO_EXTERNAL_FALLBACK');
+  if (localToExternalFallback && !externalAiAllowed) {
+    throw new ConfigError(
+      'GLDI_LOCAL_TO_EXTERNAL_FALLBACK cannot be true while GLDI_EXTERNAL_AI_ALLOWED is false. A '
+      + 'fallback that transmits where transmission is prohibited is the defect ADR-0033 §4 exists '
+      + 'to prevent, so the combination is refused at start-up rather than resolved at run time.',
+    );
+  }
+
+  return {
+    provider: requested,
+    anthropic: {
+      apiKey,
+      model: (source['ANTHROPIC_MODEL'] ?? '').trim() || DEFAULT_ANTHROPIC_MODEL,
+      baseUrl: (source['ANTHROPIC_BASE_URL'] ?? '').trim() || DEFAULT_ANTHROPIC_BASE_URL,
+    },
+    local: { baseUrl: localBaseUrl, model: localModel, protocol: protocolRaw },
+    externalAiAllowed,
+    localToExternalFallback,
+    allowedOrigins: (source['GLDI_ALLOWED_ORIGINS'] ?? '')
+      .split(',').map((o) => o.trim()).filter((o) => o !== ''),
+  };
+}
+
 export function loadConfig(source: Readonly<Record<string, string | undefined>>): AppConfig {
   const environment = source['GLDI_ENV'] ?? 'dev';
   if (!(ENVIRONMENTS as readonly string[]).includes(environment)) {

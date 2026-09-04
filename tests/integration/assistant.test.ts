@@ -77,9 +77,12 @@ describe('the assistant has no write path (G-AI-3)', () => {
     expect(reachable).not.toContain('audit.events');
   });
 
-  it('exposes exactly the twelve tools ADR-0029 enumerates', () => {
-    expect(ALL_TOOLS).toHaveLength(12);
-    expect(new Set(ALL_TOOLS).size).toBe(12);
+  it('exposes exactly the tools ADR-0029 and ADR-0034 enumerate, with no duplicates', () => {
+    // Twelve from ADR-0029, eleven added by ADR-0034. The union is closed and each member maps to
+    // exactly one existing view, so none of the additions is a new data path.
+    expect(ALL_TOOLS).toHaveLength(23);
+    expect(new Set(ALL_TOOLS).size).toBe(23);
+    for (const tool of ALL_TOOLS) expect(TOOL_VIEW[tool], tool).toBeDefined();
   });
 });
 
@@ -631,7 +634,7 @@ describe('factual and ranking answers (E-01, E-03)', () => {
   it('names rank 1 with its deciding tier and no raw float', async () => {
     const cdo = await CDO();
     const r = await cdo.run('Where should I intervene first?');
-    expect(r.answer).toMatch(/^Rank 1:/);
+    expect(r.answer).toMatch(/^Portfolio rank 1 —/);
     expect(r.answer).toMatch(/first place to intervene/);
     // The domain appends "(tier 4: 5552145.679817 vs ...)" - unrounded, twelve digits. DR-075.
     expect(r.answer).not.toMatch(/\d{6,}\.\d{4,}/);

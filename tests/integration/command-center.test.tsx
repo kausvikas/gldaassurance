@@ -12,6 +12,8 @@
  *   3. **Does every number trace?** AC-3 gives a reader ≤3 steps from a headline figure to the L1
  *      facts. Every KPI is asserted to carry a metric id, a rule version and evidence lines.
  */
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { JSX } from 'react';
@@ -473,7 +475,7 @@ describe('no metric is computed twice', () => {
 });
 
 describe('no executive surface renders an unformatted figure (DR-075)', () => {
-  it('carries no raw decimal anywhere in the command-centre view model', () => {
+  it('carries no raw decimal anywhere the surface renders', () => {
     const offenders: string[] = [];
     const walk = (node: unknown, path: string): void => {
       if (typeof node === 'string') {
@@ -488,8 +490,35 @@ describe('no executive surface renders an unformatted figure (DR-075)', () => {
         for (const [k, v] of Object.entries(node)) walk(v, `${path}.${k}`);
       }
     };
-    walk(view, 'view');
+    /*
+     * `contributions` is excluded, and the exclusion is the point of the next test rather than a
+     * hole in this one.
+     *
+     * DR-075 is about *presentation*: a reader reconciling `$5.55M` against `5552145.679817` on the
+     * same page is reconciling a number against itself in two notations. `contributions` is the
+     * opposite kind of field — a deliberately unformatted governed projection that exists so a
+     * filtered `MET-PORT-002` is computed by the catalogue's formula rather than approximated from
+     * percentages (Phase 13, ADR-0034). Formatting it would destroy the only property it has.
+     *
+     * The guard that keeps this honest is that nothing renders it, which is asserted below.
+     */
+    const { contributions: _contributions, ...rendered } = view;
+    walk(rendered, 'view');
     expect(offenders, offenders.join('\n')).toEqual([]);
+  });
+
+  it('never renders the raw aggregation components it carries for the Assistant', () => {
+    // Every governed component is present and unformatted - that is what makes it aggregable.
+    expect(view.contributions.length).toBe(view.ranked.length);
+    for (const c of view.contributions) {
+      expect(c.forecastRevenue).toMatch(/^-?\d/);
+      expect(c.estimateAtCompletion).toMatch(/^-?\d/);
+    }
+    // And no presentation module reads them. A raw decimal is safe exactly as long as that holds.
+    const surfaces = readdirSync(join(process.cwd(), 'src/presentation/surfaces'))
+      .filter((f) => f.endsWith('.tsx') || f.endsWith('.ts'))
+      .map((f) => readFileSync(join(process.cwd(), 'src/presentation/surfaces', f), 'utf8'));
+    for (const source of surfaces) expect(source).not.toContain('contributions');
   });
 
   it('keeps the deciding tier while dropping only the raw comparison', () => {

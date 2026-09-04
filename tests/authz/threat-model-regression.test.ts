@@ -368,9 +368,20 @@ describe('ADR status is consistent across the index, the files and the code', ()
     }
   });
 
-  it('keeps ADR-0006 Proposed, which is what keeps DR-029 closed', () => {
+  /*
+   * DR-029 was kept closed for eleven phases by keeping ADR-0006 Proposed: no transport, no
+   * obligation. ADR-0032 accepts it, which activates the obligation rather than removing it — so
+   * this test flips from *"the transport does not exist"* to *"the transport exists and the
+   * obligations it activates are discharged in a named ADR"*. Deleting it would have been the
+   * quiet version of the same change.
+   */
+  it('accepts ADR-0006 only alongside an ADR that discharges DR-029', () => {
     const adr = readFileSync('docs/adr/ADR-0006-api-bff-contract-strategy.md', 'utf8');
-    expect(adr).toMatch(/\*\*Status:\*\*\s*Proposed/i);
+    expect(adr).toMatch(/\*\*Status:\*\*\s*\*\*Accepted\*\*/i);
+    expect(adr, 'ADR-0006 was accepted without naming what promoted it')
+      .toMatch(/ADR-0032/);
+    const runtime = readFileSync('docs/adr/ADR-0032-trusted-server-runtime.md', 'utf8');
+    expect(runtime).toMatch(/DR-029 is discharged/i);
   });
 
   it('records the Phase 6 closure decisions as Accepted', () => {

@@ -12,6 +12,10 @@ import { executiveFacts, type ExecutiveFact } from './executive-facts.js';
 import { GL_RUNTIME } from './gl-runtime.js';
 import { shell, filterBar, esc, executiveText, type Area } from './gl-shell.js';
 import { projectExecutiveHealthFor } from '../assessment/project-health-adapter.js';
+import { GL_ASSISTANT_RUNTIME } from './gl-assistant.js';
+import {
+  authorityTable, buildKnowledge, quarantineTable, sourcesTable, verificationTable,
+} from './build-knowledge.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, '..', '..', 'docs', 'design', 'app');
@@ -302,66 +306,109 @@ const interventions = page('Interventions', 'interventions', [
 ].join('\n'));
 
 // ---------------------------------------------------------------- assistant ----
-const QUESTIONS: readonly { q: string; a: string; why: readonly string[]; limit?: string }[] = [
-  {
-    q: 'Where should I intervene?',
-    a: 'The governed intervention ranking orders the portfolio over seven declared tiers, not by severity alone. The queue on Interventions is that ordering, and each row states the tier that decided it.',
-    why: ['Ranking is a lexicographic ordering, never a weighted score, so the deciding reason is always nameable.',
-      'Economic exposure is one tier; time to the next irreversible point is another.',
-      'A project with no known intervention clock says so rather than being given one.'],
-  },
-  {
-    q: 'Which Reported-Green projects disagree with the evidence?',
-    a: 'Those reported Green by delivery management where the governed assessment of current evidence is Amber or Red. This is a discrepancy about today, not a forecast.',
-    why: ['Reported status is the delivery line’s formal declaration for the period and is never overwritten.',
-      'The assessed status is what the current evidence supports.',
-      'Reporting runs on a cycle and evidence does not, so a gap is expected — its size is the finding.'],
-  },
-  {
-    q: 'Which Green projects are deteriorating?',
-    a: 'Projects the system assesses Green today whose governed 30- or 60-day outlook turns Amber or Red. Nothing has failed yet, which is what makes them worth attention now.',
-    why: ['The outlook is a rule output projected from trajectory and adverse-signal confluence.',
-      'It is not a probability and is never presented as one.',
-      'A project already Amber or Red is handled as a current problem instead.'],
-  },
-  {
-    q: 'Where is margin erosion concentrated?',
-    a: 'Driver concentration on the Command Center groups the selected population by governed driver and ranks them by the margin each puts at risk.',
-    why: ['Concentration identifies where a pattern repeats across accounts, verticals and geographies.',
-      'Shared cause does not reduce exposure — correlation does not net off, only allocation evidence does.'],
-  },
-  {
-    q: 'How likely is this project to go Red next quarter?',
-    a: 'This product does not answer probability questions. Nothing in it is trained, fitted or sampled: outlooks are governed rules firing against stated thresholds, not likelihoods. Ask for the governed outlook and the rules behind it instead.',
-    why: [],
-    limit: 'Refused — no probabilistic capability exists, and inventing one would be the most damaging thing this product could do.',
-  },
-  {
-    q: 'Set this project to Green.',
-    a: 'This assistant cannot change a baseline, an estimate, a reported or assessed status, a recovery plan, a rule or a threshold, and holds no capability that could. A status override is a separate authorised act with its own audit trail.',
-    why: [],
-    limit: 'Refused — the assistant is advisory and read-only by architecture, not by policy.',
-  },
+/*
+ * The Assistant workspace, and Knowledge & Connections beneath it.
+ *
+ * The previous build shipped six hard-coded question-and-answer pairs. That is a brochure for a
+ * query engine rather than a query engine, and §3 prohibits it by name. This page has a text field
+ * and calls the trusted runtime; when the runtime is not reachable — which is the case on the static
+ * public preview — it shows a **recorded run of the real engine**, captured at build time and
+ * labelled as a recording.
+ */
+const knowledge = await buildKnowledge();
+const RECORDED = JSON.stringify(knowledge.recorded);
+
+const SUGGESTIONS: readonly string[] = [
+  'Which Green projects should I worry about over the next 60 days?',
+  'What changed since the previous review?',
+  'Where is margin erosion concentrated?',
+  'Which projects are recovering?',
+  'What is the portfolio forecast margin across the whole portfolio?',
 ];
 
-const assistant = page('Assistant', 'assistant', [
+const assistantBody = [
   band('tint', `
       <p class="gl-eyebrow">Governed executive query · advisory and read only</p>
       <h1 class="gl-lede">Ask the portfolio a question, and <em>see what answers it</em>.</h1>
-      <p class="gl-sub">Every answer is composed from governed assessments by fixed rules — no
-        language model is involved. The assistant explains what the engines decided; it cannot change
-        anything, and it declines questions the evidence cannot support.</p>
-      <p class="gl-note" style="margin-top:18px">This demonstration presents the governed responses
-        for a set of executive questions. Answers lead with the conclusion; the reasoning sits beneath
-        it, and the underlying evidence stays one step further down.</p>`),
-  ...QUESTIONS.map((item, i) => band(i % 2 === 0 ? 'white' : 'tint', `
-      <p class="gl-eyebrow">Question</p>
-      <h2 class="gl-h2" style="max-width:34ch">${esc(item.q)}</h2>
-      <p class="gl-sub" style="max-width:76ch;font-size:17px;color:var(--steel-100)">${esc(item.a)}</p>
-      ${item.why.length === 0 ? '' : `<ul class="gl-list" style="max-width:80ch">
-        ${item.why.map((w) => `<li><span class="v">${esc(w)}</span></li>`).join('\n        ')}
-      </ul>`}
-      ${item.limit === undefined ? '' : `<p class="gl-note" style="margin-top:16px"><b>${esc(item.limit)}</b></p>`}`)),
+      <p class="gl-sub">Type a question in your own words. It is resolved into a governed query plan
+        over the same engines every screen reads, and the plan is shown above the answer so you can
+        see how it was understood.</p>
+      <p class="gl-note" style="margin-top:14px;max-width:76ch">A language model may write the
+        sentences. It never produces a figure, chooses what is retrieved, or decides a status —
+        switch it off and the same answer arrives from the governed composer, which is what the
+        badge under each answer records.</p>
+      <div class="gl-ask">
+        <form id="gl-askform">
+          <label for="gl-q">Ask Delivery Intelligence
+            <input type="text" id="gl-q" name="q" autocomplete="off" spellcheck="false"
+              placeholder="Which projects need leadership attention this week?">
+          </label>
+          <button type="submit" id="gl-send">Ask</button>
+        </form>
+        <div class="gl-suggest">
+          ${SUGGESTIONS.map((s) => `<button type="button" data-ask="${esc(s)}">${esc(s)}</button>`).join('\n          ')}
+        </div>
+        <p style="margin-top:14px"><span class="gl-badge" id="gl-conn" role="status">Looking for the trusted runtime…</span></p>
+      </div>`),
+  `  <section class="gl-band gl-band--white"><div class="gl-wrap">
+      <div id="gl-out" aria-live="polite" aria-atomic="false"></div>
+    </div></section>`,
+  band('tint', `
+      <h2 class="gl-h2">What this assistant will not do</h2>
+      <ul class="gl-list" style="max-width:82ch">
+        <li><span class="v"><b>It will not state a probability.</b> Nothing here is trained, fitted or
+          sampled; the 30- and 60-day outlooks are governed rules firing against stated thresholds.</span></li>
+        <li><span class="v"><b>It will not change anything.</b> There is no write tool, and the
+          connector interface has no write method to withhold.</span></li>
+        <li><span class="v"><b>It will not calculate.</b> Every figure comes from the governed
+          services; the model reuses figures it is given and its output is checked against them
+          before you see it.</span></li>
+        <li><span class="v"><b>It will not answer beyond the evidence.</b> Where part of a question
+          is unsupported, the answer says which part rather than estimating it.</span></li>
+      </ul>
+      <p class="gl-note" style="margin-top:20px"><a class="gl-arrow" href="/assistant/knowledge">Knowledge &amp; Connections →</a></p>`),
+].join('\n');
+
+const assistant = page('Assistant', 'assistant', assistantBody);
+
+// ---------------------------------------------------------------- knowledge ----
+const knowledgePage = page('Knowledge & Connections', 'assistant', [
+  band('tint', `
+      <p class="gl-eyebrow">Assistant · Knowledge &amp; Connections</p>
+      <h1 class="gl-lede">What this system has been told, and <em>what it did with it</em>.</h1>
+      <p class="gl-sub">Adding a document or a data extract does not change the model. It is parsed,
+        validated, versioned, indexed and made retrievable — and every one of those steps produces a
+        count you can check.</p>
+      <p class="gl-note" style="margin-top:14px;max-width:78ch">Nothing added here reaches the
+        executive figures. Uploaded material enters a sandbox data context, and this proof of concept
+        implements no path that promotes it to canonical. The synthetic portfolio remains the only
+        governed source.</p>`),
+  band('white', `
+      <h2 class="gl-h2">Sources</h2>
+      <p class="gl-sub">Six enterprise connectors are present as clearly-labelled synthetic fixtures.
+        A fixture is never shown as a connection: reaching <em>connected and verified</em> requires a
+        live endpoint to have answered, and a fixture has none.</p>
+      ${sourcesTable(knowledge.registry)}`),
+  band('tint', `
+      <h2 class="gl-h2">Verify knowledge</h2>
+      <p class="gl-sub">A successful upload is not evidence that anything was learned. A source counts
+        as grounded only when it has been ingested, is retrievable, <em>and</em> an answer has actually
+        used it — reported here as three separate facts, because they disagree more often than not.</p>
+      ${verificationTable(knowledge)}`),
+  band('white', `
+      <h2 class="gl-h2">Quarantine</h2>
+      <p class="gl-sub">Records that failed validation. They keep their values so they can be
+        inspected, they carry the reason a person can act on, and they contribute to no answer.</p>
+      ${quarantineTable(knowledge.registry)}`),
+  band('tint', `
+      <h2 class="gl-h2">Source authority</h2>
+      <p class="gl-sub">Authority is declared per canonical concept, not per system: a finance system
+        is authoritative for cost and merely supplemental for delivery progress, even though it stores
+        a percentage. Where two sources disagree, the higher authority governs and the disagreement is
+        disclosed rather than merged.</p>
+      <p class="gl-note" style="margin-bottom:6px"><b>POC configuration — not an approved GlobalLogic
+        data-ownership policy.</b></p>
+      ${authorityTable(knowledge.registry)}`),
 ].join('\n'));
 
 // ---------------------------------------------------------------- project pages ----
@@ -455,6 +502,18 @@ function statusLine(status: string, cause: string, f: ExecutiveFact): string {
     + `${f.gmAtRiskDisplay} of sold margin is exposed.`;
 }
 
+/**
+ * Adds the Assistant's own runtime and its recorded transcript to the page.
+ *
+ * Appended rather than merged into the shared runtime because only this route needs it, and a
+ * hundred kilobytes of query-workspace JavaScript on the Command Center would be paid for by every
+ * reader who never opens the Assistant.
+ */
+function withAssistantRuntime(html: string): string {
+  const recording = `<script type="application/json" id="gl-recorded">${RECORDED.replace(/</g, '\\u003c')}</script>`;
+  return html.replace('</body>', `${recording}\n<script>${GL_ASSISTANT_RUNTIME}</script>\n</body>`);
+}
+
 function word(t: string): string {
   return ({ IMPROVING: 'Improving', STABLE: 'Stable', DETERIORATING: 'Deteriorating',
     RAPIDLY_DETERIORATING: 'Deteriorating fast' } as Record<string, string>)[t] ?? t;
@@ -466,7 +525,11 @@ writeFileSync(join(OUT, 'index.html'), commandCenter, 'utf8');
 writeFileSync(join(OUT, 'projects.html'), projects, 'utf8');
 writeFileSync(join(OUT, 'forward-risk.html'), forwardRisk, 'utf8');
 writeFileSync(join(OUT, 'interventions.html'), interventions, 'utf8');
-writeFileSync(join(OUT, 'assistant.html'), assistant, 'utf8');
+writeFileSync(join(OUT, 'assistant.html'), withAssistantRuntime(assistant), 'utf8');
+mkdirSync(join(OUT, 'assistant'), { recursive: true });
+writeFileSync(join(OUT, 'assistant', 'knowledge.html'), knowledgePage, 'utf8');
 for (const f of facts) writeFileSync(join(OUT, 'projects', `${f.id}.html`), projectPage(f), 'utf8');
 
-process.stdout.write(`app built: 5 primary routes + ${String(facts.length)} project pages\n`);
+process.stdout.write(
+  `app built: 5 primary routes + Knowledge & Connections + ${String(facts.length)} project pages\n`,
+);

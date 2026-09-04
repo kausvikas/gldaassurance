@@ -129,3 +129,34 @@ export {
 } from './periods.js';
 
 import { type CalendarDate, type WeekId, isCalendarDate } from './periods.js';
+
+/**
+ * Reads an external date as an ISO calendar date, or returns `null` (Phase 13, ADR-0036 §2).
+ *
+ * Lives here because `platform/time` is the only module permitted to parse a date, and an ingestion
+ * pipeline that parsed its own would be a second definition of what a date is. Accepts ISO first,
+ * then the two unambiguous written forms.
+ *
+ * **Bare `nn/nn/nnnn` is deliberately rejected.** `03/09/2026` is 3 September to half the world and
+ * 9 March to the other half, and a pipeline that guesses produces a period-shifted financial record
+ * that reconciles against nothing. It becomes a validation finding and a human states the format.
+ */
+export function readExternalDate(value: string): string | null {
+  const v = value.trim();
+  const iso = /^(\d{4}-\d{2}-\d{2})/.exec(v)?.[1];
+  if (iso !== undefined) {
+    const parsed = Date.parse(`${iso}T00:00:00Z`);
+    if (!Number.isFinite(parsed)) return null;
+    return new Date(parsed).toISOString().slice(0, 10) === iso ? iso : null;
+  }
+  if (!/^\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}$/.test(v)
+    && !/^[A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4}$/.test(v)) return null;
+  const parsed = Date.parse(v);
+  if (!Number.isFinite(parsed)) return null;
+  return new Date(parsed).toISOString().slice(0, 10);
+}
+
+/** Whether a value is one of the date shapes `readExternalDate` accepts. */
+export function isExternalDate(value: string): boolean {
+  return readExternalDate(value) !== null;
+}

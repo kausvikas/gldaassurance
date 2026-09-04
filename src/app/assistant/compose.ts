@@ -282,3 +282,95 @@ export function missingEvidence(
 export const COMPOSER_STATE: string =
   'Deterministic templates per intent. No arithmetic, no formatting of figures, no model. '
   + 'ADR-0030 option D floor.';
+
+// ---------------------------------------------------------------------------
+// Shape-aware composition (Phase 13, ADR-0034)
+// ---------------------------------------------------------------------------
+
+/**
+ * The thirteen Phase 11 intents, as plan shapes.
+ *
+ * Kept as an explicit table rather than derived from the names, so that renaming a shape cannot
+ * silently detach it from the composer, the required-claim set and the certification suite that
+ * proved its answers correct.
+ */
+export const SHAPE_INTENT: Readonly<Record<string, IntentId>> = {
+  'population.rank': 'portfolio.ranking',
+  'population.compare': 'portfolio.comparison',
+  'population.reportedGreenRisk': 'portfolio.reportedGreenRisk',
+  'population.emergingRisk': 'portfolio.systemEmergingRisk',
+  'project.health': 'project.healthExplanation',
+  'project.margin': 'project.marginDrivers',
+  'project.burn': 'project.burnProgress',
+  'project.scope': 'project.scopeLeakage',
+  'project.confidence': 'project.confidence',
+  'project.forwardRisk': 'project.forwardRisk',
+  'project.recovery': 'project.recovery',
+  'evidence.lookup': 'evidence.lookup',
+  'metric.definition': 'metric.definition',
+};
+
+/**
+ * Composes an answer for any plan shape.
+ *
+ * A shape with a Phase 11 intent goes through the exact composer that intent always used — same
+ * headline construction, same required claims, same "Why" selection. The shapes Phase 13 added use
+ * the generic composer below, which leads with the population or aggregate claim and lists the rest.
+ *
+ * The generic composer is deliberately plain. Its job is to be a correct floor that the narration
+ * layer improves on, and a floor that tried to be eloquent would be a floor that started choosing
+ * what to emphasise — which is a judgement no template is entitled to make.
+ */
+export function composeShape(shape: string, claims: readonly MaterialClaim[]): string {
+  const intent = SHAPE_INTENT[shape];
+  if (intent !== undefined) return compose(intent, claims);
+  const [lead, ...rest] = claims;
+  if (lead === undefined) return 'There is nothing to report for that request.';
+  const body = rest.slice(0, 6).map((c) => c.text).join(' ');
+  return neutraliseRetrievedText(joinSentences(`${lead.text} ${body}`));
+}
+
+export function whyShape(shape: string, claims: readonly MaterialClaim[]): readonly string[] {
+  const intent = SHAPE_INTENT[shape];
+  if (intent !== undefined) return why(intent, claims);
+  return claims
+    .slice(1)
+    .map((c) => neutraliseRetrievedText(c.text))
+    .filter((text) => text.trim() !== NEUTRALISED);
+}
+
+export function claimsForShape(
+  shape: string, claims: readonly MaterialClaim[],
+): readonly MaterialClaim[] {
+  const intent = SHAPE_INTENT[shape];
+  return intent === undefined ? claims : claimsFor(intent, claims);
+}
+
+/**
+ * Required claims for a shape.
+ *
+ * The Phase 13 shapes carry their own minimum sets for the same reason the Phase 11 ones do: an
+ * answer that is fully grounded and silent about something governed is materially misleading, and no
+ * grounding control catches it because every sentence in it is true. A population answer that omits
+ * its own count is exactly that — a list of five projects that a reader takes for the whole
+ * population.
+ */
+const SHAPE_REQUIRED: Readonly<Record<string, readonly string[]>> = {
+  'population.list': ['population:count'],
+  'population.aggregate': ['aggregate:count'],
+  'population.concentration': ['concentration:scope'],
+  'population.change': ['change:coverage'],
+  'population.recovering': ['recovery:count'],
+  'knowledge.document': ['knowledge:'],
+  'source.dataQuality': ['quality:completeness'],
+};
+
+export function missingRequiredForShape(
+  shape: string, claims: readonly MaterialClaim[],
+): readonly string[] {
+  const intent = SHAPE_INTENT[shape];
+  if (intent !== undefined) return missingRequiredClaims(intent, claims);
+  return (SHAPE_REQUIRED[shape] ?? []).filter(
+    (prefix) => !claims.some((c) => c.claimId.startsWith(prefix)),
+  );
+}

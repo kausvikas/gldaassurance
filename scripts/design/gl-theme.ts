@@ -15,7 +15,9 @@
  * Type is a neutral system stack: BRAND_DESIGN_SYSTEM.md §4 forbids embedding a licensed face, and
  * a webfont would be the only external request in an otherwise self-contained build.
  */
-export const GL_CSS = `
+import { GL_ASSISTANT_CSS } from './gl-assistant.js';
+
+const GL_BASE_CSS = `
 :root{
   --white:#FFFFFF; --steel-05:#F2F3F6; --steel-25:#C8CAD3; --steel-50:#858A9B;
   --steel-75:#484F6B; --steel-100:#181A24;
@@ -172,3 +174,15 @@ footer.gl-foot p{max-width:78ch}
 @media (max-width:820px){.gl-navlinks{display:none}.gl-wrap{padding:0 22px}.gl-navwrap{padding:12px 16px 0}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 `;
+
+/**
+ * The stylesheet every route carries.
+ *
+ * The Assistant's rules live in their own module beside the surface they describe, and are appended
+ * here rather than duplicated: one stylesheet on every page means a control that looks a certain way
+ * on the Command Center looks that way in the Assistant, which is most of what makes a product feel
+ * like one product.
+ */
+export const GL_CSS = `${GL_BASE_CSS}${GL_ASSISTANT_CSS}`;
+
+

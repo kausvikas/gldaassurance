@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "GlobalLogic Delivery Intelligence — DEMO / SYNTHETIC DATA proof of concept",
+  "description": "GlobalLogic Delivery Intelligence \u2014 DEMO / SYNTHETIC DATA proof of concept",
   "engines": {
     "node": ">=20"
   },
@@ -31,7 +31,11 @@
     "audit:links": "node scripts/deploy/link-audit.mjs",
     "preview": "node scripts/deploy/serve-preview.mjs",
     "deploy": "npm run build:dist && npm run audit:links && firebase deploy --only hosting",
-    "design:app": "vite-node -c vitest.config.ts scripts/design/build-app.tsx"
+    "design:app": "vite-node -c vitest.config.ts scripts/design/build-app.tsx",
+    "server": "vite-node -c vitest.config.ts server/start.ts",
+    "server:check": "vite-node -c vitest.config.ts scripts/deploy/server-check.ts",
+    "scan:secrets": "node scripts/ci/secret-scan.mjs",
+    "report:phase13": "vite-node -c vitest.config.ts scripts/deploy/phase13-report.ts"
   },
   "dependencies": {
     "decimal.js": "^10.6.0",

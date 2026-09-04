@@ -12,11 +12,11 @@ edit an accepted ADR in substance — supersede it instead.
 | [0003](ADR-0003-three-baselines-temporal-model.md) | Three baselines and an append-only temporal model | Accepted |
 | [0004](ADR-0004-fact-derived-inferred-layering.md) | L1/L2/L3 layering and the AI authority boundary | Accepted |
 | [0005](ADR-0005-server-side-authorization.md) | Server-side authorization, scoping and audit | Accepted |
-| [0006](ADR-0006-api-bff-contract-strategy.md) | Task-shaped BFF and three-axis versioning | **Proposed** |
+| [0006](ADR-0006-api-bff-contract-strategy.md) | Task-shaped BFF and three-axis versioning | Accepted (promoted by 0032) |
 | [0007](ADR-0007-operational-analytical-data-strategy.md) | Operational and analytical data strategy | **Proposed** |
-| [0008](ADR-0008-integration-and-ingestion-model.md) | Integration and ingestion model | **Proposed** |
+| [0008](ADR-0008-integration-and-ingestion-model.md) | Integration and ingestion model | Accepted (promoted by 0035) |
 | [0009](ADR-0009-observability-architecture.md) | Observability on OpenTelemetry, separated from audit | **Proposed** |
-| [0010](ADR-0010-deployment-environment-configuration.md) | Deployment, environments and configuration | **Proposed** |
+| [0010](ADR-0010-deployment-environment-configuration.md) | Deployment, environments and configuration | Accepted (promoted by 0032, §2–§9) |
 | [0011](ADR-0011-epistemic-layers-are-not-dependency-tiers.md) | Epistemic layers are not dependency tiers | **Proposed** |
 | [0012](ADR-0012-ports-in-orchestration.md) | Ports-in orchestration for aggregate, cross-domain and inferred contexts | **Proposed** |
 | [0013](ADR-0013-revised-demo-portfolio-specification.md) | Revised demo portfolio specification (Phase 3 brief reconciliation) | Accepted |
@@ -38,6 +38,14 @@ edit an accepted ADR in substance — supersede it instead.
 | [0029](ADR-0029-assistant-tool-allowlist-supersedes-free-text-retrieval.md) | The assistant's data window is a typed read-only tool allowlist, not a free-text retrieval port (resolves DQ-3) | Accepted |
 | [0030](ADR-0030-grounding-is-deterministic-and-generation-is-not-trusted.md) | Narrative generation is a governed hybrid; grounding validation is deterministic and blocking | Accepted |
 | [0031](ADR-0031-claim-envelope-carries-epistemic-metadata-to-the-assistant.md) | Every assistant-consumable output carries a uniform claim envelope; missing qualification defaults to the conservative reading | Accepted |
+| [0032](ADR-0032-trusted-server-runtime.md) | The trusted server runtime is a container, and it activates ADR-0006 (promotes 0006, 0010; discharges DR-029) | Accepted |
+| [0033](ADR-0033-llm-provider-boundary-and-external-ai-policy.md) | The LLM is a provider behind a port; sending data to one is a policy decision, and there is no silent fallback | Accepted |
+| [0034](ADR-0034-typed-query-plan.md) | A typed query plan supersedes single-intent routing; the tool allow-list of 0029 is retained and extended | Accepted |
+| [0035](ADR-0035-three-planes-and-source-authority.md) | Three data planes; source authority is declared per canonical concept, not per system (promotes 0008) | Accepted |
+| [0036](ADR-0036-knowledge-ingestion-and-citation.md) | Knowledge grounding is ingestion, indexing and citation — not training; a source is grounded only when an answer has used it | Accepted |
+| [0037](ADR-0037-enterprise-connector-contract.md) | One connector contract, honest status, and no invented GlobalLogic schemas | Accepted |
+| [0038](ADR-0038-historical-learning-seam.md) | The historical-learning seam is declared and deliberately not implemented | Accepted |
+| [0039](ADR-0039-portfolio-contract-value-is-contractual-revenue.md) | Portfolio contract value is contractual revenue, not the as-sold baseline (corrects a published headline figure) | Accepted |
 
 `Proposed` means **no code may depend on it** (`../../ARCHITECTURE_DECISIONS.md` §2) and it is not
 implemented (§3 step 7). ADR-0006…0012 were raised in Phase 1 and await approval.

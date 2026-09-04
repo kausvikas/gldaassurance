@@ -88,6 +88,36 @@ export interface CommandCenterProject {
    * portfolio figure by exactly the amount an executive later has to explain away (ADR-0021, C-20).
    */
   readonly riskCauses: readonly RiskCauseInput[];
+  /**
+   * The project's position at the previous governed period, where one exists (Phase 13).
+   *
+   * **Financial position and reported status only** — not a prior health assessment. That asymmetry
+   * is a property of the data, not an omission: reported RAG is a dated management declaration the
+   * portfolio holds every one of, and forecast economics can be recomputed at an earlier period end
+   * by the same engine that produced today's. A prior *system-assessed* band has neither property —
+   * health is assessed at the current as-of and no per-period band is stored — so it is absent here
+   * and every surface that reports movement says so rather than implying it covers all three.
+   *
+   * Optional. Its absence is reported, never rendered as no change: "unchanged" and "unknown" are
+   * different claims and only one of them is reassuring.
+   */
+  readonly periodMovement?: {
+    readonly priorLabel: string;
+    readonly priorForecastRevenue: Money;
+    readonly priorEstimateAtCompletion: Money;
+    /**
+     * The **same series'** latest point, not today's snapshot.
+     *
+     * Movement must be like-for-like. The governed margin trend is sampled at period ends, and its
+     * latest point is not necessarily the current as-of date. Comparing the prior point against
+     * today's economics mixes two bases and produces a different figure from the one the Command
+     * Center reports for the same question — which is a cross-surface disagreement about a number,
+     * not a rounding difference. Both endpoints therefore come from one series.
+     */
+    readonly currentForecastRevenue: Money;
+    readonly currentEstimateAtCompletion: Money;
+    readonly priorReportedRag: string | null;
+  };
 }
 
 /**
@@ -293,6 +323,47 @@ export interface FilterDefinitionDto {
   readonly options: readonly FilterOptionDto[];
 }
 
+/**
+ * The four governed components a portfolio aggregate is built from, per project.
+ *
+ * **This exists so that a *filtered* portfolio figure is computed by the same formula as the
+ * unfiltered one.** `MET-PORT-002` is `(Σ MET-FIN-010 − Σ MET-FIN-008) / Σ MET-FIN-010` — the
+ * catalogue states it as "weighted, never a mean of project margins". A caller that only had the
+ * per-project percentages could not reproduce it for a subset: weighting those percentages by
+ * contract value gives a different number wherever forecast revenue differs from contract value,
+ * which is wherever a change request has been executed. That defect was found in the browser runtime
+ * at Phase 12 and fixed there by emitting these same four components; the Assistant needs them for
+ * the same reason and gets them the same way, so there is one business-truth path rather than two.
+ *
+ * Emitted as a **separate top-level field**, not folded into `ExecutiveRowDto`, because these are
+ * `COMMERCIAL_CONFIDENTIAL` and `ranked` is `DELIVERY_SENSITIVE`. Nesting them would have widened
+ * what a delivery-only caller receives, silently, through a field classified for a different
+ * audience (DR-046). Separated, the classification is exact and a caller without the commercial
+ * grant simply does not receive the array.
+ *
+ * Quantity strings, never numbers: the recipient reconstructs `Money` and sums decimally.
+ */
+export interface ProjectContributionDto {
+  readonly projectId: string;
+  /** MET-FIN-002 */ readonly contractValue: string;
+  /** MET-FIN-010 */ readonly forecastRevenue: string;
+  /** MET-FIN-008 */ readonly estimateAtCompletion: string;
+  /** MET-FIN-019 */ readonly gmValueAtRisk: string;
+  /** Sold margin value, so as-sold portfolio margin is aggregable on the same basis. */
+  readonly soldGmValue: string;
+  /**
+   * The movement basis: two endpoints of one governed margin-trend series, plus the previous dated
+   * management declaration. `null` where the project has no earlier period. See `periodMovement`
+   * for why both endpoints come from the series rather than one from today's snapshot.
+   */
+  readonly priorForecastRevenue: string | null;
+  readonly priorEstimateAtCompletion: string | null;
+  readonly currentForecastRevenue: string | null;
+  readonly currentEstimateAtCompletion: string | null;
+  readonly priorReportedRag: string | null;
+  readonly priorPeriodLabel: string | null;
+}
+
 export interface CommandCenterView {
   readonly asOf: Instant;
   readonly week: WeekId;
@@ -319,6 +390,8 @@ export interface CommandCenterView {
   readonly kpis: readonly KpiDto[];
   readonly greenAtRisk: GreenAtRiskPanelDto;
   readonly ranked: readonly ExecutiveRowDto[];
+  /** Governed aggregation components. COMMERCIAL_CONFIDENTIAL; see `ProjectContributionDto`. */
+  readonly contributions: readonly ProjectContributionDto[];
   readonly insufficientEvidence: readonly { readonly projectId: string; readonly reason: string }[];
   readonly bubbles: readonly BubbleDto[];
   readonly whatChanged: readonly NarrativeDto[];
@@ -932,6 +1005,31 @@ export function buildCommandCenter(input: CommandCenterInput): CommandCenterView
     excludedFromPopulation,
     priorPeriodLabel: priorLabel,
     kpis, greenAtRisk, ranked,
+    /*
+     * Emitted in ranked order so a consumer that filters and a consumer that reads the table are
+     * looking at the same population in the same sequence. Sourced from the same
+     * `assessment.economics` the KPIs were built from, so a filtered aggregate and the unfiltered
+     * KPI cannot disagree about what a project contributed.
+     */
+    contributions: ranked.flatMap((r) => {
+      const p = byId.get(r.projectId);
+      if (p === undefined) return [];
+      const e = p.assessment.economics;
+      return [{
+        projectId: r.projectId,
+        contractValue: e.contractualRevenue.toQuantity(),
+        forecastRevenue: e.forecastRevenue.toQuantity(),
+        estimateAtCompletion: e.estimateAtCompletion.toQuantity(),
+        gmValueAtRisk: e.gmValueAtRisk.toQuantity(),
+        soldGmValue: e.soldGmValue.toQuantity(),
+        priorForecastRevenue: p.periodMovement?.priorForecastRevenue.toQuantity() ?? null,
+        priorEstimateAtCompletion: p.periodMovement?.priorEstimateAtCompletion.toQuantity() ?? null,
+        currentForecastRevenue: p.periodMovement?.currentForecastRevenue.toQuantity() ?? null,
+        currentEstimateAtCompletion: p.periodMovement?.currentEstimateAtCompletion.toQuantity() ?? null,
+        priorReportedRag: p.periodMovement?.priorReportedRag ?? null,
+        priorPeriodLabel: p.periodMovement?.priorLabel ?? null,
+      }];
+    }),
     insufficientEvidence: ranking.insufficientEvidence.map((u) => ({
       projectId: u.projectId, reason: u.reason,
     })),
