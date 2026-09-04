@@ -332,6 +332,25 @@ describe('the Assistant reconciles with the frozen executive baseline', () => {
     expect(reported?.text).toContain('12 downgrades and 8 upgrades');
   }, 30_000);
 
+  it('reports the executive Green taxonomy, not the wider legacy metric', async () => {
+    const answer = await ask('Which reported Green projects disagree with system evidence?');
+    const count = answer.response.materialClaims.find((c) => c.claimId === 'gar:reported:count');
+    // 9 is what every executive surface reports. The legacy MET-HLTH-033 count is 18, and the
+    // Assistant reported that for a while — one label, two numbers, and a CDO told the delivery
+    // line was misreporting nine more projects than it is.
+    expect(count?.display).toBe('9');
+    // And the governed metric is disclosed rather than suppressed, under its own definition.
+    const metric = answer.response.materialClaims.find((c) => c.claimId === 'gar:reported:metric');
+    expect(metric?.display).toBe('18');
+    expect(metric?.text).toMatch(/wider definition/);
+  }, 30_000);
+
+  it('reports ten projects with an emerging risk, with no overlap against the first category', async () => {
+    const answer = await ask('Which projects have an emerging risk?');
+    const count = answer.response.materialClaims.find((c) => c.claimId === 'gar:system:count');
+    expect(count?.display).toBe('10');
+  }, 30_000);
+
   it('reports four recovering projects', async () => {
     const answer = await ask('Which projects are recovering?');
     const count = answer.response.materialClaims.find((c) => c.claimId === 'recovery:count');

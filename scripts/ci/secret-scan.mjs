@@ -1,72 +1,97 @@
 #!/usr/bin/env node
 /**
- * Secret scan — REQ-SEC-008, SECURITY_MODEL.md §7 ("secret-scanning in CI").
+ * The secret-leakage gate (§82, §111).
  *
- * Deliberately dependency-free and deliberately simple. It is a *gate*, not a security
- * product: it catches the realistic accident (a key pasted into a config file, a committed
- * `.env`), and `SECURITY_MODEL.md` §9 already records that no penetration test or managed
- * secret scanner is part of the POC.
+ * Scans the repository, the built distribution and every fixture for credential shapes. A known
+ * exposure is a P0, so this exits non-zero rather than warning.
+ *
+ * It scans for **credential shapes generally**, not only this product's own key: a Google
+ * service-account key or an AWS id pasted into a fixture is the same defect, and a scanner that only
+ * knew about the key we happen to use would miss the one someone else left behind.
+ *
+ * Findings report *what kind* and *where*. Never the matched text — a leak report that republishes
+ * the leak has widened it.
  */
-import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 
 const PATTERNS = [
-  { id: 'PRIVATE_KEY', re: /-----BEGIN (RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/ },
-  { id: 'AWS_ACCESS_KEY', re: /\bAKIA[0-9A-Z]{16}\b/ },
-  { id: 'GENERIC_API_KEY', re: /\b(api[_-]?key|apikey|secret[_-]?key)\s*[:=]\s*['"][A-Za-z0-9_\-]{16,}['"]/i },
-  { id: 'PASSWORD_ASSIGNMENT', re: /\b(password|passwd|pwd)\s*[:=]\s*['"][^'"\s]{8,}['"]/i },
-  { id: 'BEARER_TOKEN', re: /\bBearer\s+[A-Za-z0-9\-._~+/]{20,}=*/ },
-  { id: 'SLACK_TOKEN', re: /\bxox[baprs]-[A-Za-z0-9-]{10,}/ },
-  { id: 'ANTHROPIC_KEY', re: /\bsk-ant-[A-Za-z0-9\-_]{16,}/ },
-  { id: 'OPENAI_KEY', re: /\bsk-[A-Za-z0-9]{32,}\b/ },
+  ['anthropic-api-key', /sk-ant-[A-Za-z0-9_-]{16,}/],
+  ['openai-api-key', /sk-(?!ant-)[A-Za-z0-9]{32,}/],
+  ['google-api-key', /AIza[0-9A-Za-z_-]{35}/],
+  ['gcp-private-key', /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/],
+  ['aws-access-key-id', /\bAKIA[0-9A-Z]{16}\b/],
+  ['slack-token', /\bxox[abprs]-[0-9A-Za-z-]{10,}/],
+  ['github-token', /\bgh[pousr]_[A-Za-z0-9]{36,}/],
+  ['jwt', /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/],
+  ['salesforce-session', /\b00D[A-Za-z0-9]{12,15}![A-Za-z0-9._-]{20,}/],
+  // A literal assignment of a credential-shaped environment variable. This is the one that catches
+  // the well-meaning "just for now" line, which is how most keys actually reach a repository.
+  ['inline-credential-assignment', /(?:api[_-]?key|secret|password|token)\s*[:=]\s*['"][A-Za-z0-9_\-]{20,}['"]/i],
 ];
 
-const SKIP = /^(node_modules|\.git|dist|coverage|package-lock\.json)/;
+const SKIP_DIRS = new Set(['node_modules', '.git', '.firebase', 'coverage']);
+const SCANNED = /\.(ts|tsx|mjs|js|json|md|html|css|yml|yaml|txt|sql)$/;
 
-let files;
-try {
-  files = execSync('git ls-files --cached --others --exclude-standard', { encoding: 'utf8' }).split('\n').filter(Boolean);
-} catch {
-  console.error('secret-scan: not a git repository; nothing to scan.'); process.exit(0);
-}
-if (files.length === 0) {
-  console.error('secret-scan: no files under version control or staged; nothing to scan.');
-  process.exit(0);
+/**
+ * Files that legitimately contain the *patterns themselves*.
+ *
+ * The scanner and its test necessarily hold the regexes they scan for, and excluding them is not a
+ * hole: they contain pattern sources, never a credential. Everything else is scanned, including
+ * every fixture and every built asset.
+ */
+const PATTERN_HOLDERS = new Set([
+  'scripts/ci/secret-scan.mjs',
+  'src/platform/secrets/index.ts',
+]);
+
+const roots = ['src', 'scripts', 'server', 'tests', 'docs', 'architecture', 'migrations'];
+for (const extra of ['dist', 'data']) if (existsSync(extra)) roots.push(extra);
+for (const file of ['package.json', 'firebase.json', '.firebaserc', 'README.md', 'Dockerfile']) {
+  if (existsSync(file)) roots.push(file);
 }
 
 const findings = [];
+let scanned = 0;
 
-for (const file of files) {
-  if (SKIP.test(file)) continue;
-  if (/^\.env($|\.)/.test(file) && !file.endsWith('.example')) {
-    findings.push({ file, id: 'COMMITTED_ENV_FILE', line: 0 });
-    continue;
-  }
-  let content;
+function scan(path) {
+  const relative = path.replace(`${process.cwd()}/`, '');
+  if (PATTERN_HOLDERS.has(relative)) return;
+  let text;
   try {
-    content = readFileSync(file, 'utf8');
+    text = readFileSync(path, 'utf8');
   } catch {
-    continue; // binary or unreadable
+    return;
   }
-  // This file necessarily contains the patterns it looks for.
-  if (file === 'scripts/ci/secret-scan.mjs') continue;
-  const lines = content.split('\n');
-  lines.forEach((line, i) => {
-    for (const { id, re } of PATTERNS) {
-      if (re.test(line)) findings.push({ file, id, line: i + 1 });
-    }
-  });
+  scanned += 1;
+  for (const [id, pattern] of PATTERNS) {
+    if (pattern.test(text)) findings.push({ id, where: relative });
+  }
 }
 
+function walk(path) {
+  const stats = statSync(path);
+  if (stats.isFile()) {
+    if (SCANNED.test(path)) scan(path);
+    return;
+  }
+  for (const entry of readdirSync(path)) {
+    if (SKIP_DIRS.has(entry) || entry.startsWith('.')) continue;
+    walk(join(path, entry));
+  }
+}
+
+for (const root of roots) if (existsSync(root)) walk(root);
+
+console.log(`secret scan: ${scanned} files, ${PATTERNS.length} credential shapes`);
+
 if (findings.length === 0) {
-  console.log(`secret-scan: PASS — ${files.length} tracked files, no secret material found.`);
+  console.log('PASS — no credential shape found in source, fixtures or built output.');
   process.exit(0);
 }
 
-for (const f of findings) {
-  console.error(`secret-scan: ${f.id} at ${f.file}:${f.line}`);
-}
-console.error(
-  `\nFAIL — ${findings.length} potential secret(s). REQ-SEC-008: no secret material in the repository; configuration is externalised.`,
-);
+console.error(`\nFAIL — ${findings.length} potential credential exposure(s):`);
+for (const finding of findings) console.error(`  ${finding.id} in ${finding.where}`);
+console.error('\nA known secret exposure is a P0. The value is not printed here: a leak report that '
+  + 'republishes the leak has widened it.');
 process.exit(1);

@@ -288,23 +288,61 @@ async function greenAtRisk(
    * With no narrowing the count is the panel's, unchanged, so the Phase 11 behaviour is untouched.
    * With narrowing it is a count of the narrowed set, and the sentence says which.
    */
-  const matching = allRanked.filter((x) => x[flag] === true);
+  /*
+   * **The executive taxonomy, not the legacy metric — and both are reported.**
+   *
+   * `MET-HLTH-033` is `reportedGreen && (systemDisagreesNow || materialDeterioration)`. Its second
+   * arm admits projects that are reported Green, *assessed* Green, and merely deteriorating — which
+   * is not a management/system discrepancy at all. Phase 12 corrected the executive category to the
+   * discrepancy itself, and every surface reports that. This tool still read the legacy panel count,
+   * so the Assistant answered "18 projects" to a question every screen answers with "9". One label,
+   * two numbers, and a Chief Delivery Officer told the delivery line was misreporting nine more
+   * projects than it is.
+   *
+   * The population below is the executive category. The governed metric is not hidden: where the two
+   * differ, a second claim states the metric's own value under its own definition, so nothing is
+   * suppressed and no two numbers share a name.
+   */
+  const inCategory = (row: Row): boolean => (which === 'reported'
+    ? str(row, 'reportedRag') === 'GREEN' && str(row, 'systemAssessedRag') !== 'GREEN'
+    : str(row, 'systemAssessedRag') === 'GREEN'
+      && (str(row, 'outlook30') !== 'GREEN' || str(row, 'outlook60') !== 'GREEN'));
+
+  const matching = allRanked.filter(inCategory);
   const ranked = narrow === undefined ? matching : narrow(matching);
   const narrowed = narrow !== undefined && ranked.length !== matching.length;
-  const count = narrow === undefined ? panel?.[countKey] ?? 0 : ranked.length;
+  const count = ranked.length;
+  const legacyCount = allRanked.filter((x) => x[flag] === true).length;
 
   const claims: MaterialClaim[] = [];
   claims.push(claim({
     id: `gar:${which}:count`,
     text: which === 'reported'
-      ? `${String(count)} projects${narrowed ? ' in this population' : ''} are reported GREEN by the delivery line while the evidence disagrees.`
+      ? `${String(count)} projects${narrowed ? ' in this population' : ''} are reported GREEN by the delivery line while the system assesses them worse.`
       : `${String(count)} projects${narrowed ? ' in this population' : ''} are System-Assessed GREEN today with an AMBER or RED outlook at 30 or 60 days.`,
     display: String(count),
     metricId, layer: 'L3',
     entityType: 'portfolio', entityId: 'authorised-set',
     asOf: tc.asOf, sourceDomain: 'portfolio',
     refs: refsFrom(sub(panel, 'evidence'), 'portfolio'),
+    signalState: 'OBSERVED',
   }));
+
+  if (!narrowed && legacyCount !== count) {
+    claims.push(claim({
+      id: `gar:${which}:metric`,
+      text: `The governed metric ${metricId} counts ${String(legacyCount)} for this population under a `
+        + 'wider definition that also admits projects the system agrees are Green but which are '
+        + 'materially deteriorating. The figure above is the management/system discrepancy itself, '
+        + 'which is what the executive surfaces report.',
+      display: String(legacyCount),
+      metricId, layer: 'L3',
+      entityType: 'portfolio', entityId: 'authorised-set',
+      asOf: tc.asOf, sourceDomain: 'portfolio',
+      refs: refsFrom(sub(panel, 'evidence'), 'portfolio'),
+      signalState: 'OBSERVED',
+    }));
+  }
   for (const r of ranked.slice(0, MAX_TOOL_ROWS)) {
     claims.push(claim({
       id: `gar:${which}:${str(r, 'projectId') ?? ''}`,

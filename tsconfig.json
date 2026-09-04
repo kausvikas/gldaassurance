@@ -36,5 +36,5 @@
       "@presentation/*": ["src/presentation/*"]
     }
   },
-  "include": ["src/**/*", "tests/**/*", "scripts/**/*.ts", "scripts/**/*.tsx", "vitest.config.ts"]
+  "include": ["src/**/*", "tests/**/*", "scripts/**/*.ts", "scripts/**/*.tsx", "server/**/*.ts", "vitest.config.ts"]
 }
