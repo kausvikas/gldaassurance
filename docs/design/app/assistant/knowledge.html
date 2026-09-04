@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Command Center — GlobalLogic Delivery Intelligence</title>
+<title>Knowledge &amp; Connections — GlobalLogic Delivery Intelligence</title>
 <style>
 :root{
   --white:#FFFFFF; --steel-05:#F2F3F6; --steel-25:#C8CAD3; --steel-50:#858A9B;
@@ -243,11 +243,11 @@ footer.gl-foot p{max-width:78ch}
   <nav class="gl-nav" aria-label="Primary">
     <a class="gl-brand" href="/"><b>GlobalLogic</b><span>Delivery Intelligence</span></a>
     <ul class="gl-navlinks">
-      <li><a href="/" aria-current="page">Command Center</a></li>
+      <li><a href="/">Command Center</a></li>
       <li><a href="/projects">Projects</a></li>
       <li><a href="/forward-risk">Forward Risk</a></li>
       <li><a href="/interventions">Interventions</a></li>
-      <li><a href="/assistant">Assistant</a></li>
+      <li><a href="/assistant" aria-current="page">Assistant</a></li>
     </ul>
     <span class="gl-navmeta">
       <span>as at 31 Aug 2026</span>
@@ -258,158 +258,353 @@ footer.gl-foot p{max-width:78ch}
 
 <main id="main">
   <section class="gl-band gl-band--tint"><div class="gl-wrap">
-      <p class="gl-eyebrow">Fixed-bid portfolio · Chief Delivery Officer</p>
-      <h1 class="gl-lede">Where the portfolio stands, and <em>where to intervene first</em>.</h1>
-      <p class="gl-sub">Every figure below is the governed assessment over the projects you are
-        authorised for. Filters change the population, not the arithmetic.</p>
-      <p class="gl-note" style="margin-top:10px;max-width:74ch">Portfolio margin is calculated from
-        aggregate forecast revenue and aggregate cost at completion — not as an average of project
-        margins, which would let small projects move a portfolio figure. Margin at risk is the sum of
-        each project's exposure; it does not net off risks that share a root cause.</p>
+      <p class="gl-eyebrow">Assistant · Knowledge &amp; Connections</p>
+      <h1 class="gl-lede">What this system has been told, and <em>what it did with it</em>.</h1>
+      <p class="gl-sub">Adding a document or a data extract does not change the model. It is parsed,
+        validated, versioned, indexed and made retrievable — and every one of those steps produces a
+        count you can check.</p>
+      <p class="gl-note" style="margin-top:14px;max-width:78ch">Nothing added here reaches the
+        executive figures. Uploaded material enters a sandbox data context, and this proof of concept
+        implements no path that promotes it to canonical. The synthetic portfolio remains the only
+        governed source.</p></div></section>
+  <section class="gl-band gl-band--white"><div class="gl-wrap">
+      <h2 class="gl-h2">Sources</h2>
+      <p class="gl-sub">Six enterprise connectors are present as clearly-labelled synthetic fixtures.
+        A fixture is never shown as a connection: reaching <em>connected and verified</em> requires a
+        live endpoint to have answered, and a fixture has none.</p>
       
-      <div class="gl-filters" role="group" aria-label="Portfolio filters">
-        
-        <label>Geography
-          <select data-dim="region">
-            <option value="">All</option>
-            <option value="Europe">Europe</option><option value="India/APAC">India/APAC</option><option value="LATAM">LATAM</option><option value="North America">North America</option>
-          </select>
-        </label>
-        <label>Vertical
-          <select data-dim="industry">
-            <option value="">All</option>
-            <option value="Communications">Communications</option><option value="Financial Services">Financial Services</option><option value="Healthcare &amp; Life Sciences">Healthcare &amp; Life Sciences</option><option value="Industrial &amp; Energy">Industrial &amp; Energy</option><option value="Media &amp; Entertainment">Media &amp; Entertainment</option><option value="Mobility">Mobility</option><option value="Retail &amp; Consumer">Retail &amp; Consumer</option><option value="Technology">Technology</option>
-          </select>
-        </label>
-        <label>Account
-          <select data-dim="account">
-            <option value="">All</option>
-            <option value="Ardent Industrial Account">Ardent Industrial Account</option><option value="Aventine Biosciences Account">Aventine Biosciences Account</option><option value="Brennick Capital Account">Brennick Capital Account</option><option value="Calder Financial Account">Calder Financial Account</option><option value="Fenwick Consumer Brands Account">Fenwick Consumer Brands Account</option><option value="Halcyon Compute Account">Halcyon Compute Account</option><option value="Halden Telco Account">Halden Telco Account</option><option value="Kestrel Mobility Group Account">Kestrel Mobility Group Account</option><option value="Larkspur Studios Account">Larkspur Studios Account</option><option value="Meridian Automotive Account">Meridian Automotive Account</option><option value="Northwind MedTech Account">Northwind MedTech Account</option><option value="Ospry Retail Group Account">Ospry Retail Group Account</option><option value="Quillon Technologies Account">Quillon Technologies Account</option><option value="Sable Communications Account">Sable Communications Account</option><option value="Tholen Energy Systems Account">Tholen Energy Systems Account</option><option value="Vireo Media Account">Vireo Media Account</option>
-          </select>
-        </label>
-        <label>Health
-          <select data-dim="system">
-            <option value="">All</option>
-            <option value="GREEN">Green</option><option value="AMBER">Amber</option><option value="RED">Red</option>
-          </select>
-        </label>
-        <label>Trajectory
-          <select data-dim="trajectory">
-            <option value="">All</option>
-            <option value="IMPROVING">Improving</option><option value="STABLE">Stable</option><option value="DETERIORATING">Deteriorating</option><option value="RAPIDLY_DETERIORATING">Deteriorating fast</option>
-          </select>
-        </label>
-        <label>60-day outlook
-          <select data-dim="outlook60">
-            <option value="">All</option>
-            <option value="GREEN">Green</option><option value="AMBER">Amber</option><option value="RED">Red</option>
-          </select>
-        </label>
-        <button type="button" class="gl-reset" id="gl-reset">Reset all</button>
-      </div>
-      <div class="gl-quick" role="group" aria-label="Quick views">
-        <button type="button" data-quick="intervene" aria-pressed="false">Needs intervention</button>
-        <button type="button" data-quick="disagree" aria-pressed="false">Reported Green — evidence disagrees</button>
-        <button type="button" data-quick="emerging" aria-pressed="false">System Green — emerging risk</button>
-        <button type="button" data-quick="declining" aria-pressed="false">Deteriorating</button>
-        <button type="button" data-quick="recovering" aria-pressed="false">Recovering</button>
-        <button type="button" data-quick="erosion" aria-pressed="false">Margin erosion</button>
-        <button type="button" data-quick="scope" aria-pressed="false">Scope leakage</button>
-      </div>
-      <p class="gl-scope" id="gl-scopeline" aria-live="polite"></p>
-      <dl class="gl-figs">
-        <div class="gl-fig"><dt>Contract value</dt><dd id="gl-tcv">—</dd>
-          <div class="gl-vs"><span id="gl-n">—</span> projects</div></div>
-        <div class="gl-fig"><dt>Forecast margin</dt><dd id="gl-fcst">—</dd>
-          <div class="gl-vs">against <span id="gl-sold">—</span> sold · portfolio aggregate</div></div>
-        <div class="gl-fig"><dt>Margin at risk</dt><dd id="gl-var">—</dd>
-          <div class="gl-vs">sum of project exposure</div></div>
-        <div class="gl-fig"><dt>Needs intervention</dt><dd id="gl-act">—</dd>
-          <div class="gl-vs">projects awaiting a decision</div></div>
-      </dl></div></section>
-  <section class="gl-band gl-band--white"><div class="gl-wrap">
-      <h2 class="gl-h2">Current health, by count and by economic weight</h2>
-      <p class="gl-note">A portfolio can look healthy by project count while most of its contract
-        value sits in the projects that are not. Both readings are shown because only one of them pays.</p>
-      <div class="gl-split">
-        <div class="gl-meter"><h3>By project count</h3>
-          <div class="gl-bar" role="img" aria-label="Health by project count">
-            <span class="g" id="gl-count-g"></span><span class="a" id="gl-count-a"></span><span class="r" id="gl-count-r"></span></div>
-          <p class="gl-legend">
-            <span><span class="gl-rag gl-rag--GREEN">GREEN</span> <b id="gl-count-legend-g">—</b></span>
-            <span><span class="gl-rag gl-rag--AMBER">AMBER</span> <b id="gl-count-legend-a">—</b></span>
-            <span><span class="gl-rag gl-rag--RED">RED</span> <b id="gl-count-legend-r">—</b></span></p></div>
-        <div class="gl-meter"><h3>By contract value</h3>
-          <div class="gl-bar" role="img" aria-label="Health by contract value">
-            <span class="g" id="gl-weight-g"></span><span class="a" id="gl-weight-a"></span><span class="r" id="gl-weight-r"></span></div>
-          <p class="gl-legend">
-            <span><span class="gl-rag gl-rag--GREEN">GREEN</span> <b id="gl-weight-legend-g">—</b></span>
-            <span><span class="gl-rag gl-rag--AMBER">AMBER</span> <b id="gl-weight-legend-a">—</b></span>
-            <span><span class="gl-rag gl-rag--RED">RED</span> <b id="gl-weight-legend-r">—</b></span></p></div>
-      </div></div></section>
+      <div style="overflow-x:auto"><table class="gl-srcgrid">
+        <thead><tr>
+          <th>Source</th><th>Type</th><th>Status</th><th>Data context</th>
+          <th>Authority</th><th>Records</th><th>Conflicts</th>
+        </tr></thead>
+        <tbody>
+        <tr>
+          <td><b>ALM (Jira / Azure DevOps)</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Synthetic demonstration data shaped like this source. Not a connection to any real system.</div></td>
+          <td>connector</td>
+          <td><span class="gl-status gl-status--FIXTURE">Synthetic fixture</span></td>
+          <td>SANDBOX</td>
+          <td>authoritative</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
+        </tr>
+        <tr>
+          <td><b>Atlas-SOW-v3.pdf</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Credentials and an endpoint are configured; no successful call has been made.</div></td>
+          <td>document</td>
+          <td><span class="gl-status gl-status--CONFIGURED_UNVERIFIED">Configured · unverified</span></td>
+          <td>SANDBOX</td>
+          <td>evidence only</td>
+          <td class="gl-num">1</td>
+          <td class="gl-num">0</td>
+        </tr>
+        <tr>
+          <td><b>CRM / Commercial</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Synthetic demonstration data shaped like this source. Not a connection to any real system.</div></td>
+          <td>connector</td>
+          <td><span class="gl-status gl-status--FIXTURE">Synthetic fixture</span></td>
+          <td>SANDBOX</td>
+          <td>authoritative</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
+        </tr>
+        <tr>
+          <td><b>Delivery Assurance platform</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Synthetic demonstration data shaped like this source. Not a connection to any real system.</div></td>
+          <td>connector</td>
+          <td><span class="gl-status gl-status--FIXTURE">Synthetic fixture</span></td>
+          <td>SANDBOX</td>
+          <td>authoritative</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
+        </tr>
+        <tr>
+          <td><b>Enterprise analytics (Tableau)</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Synthetic demonstration data shaped like this source. Not a connection to any real system.</div></td>
+          <td>connector</td>
+          <td><span class="gl-status gl-status--FIXTURE">Synthetic fixture</span></td>
+          <td>SANDBOX</td>
+          <td>supplemental</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
+        </tr>
+        <tr>
+          <td><b>Finance / ERP</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Synthetic demonstration data shaped like this source. Not a connection to any real system.</div></td>
+          <td>connector</td>
+          <td><span class="gl-status gl-status--FIXTURE">Synthetic fixture</span></td>
+          <td>SANDBOX</td>
+          <td>authoritative</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
+        </tr>
+        <tr>
+          <td><b>Governance-minutes-August.pdf</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Credentials and an endpoint are configured; no successful call has been made.</div></td>
+          <td>document</td>
+          <td><span class="gl-status gl-status--CONFIGURED_UNVERIFIED">Configured · unverified</span></td>
+          <td>SANDBOX</td>
+          <td>evidence only</td>
+          <td class="gl-num">1</td>
+          <td class="gl-num">0</td>
+        </tr>
+        <tr>
+          <td><b>Project_Financials_bad.xlsx</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Credentials and an endpoint are configured; no successful call has been made.</div></td>
+          <td>file upload</td>
+          <td><span class="gl-status gl-status--CONFIGURED_UNVERIFIED">Configured · unverified</span></td>
+          <td>SANDBOX</td>
+          <td>unverified</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
+        </tr>
+        <tr>
+          <td><b>Project_Financials.xlsx</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Credentials and an endpoint are configured; no successful call has been made.</div></td>
+          <td>file upload</td>
+          <td><span class="gl-status gl-status--CONFIGURED_UNVERIFIED">Configured · unverified</span></td>
+          <td>SANDBOX</td>
+          <td>supplemental</td>
+          <td class="gl-num">2</td>
+          <td class="gl-num">0</td>
+        </tr>
+        <tr>
+          <td><b>PSA / Resource management</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Synthetic demonstration data shaped like this source. Not a connection to any real system.</div></td>
+          <td>connector</td>
+          <td><span class="gl-status gl-status--FIXTURE">Synthetic fixture</span></td>
+          <td>SANDBOX</td>
+          <td>authoritative</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
+        </tr>
+        <tr>
+          <td><b>Synthetic delivery portfolio</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">A live endpoint responded to a health check and its schema was read.</div></td>
+          <td>canonical</td>
+          <td><span class="gl-status gl-status--REAL_VERIFIED">Connected · verified</span></td>
+          <td>CANONICAL</td>
+          <td>unverified</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
+        </tr></tbody>
+      </table></div></div></section>
   <section class="gl-band gl-band--tint"><div class="gl-wrap">
-      <h2 class="gl-h2">Green projects requiring attention</h2>
-      <p class="gl-note">Two findings, counted apart because they mean different things. One is a
-        disagreement about today; the other is a warning about what is coming. They cannot overlap:
-        the first requires the assessment to differ from the report, the second requires it to agree.
-        A project the system also calls Green is never described as evidence disagreeing.</p>
-      <div class="gl-split">
-        <div><p class="gl-eyebrow" style="margin-top:26px">Reported Green — evidence disagrees</p>
-          <p style="font-size:44px;font-weight:600;letter-spacing:-.02em" id="gl-disagree">—</p>
-          <p class="gl-note">Delivery management reports these Green for the period; the governed
-            assessment of current evidence says Amber or Red. Nobody is necessarily wrong — reporting
-            runs on a cycle and evidence does not — but the gap is the finding.</p>
-          <p class="gl-note" style="margin-top:12px"><a class="gl-arrow" href="/projects?view=disagree">See these projects →</a></p></div>
-        <div><p class="gl-eyebrow" style="margin-top:26px">System Green — emerging risk</p>
-          <p style="font-size:44px;font-weight:600;letter-spacing:-.02em" id="gl-emerging">—</p>
-          <p class="gl-note">Healthy on today's evidence, with a governed 30- or 60-day outlook that
-            turns. Nothing has failed yet, which is exactly why these are worth an hour now.</p>
-          <p class="gl-note" style="margin-top:12px"><a class="gl-arrow" href="/projects?view=emerging">See these projects →</a></p></div>
-      </div></div></section>
+      <h2 class="gl-h2">Verify knowledge</h2>
+      <p class="gl-sub">A successful upload is not evidence that anything was learned. A source counts
+        as grounded only when it has been ingested, is retrievable, <em>and</em> an answer has actually
+        used it — reported here as three separate facts, because they disagree more often than not.</p>
+      
+      <div style="overflow-x:auto"><table class="gl-srcgrid">
+        <thead><tr>
+          <th>Source</th><th>Verification</th><th>Received</th><th>Accepted</th>
+          <th>Quarantined</th><th>Indexed</th><th>Last used for</th>
+        </tr></thead>
+        <tbody>
+        <tr>
+          <td><b>Atlas-SOW-v3.pdf</b><div class="gl-note" style="font-size:12px;margin-top:3px">cac1ec42b40db58a8b7f730f…</div></td>
+          <td>Ingested and retrievable — no answer has used it yet</td>
+          <td class="gl-num">3</td>
+          <td class="gl-num">3</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">3</td>
+          <td><span class="gl-note">not yet used</span></td>
+        </tr>
+        <tr>
+          <td><b>Governance-minutes-August.pdf</b><div class="gl-note" style="font-size:12px;margin-top:3px">dca4486227e209345290f518…</div></td>
+          <td>Ingested — no question will reach it, because it is associated with no project</td>
+          <td class="gl-num">1</td>
+          <td class="gl-num">1</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">1</td>
+          <td><span class="gl-note">not yet used</span></td>
+        </tr>
+        <tr>
+          <td><b>Project_Financials_bad.xlsx</b><div class="gl-note" style="font-size:12px;margin-top:3px">ea4363ad36781ce6dbbbc57b…</div></td>
+          <td>Ingested — no question will reach it, because it is associated with no project</td>
+          <td class="gl-num">6</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">6</td>
+          <td class="gl-num">0</td>
+          <td><span class="gl-note">not yet used</span></td>
+        </tr>
+        <tr>
+          <td><b>Project_Financials.xlsx</b><div class="gl-note" style="font-size:12px;margin-top:3px">6ccda983aae1a42357819b14…</div></td>
+          <td>Ingested and retrievable — no answer has used it yet</td>
+          <td class="gl-num">3</td>
+          <td class="gl-num">2</td>
+          <td class="gl-num">1</td>
+          <td class="gl-num">0</td>
+          <td><span class="gl-note">not yet used</span></td>
+        </tr></tbody>
+      </table></div></div></section>
   <section class="gl-band gl-band--white"><div class="gl-wrap">
-      <h2 class="gl-h2">Where the portfolio is heading</h2>
-      <p class="gl-note">The governed outlook moves a band by trajectory and the number of signals
-        moving adversely at once. Rule outputs, not probabilities — nothing here is trained, fitted
-        or sampled.</p>
-      <div class="gl-flow">
-        <div><h3>Today</h3><p style="font-size:38px;font-weight:600;letter-spacing:-.02em" id="gl-today">—</p>
-          <p class="gl-note" style="margin-top:8px">Projects the evidence assesses Amber or Red right now.</p></div>
-        <div><h3>Movement to 60 days</h3><ul class="gl-moves" id="gl-moves"></ul></div>
-        <div><h3>Recovering</h3><p style="font-size:38px;font-weight:600;letter-spacing:-.02em" id="gl-improving">—</p>
-          <p class="gl-note">Improving across successive observations — a trend, not a label.</p>
-          <p class="gl-note" style="margin-top:10px"><a class="gl-arrow" href="/interventions?view=recovering">Inspect recovery →</a></p></div>
-      </div></div></section>
+      <h2 class="gl-h2">Quarantine</h2>
+      <p class="gl-sub">Records that failed validation. They keep their values so they can be
+        inspected, they carry the reason a person can act on, and they contribute to no answer.</p>
+      
+      <div style="overflow-x:auto"><table class="gl-srcgrid">
+        <thead><tr><th>Row</th><th>Source identifier</th><th>Why it was rejected</th></tr></thead>
+        <tbody>
+        <tr>
+          <td class="gl-num">4</td>
+          <td>FIN-1003</td>
+          <td><div>unresolved identity — No declared mapping links &quot;FIN-1003&quot; to a project. Identity is resolved by declared mapping or not at all; a name-similarity join is not available.</div></td>
+        </tr>
+        <tr>
+          <td class="gl-num">2</td>
+          <td>FIN-9999</td>
+          <td><div>unresolved identity — No declared mapping links &quot;FIN-9999&quot; to a project. Identity is resolved by declared mapping or not at all; a name-similarity join is not available.</div></td>
+        </tr>
+        <tr>
+          <td class="gl-num">3</td>
+          <td>FIN-1001</td>
+          <td><div>invalid date — The value is not a date this pipeline accepts. An ambiguous numeric date is rejected rather than guessed at, because guessing produces a period-shifted financial record.</div></td>
+        </tr>
+        <tr>
+          <td class="gl-num">4</td>
+          <td>FIN-1002</td>
+          <td><div>invalid data type — The value is not a number where the mapping requires one.</div></td>
+        </tr>
+        <tr>
+          <td class="gl-num">5</td>
+          <td>FIN-1001</td>
+          <td><div>prohibited negative amount — The concept cannot be negative.</div></td>
+        </tr>
+        <tr>
+          <td class="gl-num">6</td>
+          <td>(blank)</td>
+          <td><div>unresolved identity — The identity column is empty on this row.</div></td>
+        </tr>
+        <tr>
+          <td class="gl-num">7</td>
+          <td>FIN-1002</td>
+          <td><div>duplicate period record — This project and period already appear in this file.</div><div>formula cell rejected — The cell holds a formula with no cached value. Formulas are never evaluated, and an unevaluated cell is a stated absence rather than a zero.</div><div>missing required field — The mapping marks this field as required and the cell is empty.</div><div>missing required field — The mapping marks this field as required and the cell is empty.</div></td>
+        </tr></tbody>
+      </table></div></div></section>
   <section class="gl-band gl-band--tint"><div class="gl-wrap">
-      <h2 class="gl-h2">Where intervention still changes the outcome</h2>
-      <p class="gl-note">Ordered by the governed intervention ranking, which is not "most Red first".
-        A loss already crystallised may need oversight; it is not necessarily where an hour of
-        executive attention pays best.</p>
-      <div class="gl-tablewrap"><table class="gl-t"><thead><tr>
-        <th class="gl-sticky">Project</th><th>Reported</th><th>Assessed</th><th>Trajectory</th>
-        <th>60-day</th><th class="num">Margin at risk</th><th>Time to act</th><th>Executive action</th>
-      </tr></thead><tbody id="gl-queue-body"></tbody></table></div>
-      <p class="gl-note" style="margin-top:18px"><a class="gl-arrow" href="/interventions">Full intervention and recovery view →</a></p></div></section>
-  <section class="gl-band gl-band--white"><div class="gl-wrap">
-      <h2 class="gl-h2">Where the same problem is repeating</h2>
-      <p class="gl-note">Governed drivers across the selected population, by the margin they put at
-        risk. Concentration tells you where to look; it does not reduce the exposure — correlation
-        does not net off, only allocation evidence does.</p>
-      <ul class="gl-list" id="gl-drivers"></ul>
-      <p class="gl-note" style="margin-top:22px">Scope delivered without commercial cover across
-        <b id="gl-scopecount">—</b> projects, worth <b id="gl-scope">—</b>.</p></div></section>
-  <section class="gl-band gl-band--tint"><div class="gl-wrap">
-      <h2 class="gl-h2">What changed</h2>
-      <p class="gl-note">Changes shown from governed financial history and formal reported-status
-        history. What is not yet reconstructable is named in the list rather than left to inference.</p>
-      <ul class="gl-list">
-        <li><span class="k">−$3.02M</span><span class="v"><b>Forecast margin movement</b> · across 73 projects with a governed prior period</span></li>
-        <li><span class="k">39</span><span class="v"><b>Projects whose forecast margin fell</b> · largest: Ardent Industrial Claims Automation R3</span></li>
-        <li><span class="k">34</span><span class="v"><b>Projects whose forecast margin improved</b> · largest: Kestrel Mobility Group Claims Automation Wave 1</span></li>
-        <li><span class="k">34</span><span class="v"><b>Material cost-at-completion revisions</b> · estimate raised by more than half a point of the prior figure</span></li>
-        <li><span class="k">0/2</span><span class="v"><b>Contract-loss conditions created / cleared</b> · projects crossing zero forecast margin in each direction</span></li>
-        <li><span class="k">20</span><span class="v"><b>Reported status changes</b> · 12 downgraded, 8 upgraded by delivery management</span></li>
-        <li><span class="k" style="color:var(--steel-50);font-size:15px">—</span><span class="v"><b>System health band, milestone risk and acceptance movement</b> · the portfolio stores no per-period system band, milestone forecast snapshot or acceptance state, so these cannot be reconstructed without re-running the engines at an earlier as-of — which this build does not do</span></li>
-      </ul></div></section>
+      <h2 class="gl-h2">Source authority</h2>
+      <p class="gl-sub">Authority is declared per canonical concept, not per system: a finance system
+        is authoritative for cost and merely supplemental for delivery progress, even though it stores
+        a percentage. Where two sources disagree, the higher authority governs and the disagreement is
+        disclosed rather than merged.</p>
+      <p class="gl-note" style="margin-bottom:6px"><b>POC configuration — not an approved GlobalLogic
+        data-ownership policy.</b></p>
+      
+      <div style="overflow-x:auto"><table class="gl-srcgrid">
+        <thead><tr><th>Canonical concept</th><th>Source</th><th>Authority</th><th>Why</th></tr></thead>
+        <tbody>
+        <tr>
+          <td>assurance.actionStatus</td>
+          <td>src-assurance</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">Actions are tracked here.</td>
+        </tr>
+        <tr>
+          <td>assurance.finding</td>
+          <td>src-assurance</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">Findings are raised here.</td>
+        </tr>
+        <tr>
+          <td>assurance.reviewDate</td>
+          <td>src-assurance</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">The assurance platform is the record of when a review happened.</td>
+        </tr>
+        <tr>
+          <td>commercial.accountOwnership</td>
+          <td>src-crm</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">Account ownership is a commercial fact.</td>
+        </tr>
+        <tr>
+          <td>commercial.opportunity</td>
+          <td>src-crm</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">The commercial system owns the opportunity and its stage.</td>
+        </tr>
+        <tr>
+          <td>contract.soldValue</td>
+          <td>src-crm</td>
+          <td>governed reference</td>
+          <td class="gl-note" style="font-size:13px">The contract system is authoritative for the executed baseline; the CRM reflects it.</td>
+        </tr>
+        <tr>
+          <td>delivery.completedWork</td>
+          <td>src-alm</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">The backlog is where completion is recorded.</td>
+        </tr>
+        <tr>
+          <td>delivery.defectCount</td>
+          <td>src-alm</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">Defects are raised and closed here.</td>
+        </tr>
+        <tr>
+          <td>delivery.milestoneStatus</td>
+          <td>src-analytics</td>
+          <td>supplemental</td>
+          <td class="gl-note" style="font-size:13px">Reported through analytics; the delivery system remains the source.</td>
+        </tr>
+        <tr>
+          <td>delivery.plannedWork</td>
+          <td>src-alm</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">The backlog holds the plan.</td>
+        </tr>
+        <tr>
+          <td>delivery.velocity</td>
+          <td>src-alm</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">Velocity is derived from the backlog.</td>
+        </tr>
+        <tr>
+          <td>financial.actualCost</td>
+          <td>src-finance</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">The general ledger is where cost is recorded. Nothing else observes it.</td>
+        </tr>
+        <tr>
+          <td>financial.actualCost</td>
+          <td>src-upload-financials</td>
+          <td>supplemental</td>
+          <td class="gl-note" style="font-size:13px">Same reasoning: an extract, not the ledger.</td>
+        </tr>
+        <tr>
+          <td>financial.estimateToComplete</td>
+          <td>src-finance</td>
+          <td>governed reference</td>
+          <td class="gl-note" style="font-size:13px">Finance holds the ETC of record; delivery proposes it and finance accepts it.</td>
+        </tr>
+        <tr>
+          <td>financial.forecastRevenue</td>
+          <td>src-finance</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">Revenue recognition is a finance judgement, not a delivery one.</td>
+        </tr>
+        <tr>
+          <td>financial.forecastRevenue</td>
+          <td>src-upload-financials</td>
+          <td>supplemental</td>
+          <td class="gl-note" style="font-size:13px">An uploaded workbook is one person’s extract. It is evidence of what someone believes and is not a system of record.</td>
+        </tr>
+        <tr>
+          <td>financial.recognisedRevenue</td>
+          <td>src-analytics</td>
+          <td>supplemental</td>
+          <td class="gl-note" style="font-size:13px">An analytics layer reports what its upstream told it. It is a convenience, not a source.</td>
+        </tr>
+        <tr>
+          <td>resource.actualEffort</td>
+          <td>src-psa</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">Time is booked in the professional-services system.</td>
+        </tr>
+        <tr>
+          <td>resource.plannedEffort</td>
+          <td>src-psa</td>
+          <td>governed reference</td>
+          <td class="gl-note" style="font-size:13px">Staffing plans originate here.</td>
+        </tr>
+        <tr>
+          <td>resource.staffing</td>
+          <td>src-psa</td>
+          <td>authoritative</td>
+          <td class="gl-note" style="font-size:13px">Assignment is recorded here.</td>
+        </tr></tbody>
+      </table></div></div></section>
   <footer class="gl-foot"><div class="gl-wrap">
     <p><b>Synthetic demonstration data.</b> This public proof of concept renders representative
       executive views over a generated portfolio. Production identity, authentication, authorization

@@ -1,3 +1,5 @@
+import { isExternalDate, readExternalDate } from '@platform/time';
+
 /**
  * The tabular record shape every structured parser produces, and the CSV reader (ADR-0036 §2).
  *
@@ -177,35 +179,16 @@ function inferType(values: readonly string[]): ColumnProfile['inferredType'] {
 }
 
 /**
- * Date shapes this pipeline accepts.
+ * Date handling delegates to `platform/time`, which is the one module permitted to parse a date.
  *
- * ISO first, then the two unambiguous written forms. **Bare `nn/nn/nnnn` is deliberately absent**:
- * `03/09/2026` is 3 September to half the world and 9 March to the other half, and a pipeline that
- * guesses will produce a period-shifted financial record that reconciles against nothing. It becomes
- * an `INVALID_DATE` finding and a human states the format.
+ * Re-exported here so an ingestion caller has one import, and implemented there so there is one
+ * definition of what this product will accept as a date.
  */
 export function isDateLike(value: string): boolean {
-  const v = value.trim();
-  if (/^\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?$/.test(v)) return true;
-  if (/^\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}$/.test(v)) return true;
-  if (/^[A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4}$/.test(v)) return true;
-  return false;
+  return isExternalDate(value);
 }
 
 export function toIsoDate(value: string): string | null {
-  const v = value.trim();
-  const iso = /^(\d{4}-\d{2}-\d{2})/.exec(v);
-  if (iso !== null) {
-    const day = iso[1];
-    return day !== undefined && isRealDate(day) ? day : null;
-  }
-  if (!isDateLike(v)) return null;
-  const parsed = Date.parse(v);
-  if (!globalThis.Number.isFinite(parsed)) return null;
-  return new Date(parsed).toISOString().slice(0, 10);
+  return readExternalDate(value);
 }
 
-function isRealDate(iso: string): boolean {
-  const parsed = Date.parse(`${iso}T00:00:00Z`);
-  return globalThis.Number.isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === iso;
-}

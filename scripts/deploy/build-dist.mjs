@@ -28,6 +28,17 @@ const ROUTES = [
   ['assistant.html', '/assistant'],
 ];
 
+/**
+ * Secondary routes, nested under a primary product area.
+ *
+ * Knowledge & Connections sits under Assistant rather than becoming a sixth primary destination
+ * (§60): it is where a data owner works, not where an executive starts, and promoting it to the top
+ * navigation would spend the most valuable row of the product on an administrative surface.
+ */
+const NESTED = [
+  ['assistant', 'knowledge.html', '/assistant/knowledge'],
+];
+
 /** Markers that mean a page came from the retired admin-sidebar shell. */
 const LEGACY = ['gl-shell-sidebar', 'gl-sidebar', 'class="gl-app-shell"'];
 
@@ -40,6 +51,12 @@ for (const [file] of ROUTES) {
   cpSync(join(SRC, file), join(OUT, file));
 }
 
+for (const [dir, file] of NESTED) {
+  mkdirSync(join(OUT, dir), { recursive: true });
+  const source = join(SRC, dir, file);
+  cpSync(source, join(OUT, dir, file));
+}
+
 const projectPages = readdirSync(join(SRC, 'projects')).filter((f) => f.endsWith('.html'));
 if (projectPages.length === 0) throw new Error('no project pages built');
 for (const f of projectPages) cpSync(join(SRC, 'projects', f), join(OUT, 'projects', f));
@@ -47,6 +64,7 @@ for (const f of projectPages) cpSync(join(SRC, 'projects', f), join(OUT, 'projec
 // --- gates ------------------------------------------------------------------
 const published = [
   ...ROUTES.map(([f]) => join(OUT, f)),
+  ...NESTED.map(([dir, file]) => join(OUT, dir, file)),
   ...projectPages.map((f) => join(OUT, 'projects', f)),
 ];
 
@@ -64,5 +82,8 @@ for (const path of published) {
 writeFileSync(join(OUT, 'robots.txt'), 'User-agent: *\nDisallow: /\n', 'utf8');
 
 console.log(`dist built: ${OUT}`);
-console.log(`  ${String(ROUTES.length)} primary routes · ${String(projectPages.length)} project pages`);
+console.log(
+  `  ${String(ROUTES.length)} primary routes · ${String(NESTED.length)} nested · `
+  + `${String(projectPages.length)} project pages`,
+);
 console.log(`  one shell per page verified across ${String(shells)} pages · no legacy shell markers`);

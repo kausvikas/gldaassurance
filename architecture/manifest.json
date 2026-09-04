@@ -347,7 +347,8 @@
     },
     "parse": {
       "mayDependOn": [
-        "bytes"
+        "bytes",
+        "time"
       ],
       "why": "ADR-0036 \u00a72. First-party bounded readers for XLSX, CSV and PDF. In platform because ARCH-006 confines Node builtins and G-FLOAT confines numeric coercion; written rather than installed because this code runs in the process that holds the API credential (ADR-0032 \u00a74)."
     }

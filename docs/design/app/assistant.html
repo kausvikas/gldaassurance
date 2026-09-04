@@ -161,6 +161,80 @@ footer.gl-foot p{max-width:78ch}
   .gl-flow>div{border-right:0;border-bottom:1px solid var(--rule)}}
 @media (max-width:820px){.gl-navlinks{display:none}.gl-wrap{padding:0 22px}.gl-navwrap{padding:12px 16px 0}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.gl-ask{margin-top:26px;border-top:2px solid var(--steel-100);padding-top:22px}
+.gl-ask form{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.gl-ask label{flex:1 1 460px;display:block;font-size:12px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--steel-50);font-weight:600}
+.gl-ask input[type=text]{width:100%;margin-top:8px;padding:14px 16px;font:inherit;font-size:17px;
+  border:1px solid var(--rule-strong);border-radius:10px;background:var(--white);color:inherit}
+.gl-ask input[type=text]:focus{outline:2px solid var(--orange);outline-offset:1px;border-color:var(--orange)}
+.gl-ask button{margin-top:29px;padding:14px 26px;font:inherit;font-weight:600;font-size:15px;
+  border:0;border-radius:10px;background:var(--steel-100);color:var(--white);cursor:pointer}
+.gl-ask button:hover{background:var(--orange-deep)}
+.gl-ask button:disabled{background:var(--steel-25);cursor:progress}
+.gl-suggest{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+.gl-suggest button{margin:0;padding:7px 13px;font-size:13.5px;font-weight:500;border-radius:999px;
+  background:var(--white);color:var(--steel-75);border:1px solid var(--rule-strong)}
+.gl-suggest button:hover{border-color:var(--orange);color:var(--orange-deep);background:var(--white)}
+
+.gl-scopebar{margin-top:22px;padding:14px 18px;background:var(--white);border-left:3px solid var(--orange);
+  border-radius:0 8px 8px 0}
+.gl-scopebar dt{font-size:11.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--steel-50);
+  font-weight:600}
+.gl-scopebar dd{margin:5px 0 0;font-size:16px;font-weight:500}
+.gl-scopebar .gl-read{margin-top:8px;font-size:13px;color:var(--steel-50)}
+
+.gl-answer{margin-top:30px}
+.gl-answer h2{font-size:12px;letter-spacing:.11em;text-transform:uppercase;color:var(--steel-50)}
+.gl-answer .gl-prose{margin-top:12px;font-size:20px;line-height:1.5;max-width:74ch;
+  letter-spacing:-0.006em}
+.gl-answer .gl-prose:empty{display:none}
+.gl-why{margin-top:24px;padding:0;list-style:none;max-width:84ch}
+.gl-why li{padding:11px 0 11px 20px;border-top:1px solid var(--rule);position:relative;font-size:15px;
+  color:var(--steel-75)}
+.gl-why li::before{content:"";position:absolute;left:0;top:19px;width:8px;height:1px;background:var(--steel-25)}
+
+.gl-badges{margin-top:20px;display:flex;flex-wrap:wrap;gap:8px}
+.gl-badge{display:inline-flex;align-items:baseline;gap:7px;padding:6px 12px;border-radius:999px;
+  font-size:12.5px;background:var(--white);border:1px solid var(--rule-strong)}
+.gl-badge b{font-weight:600}
+.gl-badge--warn{border-color:var(--orange);color:var(--orange-deep)}
+.gl-badge--flat{background:transparent}
+
+.gl-disclose{margin-top:26px;border-top:1px solid var(--rule)}
+.gl-disclose summary{padding:14px 0;cursor:pointer;font-size:13.5px;font-weight:600;
+  color:var(--steel-75);list-style:none}
+.gl-disclose summary::-webkit-details-marker{display:none}
+.gl-disclose summary::before{content:"+ ";color:var(--orange);font-weight:700}
+.gl-disclose[open] summary::before{content:"– "}
+.gl-disclose > div{padding-bottom:20px}
+
+.gl-prov{width:100%;border-collapse:collapse;font-size:13.5px}
+.gl-prov th{text-align:left;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--steel-50);padding:8px 12px 8px 0;border-bottom:1px solid var(--rule-strong);font-weight:600}
+.gl-prov td{padding:9px 12px 9px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.gl-prov td:first-child{color:var(--steel-50);white-space:nowrap}
+.gl-prov .gl-num{font-weight:600;white-space:nowrap}
+
+.gl-srcgrid{margin-top:22px;width:100%;border-collapse:collapse;font-size:14px}
+.gl-srcgrid th{text-align:left;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--steel-50);padding:10px 14px 10px 0;border-bottom:2px solid var(--steel-100);font-weight:600}
+.gl-srcgrid td{padding:12px 14px 12px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.gl-status{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;
+  border:1px solid var(--rule-strong);white-space:nowrap}
+.gl-status--REAL_VERIFIED{color:var(--green);background:var(--rag-green-bg);border-color:var(--green-light)}
+.gl-status--FIXTURE{color:var(--steel-75);background:var(--steel-05)}
+.gl-status--NOT_CONFIGURED{color:var(--steel-50);background:transparent}
+.gl-status--MAPPING_REVIEW_REQUIRED{color:var(--orange-deep);background:var(--white);border-color:var(--orange)}
+
+.gl-offline{margin-top:22px;padding:16px 18px;border:1px solid var(--orange);border-radius:10px;
+  background:var(--white)}
+.gl-offline b{color:var(--orange-deep)}
+@media (max-width:720px){
+  .gl-ask button{margin-top:12px;width:100%}
+  .gl-prov,.gl-srcgrid{font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -186,63 +260,45 @@ footer.gl-foot p{max-width:78ch}
   <section class="gl-band gl-band--tint"><div class="gl-wrap">
       <p class="gl-eyebrow">Governed executive query · advisory and read only</p>
       <h1 class="gl-lede">Ask the portfolio a question, and <em>see what answers it</em>.</h1>
-      <p class="gl-sub">Every answer is composed from governed assessments by fixed rules — no
-        language model is involved. The assistant explains what the engines decided; it cannot change
-        anything, and it declines questions the evidence cannot support.</p>
-      <p class="gl-note" style="margin-top:18px">This demonstration presents the governed responses
-        for a set of executive questions. Answers lead with the conclusion; the reasoning sits beneath
-        it, and the underlying evidence stays one step further down.</p></div></section>
-  <section class="gl-band gl-band--white"><div class="gl-wrap">
-      <p class="gl-eyebrow">Question</p>
-      <h2 class="gl-h2" style="max-width:34ch">Where should I intervene?</h2>
-      <p class="gl-sub" style="max-width:76ch;font-size:17px;color:var(--steel-100)">The governed intervention ranking orders the portfolio over seven declared tiers, not by severity alone. The queue on Interventions is that ordering, and each row states the tier that decided it.</p>
-      <ul class="gl-list" style="max-width:80ch">
-        <li><span class="v">Ranking is a lexicographic ordering, never a weighted score, so the deciding reason is always nameable.</span></li>
-        <li><span class="v">Economic exposure is one tier; time to the next irreversible point is another.</span></li>
-        <li><span class="v">A project with no known intervention clock says so rather than being given one.</span></li>
-      </ul>
-      </div></section>
+      <p class="gl-sub">Type a question in your own words. It is resolved into a governed query plan
+        over the same engines every screen reads, and the plan is shown above the answer so you can
+        see how it was understood.</p>
+      <p class="gl-note" style="margin-top:14px;max-width:76ch">A language model may write the
+        sentences. It never produces a figure, chooses what is retrieved, or decides a status —
+        switch it off and the same answer arrives from the governed composer, which is what the
+        badge under each answer records.</p>
+      <div class="gl-ask">
+        <form id="gl-askform">
+          <label for="gl-q">Ask Delivery Intelligence
+            <input type="text" id="gl-q" name="q" autocomplete="off" spellcheck="false"
+              placeholder="Which projects need leadership attention this week?">
+          </label>
+          <button type="submit" id="gl-send">Ask</button>
+        </form>
+        <div class="gl-suggest">
+          <button type="button" data-ask="Which Green projects should I worry about over the next 60 days?">Which Green projects should I worry about over the next 60 days?</button>
+          <button type="button" data-ask="What changed since the previous review?">What changed since the previous review?</button>
+          <button type="button" data-ask="Where is margin erosion concentrated?">Where is margin erosion concentrated?</button>
+          <button type="button" data-ask="Which projects are recovering?">Which projects are recovering?</button>
+          <button type="button" data-ask="What is the portfolio forecast margin across the whole portfolio?">What is the portfolio forecast margin across the whole portfolio?</button>
+        </div>
+        <p style="margin-top:14px"><span class="gl-badge" id="gl-conn">Looking for the trusted runtime…</span></p>
+      </div></div></section>
+  <section class="gl-band gl-band--white"><div class="gl-wrap"><div id="gl-out"></div></div></section>
   <section class="gl-band gl-band--tint"><div class="gl-wrap">
-      <p class="gl-eyebrow">Question</p>
-      <h2 class="gl-h2" style="max-width:34ch">Which Reported-Green projects disagree with the evidence?</h2>
-      <p class="gl-sub" style="max-width:76ch;font-size:17px;color:var(--steel-100)">Those reported Green by delivery management where the governed assessment of current evidence is Amber or Red. This is a discrepancy about today, not a forecast.</p>
-      <ul class="gl-list" style="max-width:80ch">
-        <li><span class="v">Reported status is the delivery line’s formal declaration for the period and is never overwritten.</span></li>
-        <li><span class="v">The assessed status is what the current evidence supports.</span></li>
-        <li><span class="v">Reporting runs on a cycle and evidence does not, so a gap is expected — its size is the finding.</span></li>
+      <h2 class="gl-h2">What this assistant will not do</h2>
+      <ul class="gl-list" style="max-width:82ch">
+        <li><span class="v"><b>It will not state a probability.</b> Nothing here is trained, fitted or
+          sampled; the 30- and 60-day outlooks are governed rules firing against stated thresholds.</span></li>
+        <li><span class="v"><b>It will not change anything.</b> There is no write tool, and the
+          connector interface has no write method to withhold.</span></li>
+        <li><span class="v"><b>It will not calculate.</b> Every figure comes from the governed
+          services; the model reuses figures it is given and its output is checked against them
+          before you see it.</span></li>
+        <li><span class="v"><b>It will not answer beyond the evidence.</b> Where part of a question
+          is unsupported, the answer says which part rather than estimating it.</span></li>
       </ul>
-      </div></section>
-  <section class="gl-band gl-band--white"><div class="gl-wrap">
-      <p class="gl-eyebrow">Question</p>
-      <h2 class="gl-h2" style="max-width:34ch">Which Green projects are deteriorating?</h2>
-      <p class="gl-sub" style="max-width:76ch;font-size:17px;color:var(--steel-100)">Projects the system assesses Green today whose governed 30- or 60-day outlook turns Amber or Red. Nothing has failed yet, which is what makes them worth attention now.</p>
-      <ul class="gl-list" style="max-width:80ch">
-        <li><span class="v">The outlook is a rule output projected from trajectory and adverse-signal confluence.</span></li>
-        <li><span class="v">It is not a probability and is never presented as one.</span></li>
-        <li><span class="v">A project already Amber or Red is handled as a current problem instead.</span></li>
-      </ul>
-      </div></section>
-  <section class="gl-band gl-band--tint"><div class="gl-wrap">
-      <p class="gl-eyebrow">Question</p>
-      <h2 class="gl-h2" style="max-width:34ch">Where is margin erosion concentrated?</h2>
-      <p class="gl-sub" style="max-width:76ch;font-size:17px;color:var(--steel-100)">Driver concentration on the Command Center groups the selected population by governed driver and ranks them by the margin each puts at risk.</p>
-      <ul class="gl-list" style="max-width:80ch">
-        <li><span class="v">Concentration identifies where a pattern repeats across accounts, verticals and geographies.</span></li>
-        <li><span class="v">Shared cause does not reduce exposure — correlation does not net off, only allocation evidence does.</span></li>
-      </ul>
-      </div></section>
-  <section class="gl-band gl-band--white"><div class="gl-wrap">
-      <p class="gl-eyebrow">Question</p>
-      <h2 class="gl-h2" style="max-width:34ch">How likely is this project to go Red next quarter?</h2>
-      <p class="gl-sub" style="max-width:76ch;font-size:17px;color:var(--steel-100)">This product does not answer probability questions. Nothing in it is trained, fitted or sampled: outlooks are governed rules firing against stated thresholds, not likelihoods. Ask for the governed outlook and the rules behind it instead.</p>
-      
-      <p class="gl-note" style="margin-top:16px"><b>Refused — no probabilistic capability exists, and inventing one would be the most damaging thing this product could do.</b></p></div></section>
-  <section class="gl-band gl-band--tint"><div class="gl-wrap">
-      <p class="gl-eyebrow">Question</p>
-      <h2 class="gl-h2" style="max-width:34ch">Set this project to Green.</h2>
-      <p class="gl-sub" style="max-width:76ch;font-size:17px;color:var(--steel-100)">This assistant cannot change a baseline, an estimate, a reported or assessed status, a recovery plan, a rule or a threshold, and holds no capability that could. A status override is a separate authorised act with its own audit trail.</p>
-      
-      <p class="gl-note" style="margin-top:16px"><b>Refused — the assistant is advisory and read-only by architecture, not by policy.</b></p></div></section>
+      <p class="gl-note" style="margin-top:20px"><a class="gl-arrow" href="/assistant/knowledge">Knowledge &amp; Connections →</a></p></div></section>
   <footer class="gl-foot"><div class="gl-wrap">
     <p><b>Synthetic demonstration data.</b> This public proof of concept renders representative
       executive views over a generated portfolio. Production identity, authentication, authorization
@@ -681,6 +737,264 @@ footer.gl-foot p{max-width:78ch}
   });
   render();
 })();
+</script>
+<script type="application/json" id="gl-recorded">{"capturedAt":"2026-08-31T09:00:00.000Z","turns":[{"question":"Which Green projects should I worry about over the next 60 days?","answer":"10 projects are System-Assessed GREEN today with an AMBER or RED outlook at 30 or 60 days.","why":["10 projects are System-Assessed GREEN today with an AMBER or RED outlook at 30 or 60 days.","Ardent Industrial Diagnostics Workbench R3 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","Fenwick Consumer Brands Content Pipeline R1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","Halcyon Compute Connected Platform R1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","Ardent Industrial Device Management R2 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","Larkspur Studios Analytics Foundation Phase 1 — Reported AMBER, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","Aventine Biosciences Core Replatform R3 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","Ospry Retail Group Data Modernisation R1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","Meridian Automotive Customer Portal Phase 1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","Meridian Automotive Analytics Foundation Wave 1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","Northwind MedTech Analytics Foundation Phase 2 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER."],"scopeLine":"assessed green · assessed Green with an emerging risk","recognised":["shape project.forwardRisk","population form of project.forwardRisk","time day60"],"answerability":{"classification":"ANSWERABLE","statement":"","gaps":[]},"evidence":{"authority":"Low","freshness":"Aging","conflict":"None","coverage":"Insufficient"},"executiveAuthority":"QUALIFIED","composer":"DETERMINISTIC_COMPOSER","plan":{"shape":"population.emergingRisk","scope":"portfolio","filters":{"regions":[],"industries":[],"accounts":[],"customers":[],"deliveryGroups":[],"systemRag":["GREEN"],"reportedRag":[],"trajectory":[],"outlook30":[],"outlook60":[],"drivers":[],"findings":["emergingRisk"],"projectIds":[],"thresholds":[]},"metrics":["gmAtRisk","forecastGm","tcv"],"time":"day60","comparison":"currentVsOutlook","sort":"milestoneProximity","limit":10,"groupBy":null,"projectId":null,"metricId":null,"evidenceQuery":null,"origin":"DETERMINISTIC"},"claims":[{"layer":"L3","text":"10 projects are System-Assessed GREEN today with an AMBER or RED outlook at 30 or 60 days.","display":"10","metricId":"MET-PORT-005"},{"layer":"L3","text":"Ardent Industrial Diagnostics Workbench R3 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","display":"GREEN","metricId":"MET-PORT-005"},{"layer":"L3","text":"Fenwick Consumer Brands Content Pipeline R1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","display":"GREEN","metricId":"MET-PORT-005"},{"layer":"L3","text":"Halcyon Compute Connected Platform R1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","display":"GREEN","metricId":"MET-PORT-005"},{"layer":"L3","text":"Ardent Industrial Device Management R2 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","display":"GREEN","metricId":"MET-PORT-005"},{"layer":"L3","text":"Larkspur Studios Analytics Foundation Phase 1 — Reported AMBER, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","display":"GREEN","metricId":"MET-PORT-005"},{"layer":"L3","text":"Aventine Biosciences Core Replatform R3 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","display":"GREEN","metricId":"MET-PORT-005"},{"layer":"L3","text":"Ospry Retail Group Data Modernisation R1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","display":"GREEN","metricId":"MET-PORT-005"},{"layer":"L3","text":"Meridian Automotive Customer Portal Phase 1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","display":"GREEN","metricId":"MET-PORT-005"},{"layer":"L3","text":"Meridian Automotive Analytics Foundation Wave 1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","display":"GREEN","metricId":"MET-PORT-005"},{"layer":"L3","text":"Northwind MedTech Analytics Foundation Phase 2 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","display":"GREEN","metricId":"MET-PORT-005"}],"suggestedFollowUps":[{"label":"Where should I intervene first?"},{"label":"Which projects are System Green-at-Risk?"},{"label":"Which projects are reported GREEN against the evidence?"}]},{"question":"Only Automotive.","answer":"2 projects in this population are System-Assessed GREEN today with an AMBER or RED outlook at 30 or 60 days.","why":["2 projects in this population are System-Assessed GREEN today with an AMBER or RED outlook at 30 or 60 days.","Meridian Automotive Customer Portal Phase 1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","Meridian Automotive Analytics Foundation Wave 1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER."],"scopeLine":"Mobility · assessed green · assessed Green with an emerging risk","recognised":["industry Mobility"],"answerability":{"classification":"ANSWERABLE","statement":"","gaps":[]},"evidence":{"authority":"Low","freshness":"Aging","conflict":"None","coverage":"Insufficient"},"executiveAuthority":"QUALIFIED","composer":"DETERMINISTIC_COMPOSER","plan":{"shape":"population.emergingRisk","scope":"portfolio","filters":{"regions":[],"industries":["Mobility"],"accounts":[],"customers":[],"deliveryGroups":[],"systemRag":["GREEN"],"reportedRag":[],"trajectory":[],"outlook30":[],"outlook60":[],"drivers":[],"findings":["emergingRisk"],"projectIds":["prj-019","prj-032","prj-024","prj-067","prj-086","prj-060","prj-079","prj-017","prj-033","prj-059"],"thresholds":[]},"metrics":["gmAtRisk","forecastGm","tcv"],"time":"day60","comparison":"currentVsOutlook","sort":"economicExposure","limit":10,"groupBy":null,"projectId":null,"metricId":null,"evidenceQuery":null,"origin":"CONVERSATION_REFINEMENT"},"claims":[{"layer":"L3","text":"2 projects in this population are System-Assessed GREEN today with an AMBER or RED outlook at 30 or 60 days.","display":"2","metricId":"MET-PORT-005"},{"layer":"L3","text":"Meridian Automotive Customer Portal Phase 1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","display":"GREEN","metricId":"MET-PORT-005"},{"layer":"L3","text":"Meridian Automotive Analytics Foundation Wave 1 — Reported GREEN, System-Assessed GREEN, 30-day outlook GREEN, 60-day outlook AMBER.","display":"GREEN","metricId":"MET-PORT-005"}],"suggestedFollowUps":[{"label":"Where should I intervene first?"},{"label":"Which projects are System Green-at-Risk?"},{"label":"Which projects are reported GREEN against the evidence?"}]},{"question":"Which one has the greatest economic exposure?","answer":"Rank 1: Larkspur Studios Network Assurance Wave 2 — System-Assessed RED, GM at risk $824K; it outranks the next project because less time remains before an irreversible point (tier 3). This is the first place to intervene in your authorised set.","why":["Rank 1: Larkspur Studios Network Assurance Wave 2 — System-Assessed RED, GM at risk $824K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 2: Halden Telco Diagnostics Workbench Phase 2 — System-Assessed RED, GM at risk $1.16M; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 3: Northwind MedTech Digital Commerce Phase 1 — System-Assessed RED, GM at risk $427K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 4: Halden Telco Network Operations Transformation — System-Assessed RED, GM at risk $261K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 5: Larkspur Studios Media Supply Chain Rebuild — System-Assessed RED, GM at risk $532K; it outranks the next project because more gross margin is at risk (tier 4).","Rank 6: Calder Financial Claims Modernisation Wave 2 — System-Assessed RED, GM at risk $312K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 7: Northwind MedTech Clinical Integration Platform — System-Assessed RED, GM at risk $1.68M; it outranks the next project because more gross margin is at risk (tier 4).","Rank 8: Meridian Automotive Connected Cockpit Platform — System-Assessed RED, GM at risk $388K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 9: Aventine Biosciences Regulatory Reporting R2 — System-Assessed RED, GM at risk $306K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 10: Kestrel Mobility Group Digital Commerce Wave 1 — System-Assessed RED, GM at risk $628K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 11: Brennick Capital Data Modernisation R1 — System-Assessed RED, GM at risk $558K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 12: Tholen Energy Systems Network Assurance R3 — System-Assessed RED, GM at risk $2.14M; it outranks the next project because it carries critical economic or contractual exposure and the next project does not (tier 1).","Rank 13: Aventine Biosciences Data Modernisation Wave 1 — System-Assessed AMBER, GM at risk $1.69M; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 14: Ardent Industrial Diagnostics Workbench R3 — System-Assessed GREEN, GM at risk $68K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 15: Fenwick Consumer Brands Content Pipeline R1 — System-Assessed GREEN, GM at risk $421K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 16: Brennick Capital Network Assurance R2 — System-Assessed AMBER, GM at risk $646K; it outranks the next project because more gross margin is at risk (tier 4).","Rank 17: Kestrel Mobility Group Device Management Phase 1 — System-Assessed AMBER, GM at risk $93K; it outranks the next project because more gross margin is at risk (tier 4).","Rank 18: Halcyon Compute Connected Platform R1 — System-Assessed GREEN, GM at risk $31K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 19: Vireo Media Digital Commerce R1 — System-Assessed AMBER, GM at risk $139K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 20: Vireo Media Regulatory Reporting R1 — System-Assessed AMBER, GM at risk $1.66M; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 21: Larkspur Studios Analytics Foundation Wave 2 — System-Assessed AMBER, GM at risk $2.48M; it outranks the next project because more gross margin is at risk (tier 4).","Rank 22: Halcyon Compute Diagnostics Workbench Phase 1 — System-Assessed AMBER, GM at risk $1.48M; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 23: Sable Communications Diagnostics Workbench Wave 1 — System-Assessed AMBER, GM at risk $1.05M; it outranks the next project because more gross margin is at risk (tier 4).","Rank 24: Ardent Industrial Device Management R2 — System-Assessed GREEN, GM at risk $196K; it outranks the next project because less time remains before an irreversible point (tier 3).","Rank 25: Vireo Media Diagnostics Workbench Wave 2 — System-Assessed AMBER, GM at risk $753K; it outranks the next project because less time remains before an irreversible point (tier 3)."],"scopeLine":"Mobility · assessed green · assessed Green with an emerging risk","recognised":["shape population.rank"],"answerability":{"classification":"ANSWERABLE","statement":"","gaps":[]},"evidence":{"authority":"Low","freshness":"Aging","conflict":"None","coverage":"Insufficient"},"executiveAuthority":"QUALIFIED","composer":"DETERMINISTIC_COMPOSER","plan":{"shape":"population.rank","scope":"portfolio","filters":{"regions":[],"industries":["Mobility"],"accounts":[],"customers":[],"deliveryGroups":[],"systemRag":["GREEN"],"reportedRag":[],"trajectory":[],"outlook30":[],"outlook60":[],"drivers":[],"findings":["emergingRisk"],"projectIds":["prj-017","prj-033"],"thresholds":[]},"metrics":["gmAtRisk"],"time":"day60","comparison":"currentVsOutlook","sort":"economicExposure","limit":5,"groupBy":null,"projectId":null,"metricId":null,"evidenceQuery":null,"origin":"CONVERSATION_REFINEMENT"},"claims":[{"layer":"L3","text":"Rank 1: Larkspur Studios Network Assurance Wave 2 — System-Assessed RED, GM at risk $824K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"1","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 2: Halden Telco Diagnostics Workbench Phase 2 — System-Assessed RED, GM at risk $1.16M; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"2","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 3: Northwind MedTech Digital Commerce Phase 1 — System-Assessed RED, GM at risk $427K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"3","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 4: Halden Telco Network Operations Transformation — System-Assessed RED, GM at risk $261K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"4","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 5: Larkspur Studios Media Supply Chain Rebuild — System-Assessed RED, GM at risk $532K; it outranks the next project because more gross margin is at risk (tier 4).","display":"5","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 6: Calder Financial Claims Modernisation Wave 2 — System-Assessed RED, GM at risk $312K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"6","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 7: Northwind MedTech Clinical Integration Platform — System-Assessed RED, GM at risk $1.68M; it outranks the next project because more gross margin is at risk (tier 4).","display":"7","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 8: Meridian Automotive Connected Cockpit Platform — System-Assessed RED, GM at risk $388K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"8","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 9: Aventine Biosciences Regulatory Reporting R2 — System-Assessed RED, GM at risk $306K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"9","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 10: Kestrel Mobility Group Digital Commerce Wave 1 — System-Assessed RED, GM at risk $628K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"10","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 11: Brennick Capital Data Modernisation R1 — System-Assessed RED, GM at risk $558K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"11","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 12: Tholen Energy Systems Network Assurance R3 — System-Assessed RED, GM at risk $2.14M; it outranks the next project because it carries critical economic or contractual exposure and the next project does not (tier 1).","display":"12","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 13: Aventine Biosciences Data Modernisation Wave 1 — System-Assessed AMBER, GM at risk $1.69M; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"13","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 14: Ardent Industrial Diagnostics Workbench R3 — System-Assessed GREEN, GM at risk $68K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"14","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 15: Fenwick Consumer Brands Content Pipeline R1 — System-Assessed GREEN, GM at risk $421K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"15","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 16: Brennick Capital Network Assurance R2 — System-Assessed AMBER, GM at risk $646K; it outranks the next project because more gross margin is at risk (tier 4).","display":"16","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 17: Kestrel Mobility Group Device Management Phase 1 — System-Assessed AMBER, GM at risk $93K; it outranks the next project because more gross margin is at risk (tier 4).","display":"17","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 18: Halcyon Compute Connected Platform R1 — System-Assessed GREEN, GM at risk $31K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"18","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 19: Vireo Media Digital Commerce R1 — System-Assessed AMBER, GM at risk $139K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"19","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 20: Vireo Media Regulatory Reporting R1 — System-Assessed AMBER, GM at risk $1.66M; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"20","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 21: Larkspur Studios Analytics Foundation Wave 2 — System-Assessed AMBER, GM at risk $2.48M; it outranks the next project because more gross margin is at risk (tier 4).","display":"21","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 22: Halcyon Compute Diagnostics Workbench Phase 1 — System-Assessed AMBER, GM at risk $1.48M; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"22","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 23: Sable Communications Diagnostics Workbench Wave 1 — System-Assessed AMBER, GM at risk $1.05M; it outranks the next project because more gross margin is at risk (tier 4).","display":"23","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 24: Ardent Industrial Device Management R2 — System-Assessed GREEN, GM at risk $196K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"24","metricId":"MET-PORT-007"},{"layer":"L3","text":"Rank 25: Vireo Media Diagnostics Workbench Wave 2 — System-Assessed AMBER, GM at risk $753K; it outranks the next project because less time remains before an irreversible point (tier 3).","display":"25","metricId":"MET-PORT-007"}],"suggestedFollowUps":[{"label":"Where should I intervene first?"},{"label":"Which projects are System Green-at-Risk?"},{"label":"Which projects are reported GREEN against the evidence?"}]},{"question":"What is the portfolio forecast margin across the whole portfolio?","answer":"The aggregate covers 75 projects matching the whole fixed-bid portfolio. Forecast gross margin across that population is 20.21%, computed as aggregate forecast revenue less aggregate cost at completion over aggregate forecast revenue — weighted, never a mean of the project margins. As-sold gross margin across that population is 25.46%. Gross margin at risk across that population totals $35.95M. This is a plain sum of per-project exposure; where projects share a root cause it overstates the portfolio figure rather than de-duplicating it.","why":["Forecast gross margin across that population is 20.21%, computed as aggregate forecast revenue less aggregate cost at completion over aggregate forecast revenue — weighted, never a mean of the project margins.","As-sold gross margin across that population is 25.46%.","Gross margin at risk across that population totals $35.95M. This is a plain sum of per-project exposure; where projects share a root cause it overstates the portfolio figure rather than de-duplicating it."],"scopeLine":"the whole fixed-bid portfolio","recognised":["shape population.aggregate"],"answerability":{"classification":"ANSWERABLE","statement":"","gaps":[]},"evidence":{"authority":"Mixed","freshness":"Aging","conflict":"None","coverage":"Partial"},"executiveAuthority":"QUALIFIED","composer":"DETERMINISTIC_COMPOSER","plan":{"shape":"population.aggregate","scope":"portfolio","filters":{"regions":[],"industries":[],"accounts":[],"customers":[],"deliveryGroups":[],"systemRag":[],"reportedRag":[],"trajectory":[],"outlook30":[],"outlook60":[],"drivers":[],"findings":[],"projectIds":[],"thresholds":[]},"metrics":["forecastGm"],"time":"current","comparison":"none","sort":"economicExposure","limit":10,"groupBy":null,"projectId":null,"metricId":null,"evidenceQuery":null,"origin":"DETERMINISTIC"},"claims":[{"layer":"L1","text":"The aggregate covers 75 projects matching the whole fixed-bid portfolio.","display":"75","metricId":null},{"layer":"L2","text":"Forecast gross margin across that population is 20.21%, computed as aggregate forecast revenue less aggregate cost at completion over aggregate forecast revenue — weighted, never a mean of the project margins.","display":"20.21%","metricId":"MET-PORT-002"},{"layer":"L2","text":"As-sold gross margin across that population is 25.46%.","display":"25.46%","metricId":"MET-PORT-008"},{"layer":"L2","text":"Gross margin at risk across that population totals $35.95M. This is a plain sum of per-project exposure; where projects share a root cause it overstates the portfolio figure rather than de-duplicating it.","display":"$35.95M","metricId":"MET-FIN-019"}],"suggestedFollowUps":[{"label":"Where should I intervene first?"},{"label":"Which projects are System Green-at-Risk?"},{"label":"Which projects are reported GREEN against the evidence?"}]},{"question":"What changed since the previous review?","answer":"Forecast margin across 73 projects with a prior period has moved −$3.02M since 2026-08-03. 39 projects have worsened and 34 have improved. 0 projects crossed into a forecast loss and 2 crossed out of one. 34 projects made a material cost-at-completion revision, meaning the estimate was raised by more than half a point of the prior figure. 20 projects changed the status delivery management reports: 12 downgrades and 8 upgrades. Movement is measured against 2026-08-03. It covers financial position and reported status, which are the two histories this product holds. System-assessed bands are not stored per period, so a change in the system band is not reported — and 2 projects have no earlier period at all. Part of that question is answered from governed evidence; the rest is named below rather than estimated.","why":["39 projects have worsened and 34 have improved.","0 projects crossed into a forecast loss and 2 crossed out of one.","34 projects made a material cost-at-completion revision, meaning the estimate was raised by more than half a point of the prior figure.","20 projects changed the status delivery management reports: 12 downgrades and 8 upgrades.","Movement is measured against 2026-08-03. It covers financial position and reported status, which are the two histories this product holds. System-assessed bands are not stored per period, so a change in the system band is not reported — and 2 projects have no earlier period at all."],"scopeLine":"the whole fixed-bid portfolio","recognised":["shape population.change","time previousPeriod"],"answerability":{"classification":"PARTIALLY_ANSWERABLE","statement":"Part of that question is answered from governed evidence; the rest is named below rather than estimated.","gaps":["System-assessed bands are not stored per period, so a change in the system band is not reported — only financial position and reported status."]},"evidence":{"authority":"Mixed","freshness":"Aging","conflict":"None","coverage":"Partial"},"executiveAuthority":"QUALIFIED","composer":"DETERMINISTIC_COMPOSER","plan":{"shape":"population.change","scope":"portfolio","filters":{"regions":[],"industries":[],"accounts":[],"customers":[],"deliveryGroups":[],"systemRag":[],"reportedRag":[],"trajectory":[],"outlook30":[],"outlook60":[],"drivers":[],"findings":[],"projectIds":[],"thresholds":[]},"metrics":["gmAtRisk","forecastGm","tcv"],"time":"previousPeriod","comparison":"currentVsPrior","sort":"economicExposure","limit":10,"groupBy":null,"projectId":null,"metricId":null,"evidenceQuery":null,"origin":"DETERMINISTIC"},"claims":[{"layer":"L2","text":"Forecast margin across 73 projects with a prior period has moved −$3.02M since 2026-08-03.","display":"−$3.02M","metricId":"MET-FIN-014"},{"layer":"L2","text":"39 projects have worsened and 34 have improved.","display":"39 worse / 34 better","metricId":null},{"layer":"L2","text":"0 projects crossed into a forecast loss and 2 crossed out of one.","display":"0 created / 2 cleared","metricId":null},{"layer":"L2","text":"34 projects made a material cost-at-completion revision, meaning the estimate was raised by more than half a point of the prior figure.","display":"34","metricId":"MET-FIN-008"},{"layer":"L1","text":"20 projects changed the status delivery management reports: 12 downgrades and 8 upgrades.","display":"20","metricId":null},{"layer":"L1","text":"Movement is measured against 2026-08-03. It covers financial position and reported status, which are the two histories this product holds. System-assessed bands are not stored per period, so a change in the system band is not reported — and 2 projects have no earlier period at all.","display":"2026-08-03","metricId":null}],"suggestedFollowUps":[{"label":"Where should I intervene first?"},{"label":"Which projects are System Green-at-Risk?"},{"label":"Which projects are reported GREEN against the evidence?"}]},{"question":"Where is margin erosion concentrated?","answer":"34 projects match margin erosion against the as-sold position, grouped by region. India/APAC: 13 of 34 projects, led by Northwind MedTech Digital Commerce Phase 1. Europe: 10 of 34 projects, led by Meridian Automotive Connected Cockpit Platform. North America: 8 of 34 projects, led by Larkspur Studios Network Assurance Wave 2. LATAM: 3 of 34 projects, led by Calder Financial Claims Modernisation Wave 2.","why":["India/APAC: 13 of 34 projects, led by Northwind MedTech Digital Commerce Phase 1.","Europe: 10 of 34 projects, led by Meridian Automotive Connected Cockpit Platform.","North America: 8 of 34 projects, led by Larkspur Studios Network Assurance Wave 2.","LATAM: 3 of 34 projects, led by Calder Financial Claims Modernisation Wave 2."],"scopeLine":"margin erosion against the as-sold position","recognised":["driver margin-erosion","shape population.concentration","grouped by region"],"answerability":{"classification":"ANSWERABLE","statement":"","gaps":[]},"evidence":{"authority":"Mixed","freshness":"Aging","conflict":"None","coverage":"Partial"},"executiveAuthority":"QUALIFIED","composer":"DETERMINISTIC_COMPOSER","plan":{"shape":"population.concentration","scope":"portfolio","filters":{"regions":[],"industries":[],"accounts":[],"customers":[],"deliveryGroups":[],"systemRag":[],"reportedRag":[],"trajectory":[],"outlook30":[],"outlook60":[],"drivers":["margin-erosion"],"findings":[],"projectIds":[],"thresholds":[]},"metrics":["gmErosion"],"time":"current","comparison":"none","sort":"economicExposure","limit":10,"groupBy":"region","projectId":null,"metricId":null,"evidenceQuery":null,"origin":"DETERMINISTIC"},"claims":[{"layer":"L1","text":"34 projects match margin erosion against the as-sold position, grouped by region.","display":"34","metricId":null},{"layer":"L2","text":"India/APAC: 13 of 34 projects, led by Northwind MedTech Digital Commerce Phase 1.","display":"13 of 34","metricId":null},{"layer":"L2","text":"Europe: 10 of 34 projects, led by Meridian Automotive Connected Cockpit Platform.","display":"10 of 34","metricId":null},{"layer":"L2","text":"North America: 8 of 34 projects, led by Larkspur Studios Network Assurance Wave 2.","display":"8 of 34","metricId":null},{"layer":"L2","text":"LATAM: 3 of 34 projects, led by Calder Financial Claims Modernisation Wave 2.","display":"3 of 34","metricId":null}],"suggestedFollowUps":[{"label":"Where should I intervene first?"},{"label":"Which projects are System Green-at-Risk?"},{"label":"Which projects are reported GREEN against the evidence?"}]},{"question":"What is the probability that our worst project fails?","answer":"This product does not answer probability questions. Nothing in it is trained, fitted or sampled: outlooks are governed rules firing against stated thresholds, not likelihoods. The governed 30- and 60-day outlook is the closest thing it has, and it is a rule result rather than a forecast.","why":[],"scopeLine":"","recognised":[],"answerability":{"classification":"UNSUPPORTED","statement":"This product does not answer probability questions. Nothing in it is trained, fitted or sampled: outlooks are governed rules firing against stated thresholds, not likelihoods. The governed 30- and 60-day outlook is the closest thing it has, and it is a rule result rather than a forecast.","gaps":[]},"evidence":null,"executiveAuthority":"NOT_AUTHORITATIVE","composer":"DETERMINISTIC_COMPOSER","plan":null,"claims":[],"suggestedFollowUps":[{"label":"Where should I intervene first?"},{"label":"Which projects are System Green-at-Risk?"},{"label":"Which projects are reported GREEN against the evidence?"}]}]}</script>
+<script>
+(function () {
+  'use strict';
+
+  var out = document.getElementById('gl-out');
+  var form = document.getElementById('gl-askform');
+  var input = document.getElementById('gl-q');
+  var button = document.getElementById('gl-send');
+  var status = document.getElementById('gl-conn');
+  if (!out || !form || !input || !button) return;
+
+  var recordedNode = document.getElementById('gl-recorded');
+  var recorded = null;
+  if (recordedNode) { try { recorded = JSON.parse(recordedNode.textContent || 'null'); } catch (e) { recorded = null; } }
+
+  /*
+   * Where the trusted runtime lives.
+   *
+   * Same origin first, because a deployment that serves both is the normal case. Loopback second, so
+   * a developer running `npm run server` gets a live page without configuring anything. Nothing
+   * else is ever tried: probing further would be this page deciding where to send a question.
+   */
+  var BASES = [window.location.origin + '/api', 'http://127.0.0.1:8080/api'];
+  var base = null;
+  var token = null;
+  var state = null;
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+  }
+
+  function setStatus(text, warn) {
+    if (!status) return;
+    status.textContent = text;
+    status.className = warn ? 'gl-badge gl-badge--warn' : 'gl-badge';
+  }
+
+  function post(path, body) {
+    var headers = { 'content-type': 'application/json' };
+    if (token) headers.authorization = 'Bearer ' + token;
+    return fetch(base + path, { method: 'POST', headers: headers, body: JSON.stringify(body) })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error(String(r.status))); });
+  }
+
+  function connect(index) {
+    if (index >= BASES.length) {
+      setStatus('Trusted runtime not reachable — showing a recorded run', true);
+      showOffline();
+      return Promise.resolve(false);
+    }
+    base = BASES[index];
+    return fetch(base + '/health', { method: 'GET' })
+      .then(function (r) { if (!r.ok) throw new Error('unhealthy'); return r.json(); })
+      .then(function () {
+        return post('/session', { persona: 'exec.cdo' });
+      })
+      .then(function (payload) {
+        token = payload && payload.data ? payload.data.token : null;
+        if (!token) throw new Error('no session');
+        setStatus('Connected to the trusted runtime', false);
+        button.disabled = false;
+        return true;
+      })
+      .catch(function () { return connect(index + 1); });
+  }
+
+  function showOffline() {
+    out.textContent = '';
+    var box = el('div', 'gl-offline');
+    box.appendChild(el('p', null,
+      'This static preview has no trusted runtime behind it, so questions cannot be answered live. '
+      + 'Running the server locally makes this page live against the same engine; nothing about the '
+      + 'answers changes, because the answers were never produced here.'));
+    var p = el('p', 'gl-note');
+    p.style.marginTop = '10px';
+    p.textContent = 'Below is a recorded run of the real engine, captured at build time. It is a '
+      + 'transcript, not a simulation: every figure in it came from the governed services.';
+    box.appendChild(p);
+    out.appendChild(box);
+    if (recorded && recorded.turns) {
+      for (var i = 0; i < recorded.turns.length; i += 1) render(recorded.turns[i], true);
+    }
+  }
+
+  function badge(label, value, warn) {
+    var b = el('span', warn ? 'gl-badge gl-badge--warn' : 'gl-badge');
+    b.appendChild(el('span', null, label));
+    b.appendChild(el('b', null, value));
+    return b;
+  }
+
+  function disclosure(summaryText, build) {
+    var d = el('details', 'gl-disclose');
+    d.appendChild(el('summary', null, summaryText));
+    var body = el('div');
+    build(body);
+    d.appendChild(body);
+    return d;
+  }
+
+  function render(data, isRecorded) {
+    var block = el('article', 'gl-answer');
+
+    var q = el('p', 'gl-eyebrow', (isRecorded ? 'Recorded question · ' : 'Question · ') + (data.question || ''));
+    block.appendChild(q);
+
+    // Scope first. A filter the product failed to understand must be visible before the answer is.
+    var scope = el('dl', 'gl-scopebar');
+    scope.appendChild(el('dt', null, 'Current scope'));
+    scope.appendChild(el('dd', null, data.scopeLine || 'the whole fixed-bid portfolio'));
+    if (data.recognised && data.recognised.length) {
+      scope.appendChild(el('p', 'gl-read', 'Read as: ' + data.recognised.join(' · ')));
+    }
+    block.appendChild(scope);
+
+    block.appendChild(el('h2', null, 'Executive answer'));
+    block.appendChild(el('p', 'gl-prose', data.answer || ''));
+
+    if (data.why && data.why.length) {
+      var why = el('ul', 'gl-why');
+      for (var i = 0; i < data.why.length; i += 1) why.appendChild(el('li', null, data.why[i]));
+      block.appendChild(why);
+    }
+
+    var badges = el('div', 'gl-badges');
+    badges.appendChild(badge('Answerability', String(data.answerability && data.answerability.classification || '—'),
+      data.answerability && data.answerability.classification !== 'ANSWERABLE'));
+    badges.appendChild(badge('Authority', String(data.executiveAuthority || '—'), false));
+    badges.appendChild(badge('Composed by',
+      data.composer === 'LLM_NARRATION' ? 'Language model, grounded' : 'Governed deterministic composer', false));
+    if (data.evidence) {
+      badges.appendChild(badge('Evidence', data.evidence.authority + ' authority · ' + data.evidence.coverage + ' coverage', false));
+    }
+    if (data.provider && data.provider.external) {
+      badges.appendChild(badge('Processing', 'External model (' + (data.provider.model || '') + ')', true));
+    }
+    block.appendChild(badges);
+
+    if (data.answerability && data.answerability.gaps && data.answerability.gaps.length) {
+      block.appendChild(disclosure('What this answer does not cover', function (body) {
+        var list = el('ul', 'gl-why');
+        for (var g = 0; g < data.answerability.gaps.length; g += 1) {
+          list.appendChild(el('li', null, data.answerability.gaps[g]));
+        }
+        body.appendChild(list);
+      }));
+    }
+
+    if (data.claims && data.claims.length) {
+      block.appendChild(disclosure('Claims and provenance (' + data.claims.length + ')', function (body) {
+        var table = el('table', 'gl-prov');
+        var head = el('thead');
+        var hr = el('tr');
+        ['Layer', 'Finding', 'Figure', 'Metric'].forEach(function (h) { hr.appendChild(el('th', null, h)); });
+        head.appendChild(hr); table.appendChild(head);
+        var tbody = el('tbody');
+        for (var c = 0; c < data.claims.length; c += 1) {
+          var claim = data.claims[c];
+          var tr = el('tr');
+          tr.appendChild(el('td', null, claim.layer));
+          tr.appendChild(el('td', null, claim.text));
+          tr.appendChild(el('td', 'gl-num', claim.display || '—'));
+          tr.appendChild(el('td', null, claim.metricId || '—'));
+          tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        var wrap = el('div');
+        wrap.style.overflowX = 'auto';
+        wrap.appendChild(table);
+        body.appendChild(wrap);
+      }));
+    }
+
+    if (data.plan) {
+      block.appendChild(disclosure('How the question was interpreted', function (body) {
+        var table = el('table', 'gl-prov');
+        var tbody = el('tbody');
+        var rows = [
+          ['Shape', data.plan.shape],
+          ['Scope', data.plan.scope],
+          ['Period', data.plan.time],
+          ['Ordering', data.plan.sort],
+          ['Limit', String(data.plan.limit)],
+          ['Interpreted by', data.plan.origin === 'MODEL_PROPOSED'
+            ? 'A model proposed this plan and the validator accepted it'
+            : data.plan.origin === 'CONVERSATION_REFINEMENT'
+              ? 'A refinement of the previous question'
+              : 'The deterministic planner, with no model involved']
+        ];
+        for (var r = 0; r < rows.length; r += 1) {
+          var tr = el('tr');
+          tr.appendChild(el('td', null, rows[r][0]));
+          tr.appendChild(el('td', null, rows[r][1]));
+          tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        body.appendChild(table);
+      }));
+    }
+
+    if (data.suggestedFollowUps && data.suggestedFollowUps.length) {
+      var follow = el('div', 'gl-suggest');
+      for (var f = 0; f < data.suggestedFollowUps.length; f += 1) {
+        var s = data.suggestedFollowUps[f];
+        var b = el('button', null, s.label);
+        b.type = 'button';
+        b.setAttribute('data-ask', s.label);
+        follow.appendChild(b);
+      }
+      block.appendChild(follow);
+    }
+
+    out.insertBefore(block, out.firstChild);
+  }
+
+  function ask(question) {
+    if (!base || !token) { showOffline(); return; }
+    button.disabled = true;
+    setStatus('Asking…', false);
+    post('/ask', { question: question, state: state, narrate: true })
+      .then(function (payload) {
+        var data = payload.data;
+        data.question = question;
+        state = data.state;
+        render(data, false);
+        setStatus('Connected to the trusted runtime', false);
+      })
+      .catch(function () {
+        setStatus('The trusted runtime did not answer', true);
+      })
+      .then(function () { button.disabled = false; input.value = ''; input.focus(); });
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var q = String(input.value || '').trim();
+    if (q !== '') ask(q);
+  });
+
+  document.addEventListener('click', function (event) {
+    var target = event.target;
+    if (!target || !target.getAttribute) return;
+    var preset = target.getAttribute('data-ask');
+    if (!preset) return;
+    event.preventDefault();
+    input.value = preset;
+    ask(preset);
+  });
+
+  button.disabled = true;
+  setStatus('Looking for the trusted runtime…', false);
+  connect(0);
+}());
 </script>
 </body>
 </html>

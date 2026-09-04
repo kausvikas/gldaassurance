@@ -20,6 +20,7 @@
  * make the call.
  */
 import type { Instant } from '@platform/time';
+import { msBetween } from '@platform/time';
 
 export interface HttpBudget {
   /** Wall-clock ceiling for the whole exchange, including body read. */
@@ -167,10 +168,15 @@ async function readBounded(response: Response, max: number, host: string): Promi
   return Buffer.concat(chunks.map((c) => Buffer.from(c))).toString('utf8');
 }
 
+/**
+ * Elapsed milliseconds between two injected instants.
+ *
+ * `msBetween` rather than a local subtraction: `platform/time` is the one module permitted to touch
+ * ambient time or to parse an instant, and the lint gate enforces that rather than trusting a
+ * comment. A duration derived from two clock readings is still a time computation.
+ */
 function elapsed(from: Instant, to: Instant): number {
-  const a = Date.parse(String(from));
-  const b = Date.parse(String(to));
-  return globalThis.Number.isFinite(a) && globalThis.Number.isFinite(b) ? Math.max(0, b - a) : 0;
+  return Math.max(0, msBetween(from, to));
 }
 
 export const NET_STATE: string =
