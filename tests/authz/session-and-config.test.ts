@@ -12,7 +12,7 @@ import {
   SessionStore, assertDemoEnvironment,
 } from '@contexts/identity';
 import {
-  POC_SECURITY_POLICY, SECURITY_POLICY_PROVENANCE, type SecurityPolicy, loadConfig,
+  POC_SECURITY_POLICY, SECURITY_POLICY_PROVENANCE, type SecurityPolicy, loadAiConfig, loadConfig,
 } from '@platform/config';
 import { RATE_LIMITS, ROUTES, SECURITY_HEADERS, SESSION_COOKIE, findRoute } from '@app';
 
@@ -266,5 +266,31 @@ describe('security thresholds come from configuration, not from magic numbers', 
   it('labels the values as POC defaults rather than corporate policy', () => {
     expect(SECURITY_POLICY_PROVENANCE).toMatch(/POC/);
     expect(SECURITY_POLICY_PROVENANCE).toMatch(/not an approved GlobalLogic enterprise standard/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 13 — the CORS allow-list
+// ---------------------------------------------------------------------------
+
+describe('the CORS allow-list is deny-by-default outside development', () => {
+  it('adds loopback origins in dev and test, and only there', () => {
+    for (const environment of ['dev', 'test']) {
+      const config = loadAiConfig({ GLDI_ENV: environment });
+      expect(config.allowedOrigins, environment).toContain('http://localhost:8899');
+    }
+    // A deployment that has not named its origins has an empty allow-list. That is the safe
+    // reading, and an operator meets it immediately rather than discovering it in a review.
+    for (const environment of ['staging', 'prod']) {
+      expect(loadAiConfig({ GLDI_ENV: environment }).allowedOrigins, environment).toEqual([]);
+    }
+  });
+
+  it('never adds a wildcard, and keeps a named origin exact', () => {
+    const config = loadAiConfig({
+      GLDI_ENV: 'prod', GLDI_ALLOWED_ORIGINS: 'https://gldaassurance.web.app',
+    });
+    expect(config.allowedOrigins).toEqual(['https://gldaassurance.web.app']);
+    for (const origin of config.allowedOrigins) expect(origin).not.toContain('*');
   });
 });

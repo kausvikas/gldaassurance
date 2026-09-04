@@ -165,6 +165,32 @@ function boolFlag(source: Readonly<Record<string, string | undefined>>, key: str
  * (ADR-0010 §5): a provider selected but not configured is a start-up error, not a runtime surprise
  * discovered by an executive mid-demonstration.
  */
+/**
+ * The CORS allow-list, plus loopback in a development environment only.
+ *
+ * Deny-by-default is right and it made the ordinary local setup require an environment variable
+ * nobody would guess: serve the site on one port, the runtime on another, and every call fails with
+ * no allow header and no explanation. A developer meeting that concludes the product is broken.
+ *
+ * The loopback defaults are added **only** in `dev` and `test` — the same two environments
+ * `POC_SECURITY_POLICY.syntheticIdentityEnvironments` permits a credential-free identity provider
+ * in, and for the same reason. `staging` and `prod` are absent deliberately: a deployment that has
+ * not named its origins has an empty allow-list, which is the safe reading and the one an operator
+ * discovers immediately rather than in a review.
+ */
+function readOrigins(
+  source: Readonly<Record<string, string | undefined>>,
+): readonly string[] {
+  const declared = (source['GLDI_ALLOWED_ORIGINS'] ?? '')
+    .split(',').map((o) => o.trim()).filter((o) => o !== '');
+  const environment = (source['GLDI_ENV'] ?? 'dev').trim();
+  if (environment !== 'dev' && environment !== 'test') return declared;
+  const loopback = [8899, 8791, 5173, 3000, 8080].flatMap((port) => [
+    `http://localhost:${String(port)}`, `http://127.0.0.1:${String(port)}`,
+  ]);
+  return [...new Set([...declared, ...loopback])];
+}
+
 export function loadAiConfig(source: Readonly<Record<string, string | undefined>>): AiConfig {
   const requested = (source['AI_PROVIDER'] ?? 'none').trim().toLowerCase();
   if (requested !== 'claude' && requested !== 'local' && requested !== 'none') {
@@ -210,8 +236,7 @@ export function loadAiConfig(source: Readonly<Record<string, string | undefined>
     local: { baseUrl: localBaseUrl, model: localModel, protocol: protocolRaw },
     externalAiAllowed,
     localToExternalFallback,
-    allowedOrigins: (source['GLDI_ALLOWED_ORIGINS'] ?? '')
-      .split(',').map((o) => o.trim()).filter((o) => o !== ''),
+    allowedOrigins: readOrigins(source),
   };
 }
 
