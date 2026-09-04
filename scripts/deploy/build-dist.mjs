@@ -26,18 +26,23 @@ const ROUTES = [
   ['forward-risk.html', '/forward-risk'],
   ['interventions.html', '/interventions'],
   ['assistant.html', '/assistant'],
+  ['data-sources.html', '/data-sources'],
 ];
 
 /**
- * Secondary routes, nested under a primary product area.
+ * Secondary routes, nested under a primary product area. Currently none.
  *
- * Knowledge & Connections sits under Assistant rather than becoming a sixth primary destination
- * (§60): it is where a data owner works, not where an executive starts, and promoting it to the top
- * navigation would spend the most valuable row of the product on an administrative surface.
+ * The list is kept because the shape is still right for a future sub-surface, and because the
+ * decision it used to hold is worth keeping visible: Knowledge & Connections sat under Assistant on
+ * the reasoning that it is where a data owner works, not where an executive starts, and that
+ * promoting it would spend the most valuable row of the product on an administrative surface.
+ *
+ * That reasoning was not wrong; it was outvoted. Buried a level down, the one surface that answers
+ * "where did this number come from and what is it trusted for" was reachable only by someone who
+ * already knew it existed — which is precisely the wrong audience for a governance surface. It is
+ * now the sixth primary destination, renamed **Data Sources** for what it actually inventories.
  */
-const NESTED = [
-  ['assistant', 'knowledge.html', '/assistant/knowledge'],
-];
+const NESTED = [];
 
 /** Markers that mean a page came from the retired admin-sidebar shell. */
 const LEGACY = ['gl-shell-sidebar', 'gl-sidebar', 'class="gl-app-shell"'];

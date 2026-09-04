@@ -36,7 +36,7 @@ accepting a file and losing it at the next restart. Profiling a file — parse, 
 mapping — still works, because it writes nothing.
 
 Both surfaces become live: the Assistant answers real questions, and **Add Knowledge** on
-`/assistant/knowledge` accepts a real workbook and runs the full eight-step flow to a receipt.
+`/data-sources` accepts a real workbook and runs the full eight-step flow to a receipt.
 
 No API key is needed. With no provider configured the answers come from the governed deterministic
 composer and every response says so on its `Composed by` badge — which is also the clearest available

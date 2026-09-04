@@ -7,6 +7,13 @@
     ],
     "cleanUrls": true,
     "trailingSlash": false,
+    "redirects": [
+      {
+        "source": "/assistant/knowledge",
+        "destination": "/data-sources",
+        "type": 301
+      }
+    ],
     "rewrites": [
       {
         "source": "/api/**",

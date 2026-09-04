@@ -13,14 +13,38 @@
  */
 import { GL_CSS } from './gl-theme.js';
 
-export type Area = 'command-center' | 'projects' | 'forward-risk' | 'interventions' | 'assistant';
+export type Area =
+  | 'command-center' | 'projects' | 'forward-risk' | 'interventions' | 'assistant' | 'data-sources';
 
+/**
+ * The product's six destinations.
+ *
+ * ## Why Data Sources is here, having deliberately not been
+ *
+ * It was a link at the foot of the Assistant, on the reasoning that it is where a data owner works
+ * rather than where an executive starts, and that the top row is too valuable to spend on an
+ * administrative surface. That reasoning is kept in `scripts/deploy/build-dist.mjs` rather than
+ * deleted, because it was not wrong — it was outvoted. Buried one level down, the surface that
+ * answers *"where did this number come from and what is it trusted for"* was reachable only by
+ * someone who already knew it existed, which is the wrong audience for a governance surface.
+ *
+ * ## Why "Data Sources" and not "Knowledge & Connections"
+ *
+ * The old name described the two halves of the page — the documents it holds and the systems it
+ * talks to — and named neither the question it answers. Every other destination here is two words
+ * and says what you get: Command Center, Forward Risk, Interventions. "Knowledge" is also the one
+ * word this product should be most careful with, because ingesting a document explicitly does *not*
+ * teach the model anything (ADR-0036), and a tab called Knowledge invites exactly that reading.
+ * What the page actually inventories is where data came from, what each source is trusted for, and
+ * what happened to it. That is Data Sources.
+ */
 const NAV: readonly { area: Area; label: string; href: string }[] = [
   { area: 'command-center', label: 'Command Center', href: '/' },
   { area: 'projects', label: 'Projects', href: '/projects' },
   { area: 'forward-risk', label: 'Forward Risk', href: '/forward-risk' },
   { area: 'interventions', label: 'Interventions', href: '/interventions' },
   { area: 'assistant', label: 'Assistant', href: '/assistant' },
+  { area: 'data-sources', label: 'Data Sources', href: '/data-sources' },
 ];
 
 /**

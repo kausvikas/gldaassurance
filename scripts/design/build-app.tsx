@@ -336,7 +336,7 @@ const interventions = page('Interventions', 'interventions', [
 
 // ---------------------------------------------------------------- assistant ----
 /*
- * The Assistant workspace, and Knowledge & Connections beneath it.
+ * The Assistant workspace, and Data Sources beside it.
  *
  * The previous build shipped six hard-coded question-and-answer pairs. That is a brochure for a
  * query engine rather than a query engine, and §3 prohibits it by name. This page has a text field
@@ -395,7 +395,9 @@ const assistantBody = [
         <li><span class="v"><b>It will not answer beyond the evidence.</b> Where part of a question
           is unsupported, the answer says which part rather than estimating it.</span></li>
       </ul>
-      <p class="gl-note" style="margin-top:20px"><a class="gl-arrow" href="/assistant/knowledge">Knowledge &amp; Connections →</a></p>`),
+      <p class="gl-note" style="margin-top:20px">Every figure the Assistant cites is traceable to a
+        source, its authority and its data context — see <a class="gl-arrow" href="/data-sources"
+        data-carry>Data Sources</a>.</p>`),
 ].join('\n');
 
 const assistant = page('Assistant', 'assistant', assistantBody);
@@ -421,10 +423,10 @@ const addKnowledge = band('white', `
         <div id="gl-stage" aria-live="polite"></div>
       </div>`);
 
-const knowledgePage = page('Knowledge & Connections', 'assistant', [
+const knowledgePage = page('Data Sources', 'data-sources', [
   band('tint', `
-      <p class="gl-eyebrow">Assistant · Knowledge &amp; Connections</p>
-      <h1 class="gl-lede">What this system has been told, and <em>what it did with it</em>.</h1>
+      <p class="gl-eyebrow">Data sources, authority and evidence</p>
+      <h1 class="gl-lede">Where every figure came from, and <em>what it is trusted for</em>.</h1>
       <p class="gl-sub">Adding a document or a data extract does not change the model. It is parsed,
         validated, versioned, indexed and made retrievable — and every one of those steps produces a
         count you can check.</p>
@@ -670,12 +672,9 @@ writeFileSync(join(OUT, 'projects.html'), projects, 'utf8');
 writeFileSync(join(OUT, 'forward-risk.html'), forwardRisk, 'utf8');
 writeFileSync(join(OUT, 'interventions.html'), interventions, 'utf8');
 writeFileSync(join(OUT, 'assistant.html'), withAssistantRuntime(assistant), 'utf8');
-mkdirSync(join(OUT, 'assistant'), { recursive: true });
-writeFileSync(
-  join(OUT, 'assistant', 'knowledge.html'), withUploadRuntime(knowledgePage), 'utf8',
-);
+writeFileSync(join(OUT, 'data-sources.html'), withUploadRuntime(knowledgePage), 'utf8');
 for (const f of facts) writeFileSync(join(OUT, 'projects', `${f.id}.html`), projectPage(f), 'utf8');
 
 process.stdout.write(
-  `app built: 5 primary routes + Knowledge & Connections + ${String(facts.length)} project pages\n`,
+  `app built: 6 primary routes + ${String(facts.length)} project pages\n`,
 );

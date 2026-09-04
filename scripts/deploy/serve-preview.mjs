@@ -7,7 +7,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DIST = join(ROOT, 'dist', 'executive-poc');
-const rewrites = JSON.parse(readFileSync(join(ROOT, 'firebase.json'), 'utf8')).hosting.rewrites;
+const hosting = JSON.parse(readFileSync(join(ROOT, 'firebase.json'), 'utf8')).hosting;
+const rewrites = hosting.rewrites;
 const PORT = Number(process.argv[2] ?? 8791);
 createServer((req, res) => {
   const path = decodeURIComponent((req.url ?? '/').split('?')[0]);
@@ -15,10 +16,26 @@ createServer((req, res) => {
   /*
    * A path can name a directory as well as a file.
    *
-   * `/assistant` is a page **and** a folder now that Knowledge & Connections lives beneath it, and
-   * treating the folder as the file crashed this server with EISDIR. Hosting resolves the page,
-   * so the local validator has to as well or it stops being a validator.
+   * `/projects` is a page **and** a folder — the per-project pages live beneath it — and treating
+   * the folder as the file crashed this server with EISDIR. Hosting resolves the page, so the local
+   * validator has to as well or it stops being a validator. (`/assistant` was the original case,
+   * before Data Sources moved out from under it.)
    */
+  /*
+   * Honour the hosting redirects too.
+   *
+   * Without this the retired `/assistant/knowledge` fell through to the catch-all rewrite and served
+   * the Command Center — a silently wrong page, which is a worse failure than a 404 because nothing
+   * tells the reader they are not where they asked to be. The local validator has to model the
+   * hosting config, not a convenient subset of it.
+   */
+  const redirect = (hosting.redirects ?? []).find((r) => r.source === path);
+  if (redirect) {
+    res.writeHead(redirect.type ?? 302, { location: redirect.destination });
+    res.end();
+    return;
+  }
+
   const isFile = (p) => existsSync(p) && statSync(p).isFile();
   if (!isFile(join(DIST, file))) {
     if (isFile(join(DIST, `${file}.html`))) file = `${file}.html`;

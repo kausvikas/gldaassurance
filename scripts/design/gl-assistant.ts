@@ -86,10 +86,18 @@ export const GL_ASSISTANT_CSS = `
 .gl-prov td:first-child{color:var(--steel-50);white-space:nowrap}
 .gl-prov .gl-num{font-weight:600;white-space:nowrap}
 
-.gl-srcgrid{margin-top:22px;width:100%;border-collapse:collapse;font-size:14px}
-.gl-srcgrid th{text-align:left;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;
-  color:var(--steel-50);padding:10px 14px 10px 0;border-bottom:2px solid var(--steel-100);font-weight:600}
-.gl-srcgrid td{padding:12px 14px 12px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+/*
+ * One table register, not two.
+ *
+ * This was a near-duplicate of .gl-t with its own padding and its own header rule — a second dialect
+ * for the same object, which is how "DATA CONTEXT" ended up wrapping in a header row where nothing
+ * else did. The markup now carries .gl-t as well, so the shared rules do the work; what remains here
+ * is only what is genuinely different about a source inventory: a heavier rule under the header,
+ * because this table is the page rather than a panel within it.
+ */
+.gl-srcgrid{margin-top:22px}
+.gl-srcgrid th{border-bottom:2px solid var(--steel-100);padding-bottom:10px}
+.gl-srcgrid td{padding-top:12px;padding-bottom:12px}
 .gl-status{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;
   border:1px solid var(--rule-strong);white-space:nowrap}
 .gl-status--REAL_VERIFIED{color:var(--green);background:var(--rag-green-bg);border-color:var(--green-light)}

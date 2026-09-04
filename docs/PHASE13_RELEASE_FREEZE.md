@@ -151,7 +151,7 @@ precondition in `docs/REAL_GL_CONNECTOR_ONBOARDING.md` §4 before any non-synthe
 
 1. open `https://gldaassurance.web.app/assistant` and sign in with the demo access code;
 2. ask an unseen question; confirm scope, answer, answerability and provenance;
-3. Assistant → Knowledge & Connections → Add knowledge;
+3. Data Sources → Add knowledge;
 4. upload the synthetic XLSX through Select → Parse → Profile → Map → Validate → Preview → Confirm →
    Receipt;
 5. confirm the receipt matches the server result, the quarantined row is visible, the conflict is

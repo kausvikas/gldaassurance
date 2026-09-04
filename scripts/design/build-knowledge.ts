@@ -147,7 +147,7 @@ export function sourcesTable(registry: SourceRegistry): string {
           <td class="gl-num">${String(s.conflicts)}</td>
         </tr>`).join('');
   return `
-      <div style="overflow-x:auto"><table class="gl-srcgrid">
+      <div style="overflow-x:auto"><table class="gl-t gl-srcgrid">
         <thead><tr>
           <th>Source</th><th>Type</th><th>Status</th><th>Data context</th>
           <th>Authority</th><th>Records</th><th>Conflicts</th>
@@ -178,7 +178,7 @@ export function verificationTable(build: KnowledgeBuild): string {
           <td>${v.lastUsedFor === null ? '<span class="gl-note">not yet used</span>' : esc(v.lastUsedFor.slice(0, 80))}</td>
         </tr>`).join('');
   return `
-      <div style="overflow-x:auto"><table class="gl-srcgrid">
+      <div style="overflow-x:auto"><table class="gl-t gl-srcgrid">
         <thead><tr>
           <th>Source</th><th>Verification</th><th>Received</th><th>Accepted</th>
           <th>Quarantined</th><th>Indexed</th><th>Last used for</th>
@@ -214,7 +214,7 @@ export function conflictTable(registry: SourceRegistry): string {
         </tr>`;
   }).join('');
   return `
-      <div style="overflow-x:auto"><table class="gl-srcgrid">
+      <div style="overflow-x:auto"><table class="gl-t gl-srcgrid">
         <thead><tr>
           <th>Project</th><th>Concept</th><th>Governed value</th><th>Also reported</th><th>Resolution</th>
         </tr></thead>
@@ -235,7 +235,7 @@ export function quarantineTable(registry: SourceRegistry): string {
           <td>${r.findings.map((f) => `<div>${esc(f.code.toLowerCase().replace(/_/g, ' '))} — ${esc(f.detail)}</div>`).join('')}</td>
         </tr>`).join('');
   return `
-      <div style="overflow-x:auto"><table class="gl-srcgrid">
+      <div style="overflow-x:auto"><table class="gl-t gl-srcgrid">
         <thead><tr><th>Row</th><th>Source identifier</th><th>Why it was rejected</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>`;
@@ -254,7 +254,7 @@ export function authorityTable(registry: SourceRegistry): string {
           <td class="gl-note" style="font-size:13px">${esc(g.rationale)}</td>
         </tr>`).join('');
   return `
-      <div style="overflow-x:auto"><table class="gl-srcgrid">
+      <div style="overflow-x:auto"><table class="gl-t gl-srcgrid">
         <thead><tr><th>Canonical concept</th><th>Source</th><th>Authority</th><th>Why</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>`;
