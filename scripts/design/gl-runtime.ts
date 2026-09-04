@@ -557,11 +557,12 @@ export const GL_RUNTIME = `
        */
       var mv = moves[keys[k]];
       html += '<li data-move="' + esc(keys[k]) + '">'
-        + '<span><span class="gl-rag gl-rag--' + parts[0] + '">' + parts[0] + '</span>'
-        + ' <span class="to">\\u2192</span> <span class="gl-rag gl-rag--' + parts[1] + '">' + parts[1] + '</span></span>'
-        + '<span class="gl-movefig"><b>' + countOf(mv.n, 'project') + '</b>'
-        + '<span class="gl-moveval">' + money(mv.v) + ' <i>contractual value</i></span>'
-        + '<span class="gl-moveval">' + money(mv.r) + ' <i>margin at risk</i></span></span></li>';
+        + '<span class="gl-movepair"><span class="gl-rag gl-rag--' + parts[0] + '">' + parts[0] + '</span>'
+        + '<span class="to">\\u2192</span><span class="gl-rag gl-rag--' + parts[1] + '">' + parts[1] + '</span></span>'
+        + '<span class="gl-movefig"><b>' + mv.n + '</b><span>'
+        + plural('project', mv.n) + '</span></span>'
+        + '<span class="gl-movefig"><b>' + money(mv.v) + '</b><span>contractual value</span></span>'
+        + '<span class="gl-movefig"><b>' + money(mv.r) + '</b><span>margin at risk</span></span></li>';
     }
     host.innerHTML = html || '<li class="gl-empty">No project in this view changes band within 60 days on the governed outlook.</li>';
     // A transition an executive can see and cannot open is the clearest possible way to say "this

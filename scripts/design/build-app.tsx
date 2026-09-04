@@ -141,7 +141,7 @@ const commandCenter = page('Command Center', 'command-center', [
       <p class="gl-note">Ordered by the governed intervention ranking, which is not "most Red first".
         A loss already crystallised may need oversight; it is not necessarily where an hour of
         executive attention pays best.</p>
-      <div class="gl-tablewrap"><table class="gl-t"><thead><tr>
+      <div class="gl-tablewrap"><table class="gl-t gl-t--queue"><thead><tr>
         <th class="gl-sticky">Project</th><th>Reported</th><th>Assessed</th><th>Trajectory</th>
         <th>60-day</th><th class="num">Margin at risk</th><th>Time to act</th><th>Executive action</th>
       </tr></thead><tbody id="gl-queue-body"></tbody></table></div>
