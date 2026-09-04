@@ -118,17 +118,32 @@ because the session key is separate from the code.
 
 `AI_PROVIDER=none` is a decision, not an omission: sending delivery and commercial material to a
 hosted model is a policy decision (ADR-0033), and a deployment nobody has explicitly said yes to has
-said no. Answers come from the governed deterministic composer and every response says so. To turn
+said no. Answers come from the governed deterministic composer and every response says so. ### Claude has been verified through this path, and then switched back off
+
+The secret `anthropic-key` exists in Secret Manager and the runtime identity can read it. To turn
 Claude narration on:
 
 ```bash
-printf '%s' "$ANTHROPIC_API_KEY" | gcloud secrets create anthropic-key --data-file=- --project gldaassurance
 gcloud run services update gldi-runtime --region europe-west1 --project gldaassurance \
-  --set-secrets ANTHROPIC_API_KEY=anthropic-key:latest \
+  --set-secrets ANTHROPIC_API_KEY=anthropic-key:latest,GLDI_DEMO_ACCESS_CODE=gldi-access-code:latest,GLDI_SESSION_KEY=gldi-session-key:latest \
   --update-env-vars AI_PROVIDER=claude,GLDI_EXTERNAL_AI_ALLOWED=true
 ```
 
-Nothing else changes. The facts are identical either way — only the `Composed by` badge moves.
+and to switch it back:
+
+```bash
+gcloud run services update gldi-runtime --region europe-west1 --project gldaassurance \
+  --update-env-vars AI_PROVIDER=none,GLDI_EXTERNAL_AI_ALLOWED=false
+```
+
+`--set-secrets` replaces the whole set rather than adding to it, which is why the other two are
+repeated. Omitting them removes the access code, and a deployment with no access code is *closed* —
+visible in seconds, and the right way round.
+
+**Measured on `claude-sonnet-5` through the public URL:** 8 questions, 53 authoritative facts, **zero
+differences** against `AI_PROVIDER=none`. Only the prose moves. Two of the eight came back from the
+deterministic composer *while the provider was used* — the grounding validator refusing sentences the
+claims could not license, which is the whole point of putting a validator after the model.
 
 ### Two things this deployment found
 

@@ -339,11 +339,39 @@ planner which throws degrades to the deterministic decline rather than a 500.
 | # | Finding | Severity | Why it is not closed |
 | --- | --- | --- | --- |
 | 1 | The access code is shared, not an identity | P1 | Anyone holding it is whichever persona they choose. Correct for a synthetic demo; a blocker for real data. `docs/REAL_GL_CONNECTOR_ONBOARDING.md` §4 lists it as a precondition. |
-| 2 | Audit lineage is not durable | P1 | `AuditRepository` is implemented and wired into `DurableStores`; the assistant still writes to the in-memory log. Declared, not done, and said so in the state audit rather than counted as complete. |
+| 2 | ~~Audit lineage is not durable~~ | — | **Closed.** See P0-12 and P0-13 below. |
 | 3 | Rate limiting is per-process | P2 | Three instances means three times the limit. The real ceiling is `--max-instances` and the $25 budget, both set. |
 | 4 | Parsers are not sandboxed | P2 | A recorded decision with its trigger conditions, in `docs/UPLOAD_THREAT_MODEL.md` §1 — not an omission. |
 | 5 | No retention or deletion path | P2 | Uploaded records and blobs accumulate. Fine for a demo; a precondition for anything else. |
 | 6 | Three sources from the pre-fix revision are still listed | P3 | Real records of real uploads whose receipts were lost to P0-10. Clearing them needs a destructive command nobody has authorised. |
+
+### P0-12 · The deployed Assistant recorded no audit at all · CLOSED
+
+*Found by: Chief Data Officer, tracing §2.*
+
+The finding going in was "audit lineage is not durable". The finding coming out was worse:
+`auditAssistantQuery` was correct, tested, and its **only caller in the repository was the static
+build script**. Step 14 was documented in the orchestrator's own header and executed nowhere in the
+deployed product. There was no lineage to make durable.
+
+Closed by making `askWithPlan` a wrapper whose single job is to audit every exit — including all nine
+refusal paths — and by writing a durable lineage carrying the plan, the validation outcome, the tools,
+the source versions, the provider, the external-AI policy decision, the composer, the answerability
+result and the grounding outcome. No prose, no reasoning, no credential. Proven across a cold start on
+the live URL, field by field.
+
+### P0-13 · Audit event ids were not unique per interaction · CLOSED
+
+*Found by: measuring the fix, which is the only way it could have been found.*
+
+The event id was the correlation id, which is per *session*, so every question a caller asked in one
+sitting shared an id. Looking one back up after a restart returned whichever the store handed over.
+The frozen demo clock made it worse: `occurredAt` came from the injected as-of clock, so time could
+not separate them either — the same governed-time/elapsed-time conflation already fixed for sessions
+and rate limits, in a third place.
+
+Closed by keying on session + recorded instant + question digest, keeping the correlation id as its
+own field, and injecting `recordedAt` rather than reading an ambient clock.
 
 ### Re-review summary
 
@@ -352,11 +380,11 @@ planner which throws degrades to the deterministic decline rather than a 500.
 | Global Delivery Head / CDO | PASS | 0 | 0 | 0 |
 | Data owner (upload flow) | PASS | 1 (P0-8) | 0 | 0 |
 | CFO | PASS | 0 | 0 | 0 |
-| Chief Data Officer | PASS | 1 (P0-8) | 0 | 1 |
+| Chief Data Officer | PASS | 3 (P0-8, P0-12, P0-13) | 0 | 0 |
 | Chief Enterprise Architect | PASS | 1 (P0-11) | 0 | 0 |
 | CISO | PASS | 1 (P0-9) | 0 | 1 |
 
-**Eleven P0s across the phase. Eleven closed. None open.**
+**Thirteen P0s across the phase. Thirteen closed. None open.**
 
 Four of the last five were invisible to a preview build, a local server, and a green test suite.
 They needed a public URL, a process that restarts, and someone willing to measure the same thing

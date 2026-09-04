@@ -1,20 +1,37 @@
 # PHASE_HANDOFF.md
 
-**Current state:** Phases 0–12 complete · **Phase 13 COMPLETE and FROZEN — status B, freeze with stated limitations** · **Phase 14 not started** (no scope defined; the six open findings below are its candidate inputs)
+**Current state:** Phases 0–12 complete · **Phase 13 OPERATIONAL — final closure still required (status B)** · **Phase 14 not started** (no scope defined; the open findings below are its candidate inputs)
 **Last updated:** 2026-09-04 (Phase 13 — enterprise conversational intelligence, release freeze)
 **Updated by:** Chief Data Officer · CISO · Chief Enterprise Architect · CFO · Global Delivery Head
 
 > ## Phase 13 — what closed, and what did not
 >
-> **Live:** `https://gldaassurance.web.app` · Cloud Run `gldi-runtime-00012-f5z` (europe-west1).
+> **Live:** `https://gldaassurance.web.app` · Cloud Run `gldi-runtime-00019-gh4` (europe-west1) ·
+> commit `41b77fb` on `main`.
+>
+> **Status B, not A, for one reason:** the authenticated browser walk-through has not been performed
+> by a person. Everything it would exercise is measured against the live public API and asserted in
+> `server:check`; that is not the same claim, and the freeze record does not make it. The steps are
+> in `docs/PHASE13_RELEASE_FREEZE.md` §5.
 > The freeze record is `docs/PHASE13_RELEASE_FREEZE.md`; the rejection review is
 > `docs/PHASE13_FIVE_ROLE_REVIEW.md`; the durability evidence is
 > `docs/PHASE13_STATE_LOCATION_AUDIT.md`, measured before and after the fix.
 >
-> **Eleven P0s were found and closed during the phase. Every one was found by running the product,
-> and none by the test suite as it then stood.** The last four were invisible to a preview build, a
+> **Thirteen P0s were found and closed during the phase. Every one was found by running the product,
+> and none by the test suite as it then stood.** The last six were invisible to a preview build, a
 > local server and a green suite: they needed a public URL, a process that restarts, and someone
 > willing to measure the same thing twice.
+>
+> Two of them were the same shape and are worth naming together: `auditAssistantQuery` and the
+> model-assisted planner were both **written, correct, tested — and called by nothing in the deployed
+> product.** A docstring described each as wired. Scaffolding described as wiring is the defect class
+> this phase should be remembered for.
+>
+> **Claude verified through the public cloud path** on `claude-sonnet-5`: 8 questions, 53 facts,
+> **zero authoritative differences** against `AI_PROVIDER=none`. Only prose moves. Two of the eight
+> answers came back from the deterministic composer *while the provider was used* — the grounding
+> validator refusing the model's sentences, which is the behaviour the design exists to produce. The
+> deployment is returned to `AI_PROVIDER=none`.
 >
 > ### Governance added
 >
