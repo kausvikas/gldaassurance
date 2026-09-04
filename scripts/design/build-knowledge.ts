@@ -13,7 +13,7 @@ import {
 } from '@app';
 import type { ConversationState, PlannedAnswer, PlannerVocabulary, SourceRegistry } from '@app';
 import { DEMO_NOW, createDemoApi } from '../security/demo-api.js';
-import { knowledgeDemo } from '../fixtures/demo-knowledge.js';
+import { knowledgeDemo, syncFixtures } from '../fixtures/demo-knowledge.js';
 import { esc } from './gl-shell.js';
 
 export interface RecordedTurn {
@@ -73,6 +73,7 @@ export async function buildKnowledge(): Promise<KnowledgeBuild> {
   const demo = knowledgeDemo(authorised, first?.id ?? authorised[0] ?? 'prj-001');
   // The three uploads the Knowledge surface renders: a contract, a supplemental extract, and a file
   // of deliberately bad rows whose quarantine is the point.
+  await syncFixtures(demo.registry);
   demo.addAtlasSow();
   demo.addSupplementalFinancials();
   demo.addBadRows();
@@ -137,11 +138,11 @@ const STATUS_WORD: Readonly<Record<string, string>> = {
 export function sourcesTable(registry: SourceRegistry): string {
   const rows = registry.sources().map((s) => `
         <tr>
-          <td><b>${esc(s.displayName)}</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">${esc(registry.statusMeaning(s.status as never))}</div></td>
+          <td><b>${esc(s.displayName)}</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">${esc(registry.statusMeaning(s.status as never, s.kind as never))}</div></td>
           <td>${esc(s.kind.toLowerCase().replace(/_/g, ' '))}</td>
           <td><span class="gl-status gl-status--${esc(s.status)}">${esc(STATUS_WORD[s.status] ?? s.status)}</span></td>
           <td>${esc(s.dataContext)}</td>
-          <td>${esc(s.authority.toLowerCase().replace(/_/g, ' '))}</td>
+          <td>${esc(s.authority)}</td>
           <td class="gl-num">${String(s.recordCount)}</td>
           <td class="gl-num">${String(s.conflicts)}</td>
         </tr>`).join('');

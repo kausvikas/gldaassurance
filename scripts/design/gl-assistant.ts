@@ -94,6 +94,7 @@ export const GL_ASSISTANT_CSS = `
   border:1px solid var(--rule-strong);white-space:nowrap}
 .gl-status--REAL_VERIFIED{color:var(--green);background:var(--rag-green-bg);border-color:var(--green-light)}
 .gl-status--FIXTURE{color:var(--steel-75);background:var(--steel-05)}
+.gl-status--INGESTED{color:var(--blue-deep);background:var(--blue-light);border-color:var(--blue-light)}
 .gl-status--NOT_CONFIGURED{color:var(--steel-50);background:transparent}
 .gl-status--MAPPING_REVIEW_REQUIRED{color:var(--orange-deep);background:var(--white);border-color:var(--orange)}
 

@@ -52,6 +52,49 @@ export interface KnowledgeDemo {
  * governed figure, which is the property §8 and §29 of the Phase 13 contract require and which this
  * function is where it becomes true.
  */
+export async function syncFixtures(registry: SourceRegistry): Promise<void> {
+  /*
+   * An initial sync of every fixture.
+   *
+   * Without it the Knowledge surface showed "0 records" beside six connectors, which reads as
+   * *empty* rather than as *not yet synchronised* — and a demonstration of a connector architecture
+   * that never runs a connector demonstrates a diagram. This exercises the real `sync` path, real
+   * idempotency keys included, so the counts on the page are counts of records that actually moved.
+   */
+  for (const source of registry.sourceList().filter((s) => s.kind === 'CONNECTOR')) {
+    const connector = registry.connector(source.sourceId);
+    if (connector === undefined) continue;
+    const { result } = await connector.sync({ mode: 'INITIAL', since: null, maxRecords: 500 });
+    registry.addReceipt(source.sourceId, {
+      receiptId: `rcpt-${source.sourceId}`,
+      sourceId: source.sourceId,
+      sourceName: source.displayName,
+      sourceKind: 'CONNECTOR_SYNC',
+      fingerprint: '',
+      byteLength: 0,
+      receivedAt: KNOWLEDGE_NOW,
+      effectiveDate: result.watermark,
+      recordsDetected: result.recordsRead,
+      recordsAccepted: result.recordsNew,
+      recordsQuarantined: result.recordsRejected,
+      projectsMatched: 0,
+      projectsUnresolved: 0,
+      fieldsMapped: connector.mapSchema()?.fields.length ?? 0,
+      fieldsIgnored: 0,
+      conceptsMapped: [...connector.suppliesConcepts],
+      conflictsDetected: 0,
+      authority: 'SUPPLEMENTAL',
+      dataContext: 'SANDBOX',
+      mappingVersion: connector.mapSchema()?.mappingVersion ?? 'unmapped',
+      ingestionVersion: 'INGEST-v1',
+      pagesParsed: null,
+      chunksIndexed: null,
+      parseCompleteness: null,
+      notes: [...result.notes],
+    });
+  }
+}
+
 export function knowledgeDemo(
   knownProjectIds: readonly string[],
   /**
@@ -80,6 +123,16 @@ export function knowledgeDemo(
     isFixture: false,
     receipts: [],
     lastUpdated: KNOWLEDGE_NOW,
+    /*
+     * The authorised project count, across every contracting model.
+     *
+     * Deliberately not the fixed-bid 75 the executive surfaces report on: this row counts what the
+     * *source* holds, and the surfaces count the population they assess. The Command Center is
+     * careful about exactly this pair — `projectCount` against `authorisedUniverseCount` — and a
+     * source inventory that silently reported the narrower one would be the same confusion in a
+     * different column.
+     */
+    recordCount: knownProjectIds.length,
   });
 
   for (const connector of allFixtures()) registry.registerConnector(connector, 'FIXTURE');

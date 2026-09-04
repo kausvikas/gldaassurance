@@ -39,6 +39,15 @@ export interface RegisteredSource {
   readonly isFixture: boolean;
   readonly receipts: readonly IngestionReceipt[];
   readonly lastUpdated: Instant | null;
+  /**
+   * A record count the source knows about itself, where ingestion is not how it got here.
+   *
+   * The canonical portfolio has no ingestion receipts — it was generated, not ingested — so counting
+   * receipts reported it as holding nothing, next to a data-context column saying it governs every
+   * figure on every screen. Optional, and used only where the count is a fact about the data rather
+   * than a record of a transfer.
+   */
+  readonly recordCount?: number;
 }
 
 /**
@@ -112,8 +121,19 @@ export class SourceRegistry implements KnowledgePort {
   addReceipt(sourceId: string, receipt: IngestionReceipt): void {
     const source = this.#sources.get(sourceId);
     if (source === undefined) return;
+    /*
+     * A file's status is what its ingestion produced, not what it was before.
+     *
+     * A connector's status is about a connection and is left alone. An upload has no connection: it
+     * has been received and indexed, or it has not, and saying "configured, awaiting a call" about a
+     * parsed workbook is a label that is almost right, which is the worst kind.
+     */
+    const status = source.kind === 'FILE_UPLOAD' || source.kind === 'DOCUMENT'
+      ? 'INGESTED' as const
+      : source.status;
     this.#sources.set(sourceId, {
       ...source,
+      status,
       receipts: [...source.receipts, receipt],
       lastUpdated: receipt.receivedAt,
     });
@@ -196,9 +216,19 @@ export class SourceRegistry implements KnowledgePort {
         displayName: s.displayName,
         kind: s.kind,
         status: s.status,
-        authority: grants[0]?.authority ?? (s.kind === 'DOCUMENT' ? 'EVIDENCE_ONLY' : 'UNVERIFIED'),
+        /*
+         * **A source does not have an authority. A source has authority over concepts.**
+         *
+         * Rendering the first grant's class put the word "authoritative" in a column headed
+         * *Authority* next to a system name — which is precisely the system-level framing ADR-0035
+         * §3 rejects, on the page whose job is to argue against it. A CRM shown as "authoritative"
+         * invites exactly the conclusion that it is authoritative for whatever it stores.
+         *
+         * So the cell states the distribution: what this source is trusted for, and how much of it.
+         */
+        authority: summariseAuthority(grants, s.kind),
         dataContext: s.kind === 'CANONICAL' ? 'CANONICAL' : 'SANDBOX',
-        recordCount: documents.length > 0 ? documents.length : receiptRecords,
+        recordCount: s.recordCount ?? (documents.length > 0 ? documents.length : receiptRecords),
         lastUpdated: s.lastUpdated,
         conflicts: this.conflicts().filter(
           (c) => c.entries.some((e) => e.sourceId === s.sourceId),
@@ -319,10 +349,45 @@ export class SourceRegistry implements KnowledgePort {
     };
   }
 
-  /** The honest meaning of a status, so a surface never has to invent one. */
-  statusMeaning(status: SourceStatus): string {
+  /**
+   * The honest meaning of a status, so a surface never has to invent one.
+   *
+   * The canonical portfolio is not a connector and never answered a health check. Rendering
+   * `REAL_VERIFIED`'s meaning — *"a live endpoint responded"* — against it was a small lie in the
+   * one column whose job is to prevent them, so the source that is not a connection says what it
+   * actually is.
+   */
+  statusMeaning(status: SourceStatus, kind?: RegisteredSource['kind']): string {
+    if (kind === 'CANONICAL') {
+      return 'The generated synthetic portfolio. Not a connection to anything: it is the dataset '
+        + 'every governed figure in this proof of concept is computed from.';
+    }
     return STATUS_MEANING[status];
   }
+}
+
+/**
+ * What a source is trusted for, in one line.
+ *
+ * Counts by class rather than naming a single one, because the useful fact is the shape of the
+ * trust: "authoritative for 4 concepts" says something a reviewer can check, and "authoritative"
+ * says something that is not true of any source in this model.
+ */
+function summariseAuthority(
+  grants: readonly { readonly authority: string }[], kind: RegisteredSource['kind'],
+): string {
+  // The canonical source is not in the connector model and has no per-concept grants, and "none
+  // registered" beside a CANONICAL data context read as *trusted for nothing* — the opposite of the
+  // truth. It governs everything, which is what the data context already says and what this says.
+  if (kind === 'CANONICAL') return 'governs every governed figure';
+  if (grants.length === 0) return kind === 'DOCUMENT' ? 'evidence only' : 'none registered';
+  const counts = new Map<string, number>();
+  for (const g of grants) counts.set(g.authority, (counts.get(g.authority) ?? 0) + 1);
+  const order = ['AUTHORITATIVE', 'GOVERNED_REFERENCE', 'SUPPLEMENTAL', 'EVIDENCE_ONLY', 'UNVERIFIED'];
+  return [...counts]
+    .sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]))
+    .map(([authority, count]) => `${authority.toLowerCase().replace(/_/g, ' ')} for ${String(count)}`)
+    .join(' · ');
 }
 
 /** A document is reachable by a project question only if something associates it with a project. */

@@ -46,6 +46,17 @@ export type SourceDomain =
  */
 export type SourceStatus =
   | 'REAL_VERIFIED'
+  /**
+   * A file that was received, parsed and indexed.
+   *
+   * Added because the vocabulary was designed for connectors and had no state for an upload, so a
+   * successfully ingested workbook was rendered as `CONFIGURED_UNVERIFIED` — whose stated meaning
+   * is *"credentials and an endpoint are configured; no successful call has been made"*, which is
+   * nonsense about a file and is exactly the kind of almost-right label this vocabulary exists to
+   * prevent. It is deliberately **not** `REAL_VERIFIED`: nothing was verified against a system, and
+   * whether the content is trustworthy is the authority column's question, not this one.
+   */
+  | 'INGESTED'
   | 'CONFIGURED_UNVERIFIED'
   | 'ADAPTER_READY'
   | 'FIXTURE'
@@ -57,6 +68,7 @@ export type SourceStatus =
 
 export const STATUS_LABEL: Readonly<Record<SourceStatus, string>> = {
   REAL_VERIFIED: 'Connected and verified',
+  INGESTED: 'Received and indexed',
   CONFIGURED_UNVERIFIED: 'Configured, not yet verified',
   ADAPTER_READY: 'Adapter ready, not configured',
   FIXTURE: 'Synthetic fixture',
@@ -70,6 +82,7 @@ export const STATUS_LABEL: Readonly<Record<SourceStatus, string>> = {
 /** What a status means for the data. Rendered, so a reader never has to infer it from a colour. */
 export const STATUS_MEANING: Readonly<Record<SourceStatus, string>> = {
   REAL_VERIFIED: 'A live endpoint responded to a health check and its schema was read.',
+  INGESTED: 'The file was received, parsed and indexed. What it is trusted for is the authority column.',
   CONFIGURED_UNVERIFIED: 'Credentials and an endpoint are configured; no successful call has been made.',
   ADAPTER_READY: 'The adapter, mapping and tests exist. No endpoint or credential is configured.',
   FIXTURE: 'Synthetic demonstration data shaped like this source. Not a connection to any real system.',

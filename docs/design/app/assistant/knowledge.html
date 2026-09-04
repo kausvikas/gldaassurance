@@ -225,6 +225,7 @@ footer.gl-foot p{max-width:78ch}
   border:1px solid var(--rule-strong);white-space:nowrap}
 .gl-status--REAL_VERIFIED{color:var(--green);background:var(--rag-green-bg);border-color:var(--green-light)}
 .gl-status--FIXTURE{color:var(--steel-75);background:var(--steel-05)}
+.gl-status--INGESTED{color:var(--blue-deep);background:var(--blue-light);border-color:var(--blue-light)}
 .gl-status--NOT_CONFIGURED{color:var(--steel-50);background:transparent}
 .gl-status--MAPPING_REVIEW_REQUIRED{color:var(--orange-deep);background:var(--white);border-color:var(--orange)}
 
@@ -284,14 +285,14 @@ footer.gl-foot p{max-width:78ch}
           <td>connector</td>
           <td><span class="gl-status gl-status--FIXTURE">Synthetic fixture</span></td>
           <td>SANDBOX</td>
-          <td>authoritative</td>
-          <td class="gl-num">0</td>
+          <td>authoritative for 4</td>
+          <td class="gl-num">2</td>
           <td class="gl-num">0</td>
         </tr>
         <tr>
-          <td><b>Atlas-SOW-v3.pdf</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Credentials and an endpoint are configured; no successful call has been made.</div></td>
+          <td><b>Atlas-SOW-v3.pdf</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">The file was received, parsed and indexed. What it is trusted for is the authority column.</div></td>
           <td>document</td>
-          <td><span class="gl-status gl-status--CONFIGURED_UNVERIFIED">Configured · unverified</span></td>
+          <td><span class="gl-status gl-status--INGESTED">INGESTED</span></td>
           <td>SANDBOX</td>
           <td>evidence only</td>
           <td class="gl-num">1</td>
@@ -302,8 +303,8 @@ footer.gl-foot p{max-width:78ch}
           <td>connector</td>
           <td><span class="gl-status gl-status--FIXTURE">Synthetic fixture</span></td>
           <td>SANDBOX</td>
-          <td>authoritative</td>
-          <td class="gl-num">0</td>
+          <td>authoritative for 2 · governed reference for 1</td>
+          <td class="gl-num">2</td>
           <td class="gl-num">0</td>
         </tr>
         <tr>
@@ -311,8 +312,8 @@ footer.gl-foot p{max-width:78ch}
           <td>connector</td>
           <td><span class="gl-status gl-status--FIXTURE">Synthetic fixture</span></td>
           <td>SANDBOX</td>
-          <td>authoritative</td>
-          <td class="gl-num">0</td>
+          <td>authoritative for 3</td>
+          <td class="gl-num">2</td>
           <td class="gl-num">0</td>
         </tr>
         <tr>
@@ -320,8 +321,8 @@ footer.gl-foot p{max-width:78ch}
           <td>connector</td>
           <td><span class="gl-status gl-status--FIXTURE">Synthetic fixture</span></td>
           <td>SANDBOX</td>
-          <td>supplemental</td>
-          <td class="gl-num">0</td>
+          <td>supplemental for 2</td>
+          <td class="gl-num">1</td>
           <td class="gl-num">0</td>
         </tr>
         <tr>
@@ -329,34 +330,34 @@ footer.gl-foot p{max-width:78ch}
           <td>connector</td>
           <td><span class="gl-status gl-status--FIXTURE">Synthetic fixture</span></td>
           <td>SANDBOX</td>
-          <td>authoritative</td>
-          <td class="gl-num">0</td>
+          <td>authoritative for 2 · governed reference for 1</td>
+          <td class="gl-num">3</td>
           <td class="gl-num">0</td>
         </tr>
         <tr>
-          <td><b>Governance-minutes-August.pdf</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Credentials and an endpoint are configured; no successful call has been made.</div></td>
+          <td><b>Governance-minutes-August.pdf</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">The file was received, parsed and indexed. What it is trusted for is the authority column.</div></td>
           <td>document</td>
-          <td><span class="gl-status gl-status--CONFIGURED_UNVERIFIED">Configured · unverified</span></td>
+          <td><span class="gl-status gl-status--INGESTED">INGESTED</span></td>
           <td>SANDBOX</td>
           <td>evidence only</td>
           <td class="gl-num">1</td>
           <td class="gl-num">0</td>
         </tr>
         <tr>
-          <td><b>Project_Financials_bad.xlsx</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Credentials and an endpoint are configured; no successful call has been made.</div></td>
+          <td><b>Project_Financials_bad.xlsx</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">The file was received, parsed and indexed. What it is trusted for is the authority column.</div></td>
           <td>file upload</td>
-          <td><span class="gl-status gl-status--CONFIGURED_UNVERIFIED">Configured · unverified</span></td>
+          <td><span class="gl-status gl-status--INGESTED">INGESTED</span></td>
           <td>SANDBOX</td>
-          <td>unverified</td>
+          <td>none registered</td>
           <td class="gl-num">0</td>
           <td class="gl-num">0</td>
         </tr>
         <tr>
-          <td><b>Project_Financials.xlsx</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">Credentials and an endpoint are configured; no successful call has been made.</div></td>
+          <td><b>Project_Financials.xlsx</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">The file was received, parsed and indexed. What it is trusted for is the authority column.</div></td>
           <td>file upload</td>
-          <td><span class="gl-status gl-status--CONFIGURED_UNVERIFIED">Configured · unverified</span></td>
+          <td><span class="gl-status gl-status--INGESTED">INGESTED</span></td>
           <td>SANDBOX</td>
-          <td>supplemental</td>
+          <td>supplemental for 2</td>
           <td class="gl-num">2</td>
           <td class="gl-num">0</td>
         </tr>
@@ -365,17 +366,17 @@ footer.gl-foot p{max-width:78ch}
           <td>connector</td>
           <td><span class="gl-status gl-status--FIXTURE">Synthetic fixture</span></td>
           <td>SANDBOX</td>
-          <td>authoritative</td>
-          <td class="gl-num">0</td>
+          <td>authoritative for 2 · governed reference for 1</td>
+          <td class="gl-num">2</td>
           <td class="gl-num">0</td>
         </tr>
         <tr>
-          <td><b>Synthetic delivery portfolio</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">A live endpoint responded to a health check and its schema was read.</div></td>
+          <td><b>Synthetic delivery portfolio</b><div class="gl-note" style="font-size:12.5px;margin-top:3px">The generated synthetic portfolio. Not a connection to anything: it is the dataset every governed figure in this proof of concept is computed from.</div></td>
           <td>canonical</td>
           <td><span class="gl-status gl-status--REAL_VERIFIED">Connected · verified</span></td>
           <td>CANONICAL</td>
-          <td>unverified</td>
-          <td class="gl-num">0</td>
+          <td>governs every governed figure</td>
+          <td class="gl-num">91</td>
           <td class="gl-num">0</td>
         </tr></tbody>
       </table></div></div></section>
@@ -392,12 +393,57 @@ footer.gl-foot p{max-width:78ch}
         </tr></thead>
         <tbody>
         <tr>
+          <td><b>ALM (Jira / Azure DevOps)</b><div class="gl-note" style="font-size:12px;margin-top:3px">…</div></td>
+          <td>Ingested and retrievable — no answer has used it yet</td>
+          <td class="gl-num">2</td>
+          <td class="gl-num">2</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
+          <td><span class="gl-note">not yet used</span></td>
+        </tr>
+        <tr>
           <td><b>Atlas-SOW-v3.pdf</b><div class="gl-note" style="font-size:12px;margin-top:3px">cac1ec42b40db58a8b7f730f…</div></td>
           <td>Ingested and retrievable — no answer has used it yet</td>
           <td class="gl-num">3</td>
           <td class="gl-num">3</td>
           <td class="gl-num">0</td>
           <td class="gl-num">3</td>
+          <td><span class="gl-note">not yet used</span></td>
+        </tr>
+        <tr>
+          <td><b>CRM / Commercial</b><div class="gl-note" style="font-size:12px;margin-top:3px">…</div></td>
+          <td>Ingested and retrievable — no answer has used it yet</td>
+          <td class="gl-num">2</td>
+          <td class="gl-num">2</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
+          <td><span class="gl-note">not yet used</span></td>
+        </tr>
+        <tr>
+          <td><b>Delivery Assurance platform</b><div class="gl-note" style="font-size:12px;margin-top:3px">…</div></td>
+          <td>Ingested and retrievable — no answer has used it yet</td>
+          <td class="gl-num">2</td>
+          <td class="gl-num">2</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
+          <td><span class="gl-note">not yet used</span></td>
+        </tr>
+        <tr>
+          <td><b>Enterprise analytics (Tableau)</b><div class="gl-note" style="font-size:12px;margin-top:3px">…</div></td>
+          <td>Ingested and retrievable — no answer has used it yet</td>
+          <td class="gl-num">1</td>
+          <td class="gl-num">1</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
+          <td><span class="gl-note">not yet used</span></td>
+        </tr>
+        <tr>
+          <td><b>Finance / ERP</b><div class="gl-note" style="font-size:12px;margin-top:3px">…</div></td>
+          <td>Ingested and retrievable — no answer has used it yet</td>
+          <td class="gl-num">3</td>
+          <td class="gl-num">3</td>
+          <td class="gl-num">0</td>
+          <td class="gl-num">0</td>
           <td><span class="gl-note">not yet used</span></td>
         </tr>
         <tr>
@@ -424,6 +470,15 @@ footer.gl-foot p{max-width:78ch}
           <td class="gl-num">3</td>
           <td class="gl-num">2</td>
           <td class="gl-num">1</td>
+          <td class="gl-num">0</td>
+          <td><span class="gl-note">not yet used</span></td>
+        </tr>
+        <tr>
+          <td><b>PSA / Resource management</b><div class="gl-note" style="font-size:12px;margin-top:3px">…</div></td>
+          <td>Ingested and retrievable — no answer has used it yet</td>
+          <td class="gl-num">2</td>
+          <td class="gl-num">2</td>
+          <td class="gl-num">0</td>
           <td class="gl-num">0</td>
           <td><span class="gl-note">not yet used</span></td>
         </tr></tbody>
