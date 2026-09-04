@@ -88,7 +88,18 @@ export async function executePlan(
       const result = await port.invoke(tool, argsFor(plan));
       results.push(result);
       invoked.push(tool);
-    } catch {
+    } catch (e) {
+      /*
+       * **Only a governed denial is swallowed. A defect is not.**
+       *
+       * `ToolDenied` is the one outcome that must be indistinguishable — out of scope,
+       * non-existent and not-computable are deliberately one answer (`SECURITY_MODEL.md` §4.5).
+       * Everything else is a bug, and reporting a bug as "there is nothing to show in your
+       * authorised scope" is how a broken tool becomes an invisible one: an arithmetic error inside
+       * a filter was found presenting itself for weeks as an authorisation result. Rethrowing means
+       * the runtime returns a server error and someone finds out.
+       */
+      if (e instanceof Error && e.name !== 'ToolDenied') throw e;
       if (!tolerant) return { claims: [], results: [], population: [], toolsInvoked: invoked, denied: true };
       denied = true;
     }

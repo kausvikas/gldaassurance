@@ -216,7 +216,22 @@ export interface PdfPageSpec {
   readonly lines: readonly string[];
 }
 
-const pdfEscape = (s: string): string => s.replace(/[\\()]/g, (c) => `\\${c}`);
+/**
+ * Prepares a string for a WinAnsi content stream.
+ *
+ * Typographic punctuation is folded to ASCII **before** escaping. The content stream is written as
+ * latin1, so a character above U+00FF is silently truncated to a control byte — an em dash in a
+ * document title came back out of the extractor as 0x14. Folding is the honest fix: the reader
+ * genuinely cannot represent those code points under WinAnsi, so the fixture must not contain them.
+ */
+const pdfEscape = (s: string): string => s
+  .replace(/[\u2010-\u2015]/g, '-')
+  .replace(/[\u2018\u2019]/g, "'")
+  .replace(/[\u201c\u201d]/g, '"')
+  .replace(/\u2026/g, '...')
+  .replace(/\u00a0/g, ' ')
+  .replace(/[^\u0000-\u00ff]/g, '?')
+  .replace(/[\\()]/g, (c) => `\\${c}`);
 
 /**
  * A genuinely structured PDF: catalogue, page tree, per-page Flate-compressed content streams.

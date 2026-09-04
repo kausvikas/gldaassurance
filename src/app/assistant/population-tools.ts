@@ -114,11 +114,20 @@ export function applyFilters(rows: readonly Row[], plan: QueryPlan): readonly Ro
  * produced two populations with one name.
  */
 function exhibitsDriver(r: Row, driver: string): boolean {
+  /*
+   * A percentage-point figure as a decimal string the platform will accept.
+   *
+   * The leading `+` has to go. Surfaces format a positive variance as `+0.1 pp` because a reader
+   * needs the sign, and `qty` rejects `+0.1` by design — scientific notation and JavaScript numbers
+   * are refused, and so is a leading plus. Leaving it in threw a TypeError inside a tool, which the
+   * executor then reported as "nothing in your authorised scope": a programming defect wearing an
+   * authorisation outcome's clothes.
+   */
   const points = (key: string): string | null => {
     const raw = str(r, key);
     if (raw === null) return null;
-    const cleaned = raw.replace(/[^0-9.+-]/g, '');
-    return /^[+-]?\d+(\.\d+)?$/.test(cleaned) ? cleaned : null;
+    const cleaned = raw.replace(/[^0-9.+-]/g, '').replace(/^\+/, '');
+    return /^-?\d+(\.\d+)?$/.test(cleaned) ? cleaned : null;
   };
   switch (driver) {
     case 'margin-erosion': {
@@ -153,11 +162,12 @@ function exhibitsDriver(r: Row, driver: string): boolean {
 function metricValueOf(r: Row, metric: string): string | null {
   const clean = (raw: string | null): string | null => {
     if (raw === null) return null;
-    const compact = raw.replace(/[^0-9.KMB+-]/gi, '');
+    // The minus sign surfaces use is U+2212, not the ASCII hyphen a decimal parser expects.
+    const compact = raw.replace(/\u2212/g, '-').replace(/[^0-9.KMB+-]/gi, '').replace(/^\+/, '');
     const scale = /M$/i.test(compact) ? '1000000' : /K$/i.test(compact) ? '1000'
       : /B$/i.test(compact) ? '1000000000' : '1';
     const digits = compact.replace(/[KMB]/gi, '');
-    if (!/^[+-]?\d+(\.\d+)?$/.test(digits)) return null;
+    if (!/^-?\d+(\.\d+)?$/.test(digits)) return null;
     return scale === '1' ? digits : multiply(digits, scale);
   };
   switch (metric) {

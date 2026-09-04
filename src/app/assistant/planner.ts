@@ -91,7 +91,7 @@ const MUTATION_REQUEST =
  * present.
  */
 const PROBABILITY_REQUEST =
-  /\b(how likely|likelihood|probabilit|what are the odds|chance(?:s)? (?:of|that)|percent(?:age)? (?:risk|chance|likelihood)|will\s+(?:\S+\s+){0,6}?(?:fail|succeed)|predict the|forecast the probability)\b/;
+  /\b(?:how likely|likelihood|probabilit\w*|what are the odds|chance(?:s)? (?:of|that)|percent(?:age)? (?:risk|chance|likelihood)|will\s+(?:\S+\s+){0,6}?(?:fail|succeed)|predict the|odds of)\b/;
 
 /** Attempts to reach the machinery rather than the data. Declined before anything is planned. */
 const SYSTEM_PROBE =
@@ -140,9 +140,9 @@ const SHAPE_PATTERNS: readonly (readonly [PlanShape, RegExp])[] = [
   ['project.confidence', /\b(confiden|how sure|how much do we trust|late detection|would we have caught|reliab)\b/],
   ['project.forwardRisk', /\b(outlook|forward|early warning|trajectory|30-day|60-day|next \d+ days|going to (?:turn|go))\b/],
   ['evidence.lookup', /\b(what evidence|where does .* come from|back this up|show me the source)\b/],
-  ['population.rank', /\b(where (?:do|should) (?:i|we)|intervene|first|priorit|worst|most at risk|worry about|need(?:s)? (?:attention|intervention|leadership)|focus on|this week)\b/],
+  ['population.rank', /\b(?:where (?:do|should) (?:i|we)|intervene|first|priorit\w*|worst|rank|top \d|biggest|largest|greatest|most at risk|worry about|need(?:s)? (?:attention|intervention|leadership)|focus on|this week)\b/],
   ['project.health', /\b(why is|health|\brag\b|status of|explain|red|amber|green)\b/],
-  ['population.list', /\b(which projects|list|show me|how many|what projects|find)\b/],
+  ['population.list', /\b(?:which projects|list|show me|show all|how many|what projects|find|give me)\b/],
 ];
 
 /**
@@ -177,10 +177,21 @@ const POPULATION_COUNTERPART: Readonly<Partial<Record<PlanShape, PlanShape>>> = 
  * "contains no project name" — a question can name no project and still be about one, which is why
  * `"why is it red?"` remains a project question resolved through the conversation's active project.
  */
+/**
+ * The nouns an executive uses for "more than one project".
+ *
+ * `engagement`, `work` and `account` are not synonyms this product invented — they are what people
+ * in a delivery business actually say, and a question using one of them was declining with "name a
+ * project" while the identical question using the word *projects* was answered. That asymmetry is
+ * invisible to whoever wrote the vocabulary and obvious to the first executive who meets it.
+ */
+const POPULATION_NOUN = /\b(projects?|engagements?|programmes?|programs?|accounts?|contracts?|work|deals?)\b/;
+
 function isPopularPluralQuestion(text: string): boolean {
-  return /\b(which|what|list|show|find|how many)\b[^?]{0,60}\bprojects?\b/.test(text)
+  return (/\b(which|what|list|show|find|how many|give me|rank|is anything|anything)\b/.test(text)
+    && POPULATION_NOUN.test(text))
     || /\bprojects\b/.test(text)
-    || /\b(portfolio|across the|anywhere|everywhere|concentrat\w*|which region|which vertical|which account)\b/.test(text);
+    || /\b(portfolio|across the|anywhere|everywhere|concentrat\w*|geographically|which region|which vertical|which account)\b/.test(text);
 }
 
 function isPopulationQuestion(text: string): boolean {
@@ -210,7 +221,21 @@ export function planQuestion(
   const filters = readFilters(text, vocabulary, recognised);
   const isRefinement = REFINEMENT_OPENER.test(text) || BACK_REFERENCE.test(text);
 
-  const shape = readShape(text);
+  /*
+   * A recognised population question with no recognised family is a list, not a decline.
+   *
+   * A question naming a vertical and a governed condition is unmistakably about a set of projects,
+   * and it can still match no family pattern because nobody wrote one for the particular verb the
+   * executive used. Declining that is worse than answering it as a filtered list: the filters were
+   * all understood, the population is exact, and the reader gets what they asked for with the scope
+   * line showing precisely how it was read.
+   *
+   * This is a fallback, not a catch-all: it fires only when the question is already recognised as
+   * being about a population, and the resulting plan still carries only filters the vocabulary
+   * validated.
+   */
+  const shape = readShape(text)
+    ?? (isPopulationQuestion(text) && hasAnyFilter(filters) ? 'population.list' : null);
   const projectId = readProjectId(question, vocabulary);
   if (projectId !== null) recognised.push(`project ${projectId}`);
 
@@ -241,7 +266,19 @@ export function planQuestion(
   }
   recognised.push(`shape ${shape}`);
 
-  const resolvedShape = requiresProject(shape) && projectId === null && isPopulationQuestion(text)
+  /*
+   * Naming a geography or a vertical is naming a set.
+   *
+   * A question can name a geography and a governed condition without containing a plural noun at
+   * all, and still be unambiguously about a population — the region is the population. Requiring the
+   * word "projects" made the product answerable in the phrasing a specification writer uses and
+   * unanswerable in the phrasing an executive uses, which is the wrong way round.
+   */
+  const namesASet = isPopulationQuestion(text)
+    || filters.regions.length > 0 || filters.industries.length > 0
+    || filters.accounts.length > 0 || filters.deliveryGroups.length > 0;
+
+  const resolvedShape = requiresProject(shape) && projectId === null && namesASet
     ? POPULATION_COUNTERPART[shape] ?? shape
     : shape;
 
@@ -338,16 +375,32 @@ function readProjectId(question: string, vocabulary: PlannerVocabulary): string 
   const byId = PROJECT_ID.exec(question)?.[1];
   if (byId !== undefined) return byId.toLowerCase();
   const text = question.toLowerCase();
-  const matches = vocabulary.projects.filter((p) => {
-    const name = p.name.toLowerCase();
-    if (text.includes(name)) return true;
-    // The distinctive leading token of a project name — "Atlas" out of "Atlas Connected Platform R2"
-    // — but only when it is long enough to be a name rather than a word.
-    const head = name.split(' ')[0] ?? '';
+
+  /*
+   * A full-name match wins outright.
+   *
+   * The head heuristic below is what lets *"why is Atlas red?"* work, and it is also what broke the
+   * full name: several projects in this portfolio share a leading client token, so a question naming
+   * one of them completely still matched two candidates and resolved to nothing. Exact containment
+   * is unambiguous by construction and is therefore checked first — and when two names both match
+   * exactly, the longer one is the more specific and wins.
+   */
+  const exact = vocabulary.projects
+    .filter((p) => text.includes(p.name.toLowerCase()))
+    .sort((a, b) => b.name.length - a.name.length);
+  const exactMatch = exact[0];
+  if (exactMatch !== undefined) return exactMatch.id;
+
+  // The distinctive leading token — "Atlas" out of "Atlas Connected Platform R2" — but only when it
+  // is long enough to be a name rather than a word, and only when exactly one project claims it.
+  // Two projects sharing a leading token is an ambiguity, and guessing between them is how a
+  // question about one client's contract gets answered about another's.
+  const byHead = vocabulary.projects.filter((p) => {
+    const head = p.name.toLowerCase().split(' ')[0] ?? '';
     return head.length >= 5 && new RegExp(`\\b${head.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(text);
   });
-  const only = matches[0];
-  return matches.length === 1 && only !== undefined ? only.id : null;
+  const only = byHead[0];
+  return byHead.length === 1 && only !== undefined ? only.id : null;
 }
 
 function readFilters(

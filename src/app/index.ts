@@ -141,3 +141,12 @@ export {
   evaluateExternalTransmission, type LLMProvider, type ProviderHealth, type ProviderMetadata,
   type RoutingDecision, type MaterialInventory, type ExternalAiPolicy,
 } from './llm/index.js';
+
+// --- Phase 13: ingestion and the knowledge registry (ADR-0008, 0035, 0036) --
+export {
+  type MappingSuggestion, type ApprovedMapping, type StructuredIngestionRequest,
+  type StructuredIngestionResult, type DocumentIngestionRequest, type DocumentIngestionResult,
+  type RegisteredSource, type KnowledgeVerification,
+  UnreadableUpload, UnreadableDocument, SourceRegistry,
+  ingestStructured, ingestDocument, suggestMappings,
+} from './ingestion/index.js';

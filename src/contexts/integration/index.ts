@@ -103,6 +103,10 @@ export {
   STATUS_LABEL, STATUS_MEANING, detectDrift,
 } from './internal/connector.js';
 
+export {
+  type FixtureDefinition, FixtureConnector,
+} from './internal/fixture-connector.js';
+
 export const IMPLEMENTATION_STATE: string =
   'IMPLEMENTED (Phase 13, ADR-0008 Accepted 2026-09-03). Connector contract, authority registry, '
   + 'identity hub, staging, quarantine, conflict engine and receipts. Six enterprise adapters ship '
