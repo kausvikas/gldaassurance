@@ -1,17 +1,12 @@
+/**
+ * Test configuration. The aliases come from `vite.config.ts`, which the container also loads, so
+ * a module cannot resolve differently under test than it does in production.
+ */
 import { defineConfig } from 'vitest/config';
-import { fileURLToPath } from 'node:url';
-
-const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
+import { ALIASES } from './vite.config.js';
 
 export default defineConfig({
-  resolve: {
-    alias: {
-      '@platform': r('./src/platform'),
-      '@contexts': r('./src/contexts'),
-      '@presentation': r('./src/presentation'),
-      '@app': r('./src/app/index.ts'),
-    },
-  },
+  resolve: { alias: ALIASES },
   test: {
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     environment: 'node',

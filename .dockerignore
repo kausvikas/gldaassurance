@@ -1,0 +1,10 @@
+.git/
+node_modules/
+dist/
+coverage/
+.firebase/
+docs/design/
+data/synthetic/*.ndjson
+.env
+.env.*
+*.log

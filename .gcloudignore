@@ -1,0 +1,21 @@
+# What Cloud Build does not need, and what must not leave this machine.
+#
+# `.gcloudignore` replaces `.gitignore` for the source upload, so anything excluded has to be named
+# here explicitly — including the ignored paths, which is why they are repeated rather than assumed.
+.git/
+.github/
+node_modules/
+dist/
+coverage/
+.firebase/
+docs/design/
+
+# Generated synthetic records. The portfolio is a pure function of its seed, so the container
+# regenerates them and shipping 37 ndjson files would be shipping a cache.
+data/synthetic/*.ndjson
+
+# Never, under any circumstance.
+.env
+.env.*
+!.env.example
+*.log

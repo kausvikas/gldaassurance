@@ -8,8 +8,8 @@ Three things can be true of this product at once, and it is worth naming them be
 | | Works today | Needs |
 | --- | --- | --- |
 | The five executive surfaces | **Live**, at https://gldaassurance.web.app | nothing |
-| The Assistant answering, and Add Knowledge | **Locally**, in two commands | a running server |
-| The same, on the public URL | not yet | GCP billing, then one deploy |
+| The Assistant answering, and Add Knowledge | **Live**, at the same URL | nothing |
+| The same, locally | two commands | nothing |
 
 ---
 
@@ -62,55 +62,48 @@ defects, all of which quarantine, and the answer they would have changed does no
 
 ---
 
-## 2 · Make the public URL answer live
+## 2 · The cloud deployment, as it stands
 
-**This is the only step that needs you rather than the repository.** Cloud Run requires a
-billing-enabled GCP project, and `gldaassurance` currently has billing off — which is why the
-container is built, tested and not deployed.
+**Deployed 2026-09-04.** The runtime runs on Cloud Run in `europe-west1` as `gldi-runtime`, and
+Firebase Hosting rewrites `/api/**` to it, so the browser makes no cross-origin request at all.
 
-### What you do
+```
+service   gldi-runtime · europe-west1 · 0–3 instances · 1 vCPU · 1 GiB
+config    GLDI_ENV=prod  AI_PROVIDER=none  GLDI_EXTERNAL_AI_ALLOWED=false
+          GLDI_ALLOWED_ORIGINS=https://gldaassurance.web.app
+```
 
-1. **Enable billing** on the `gldaassurance` project (Blaze plan) in the Google Cloud console.
-2. **Decide whether Claude may be called**, and put the key somewhere the runtime can read it —
-   Secret Manager, not the repository.
-
-Costs, so they are not a surprise: Cloud Run bills per request and idles to zero; a demo of this size
-sits inside or near the free tier. Anthropic API calls are billed per token, and one narration is a
-few hundred tokens. The static hosting is unchanged and free.
-
-### What happens then
+`AI_PROVIDER=none` is a decision, not an omission: sending delivery and commercial material to a
+hosted model is a policy decision (ADR-0033), and a deployment nobody has explicitly said yes to has
+said no. Answers come from the governed deterministic composer and every response says so. To turn
+Claude narration on:
 
 ```bash
-gcloud run deploy gldi-runtime \
-  --source . \
-  --region europe-west1 \
-  --allow-unauthenticated \
-  --set-env-vars GLDI_ENV=prod,AI_PROVIDER=claude,GLDI_EXTERNAL_AI_ALLOWED=true,GLDI_ALLOWED_ORIGINS=https://gldaassurance.web.app \
-  --set-secrets ANTHROPIC_API_KEY=anthropic-key:latest
+printf '%s' "$ANTHROPIC_API_KEY" | gcloud secrets create anthropic-key --data-file=- --project gldaassurance
+gcloud run services update gldi-runtime --region europe-west1 --project gldaassurance \
+  --set-secrets ANTHROPIC_API_KEY=anthropic-key:latest \
+  --update-env-vars AI_PROVIDER=claude,GLDI_EXTERNAL_AI_ALLOWED=true
 ```
 
-Then add the rewrite to `firebase.json`, **above** the catch-all — order matters, because the
-existing `**` rule would otherwise swallow `/api`:
+Nothing else changes. The facts are identical either way — only the `Composed by` badge moves.
 
-```json
-"rewrites": [
-  { "source": "/api/**", "run": { "serviceId": "gldi-runtime", "region": "europe-west1" } },
-  { "source": "**", "destination": "/index.html" }
-]
-```
+### Two things this deployment found
 
-and redeploy hosting:
+- **The site's own CSP blocked every fetch.** `default-src 'none'` with no `connect-src` meant the
+  page could never reach a runtime, on any host — the Assistant would have reported "not reachable"
+  even with the server answering beside it, and it did. `connect-src 'self'` is now set, which is
+  same-origin only and no less restrictive than the intent.
+- **The container could not write its own working directory.** `vite` bundles its config to a
+  temporary file beside itself before loading it, and `USER node` did not own `/app`. Cloud Run
+  reported only that the container had not listened on the port.
+
+### Redeploying the runtime
 
 ```bash
-npm run deploy
+gcloud run deploy gldi-runtime --source . --region europe-west1 --project gldaassurance
 ```
 
-That rewrite is worth understanding rather than copying. It puts the API on the **same origin** as
-the site, so the browser sends no cross-origin request at all — CORS stops being involved, and
-`GLDI_ALLOWED_ORIGINS` becomes a second line of defence rather than the only one. No application code
-changes; the page finds its API at `window.location.origin + '/api'` exactly as it already tries to.
-
-### Verifying it worked
+### Verifying it
 
 ```bash
 curl -s https://gldaassurance.web.app/api/health
@@ -118,9 +111,17 @@ npm run server:check     # 29 transport assertions against a live socket
 npm run scan:secrets     # no credential in source, fixtures or built output
 ```
 
-The Assistant page should stop saying *"Trusted runtime not reachable"* and the Add Knowledge drop
-zone should stop being disabled. Nothing else about the answers changes, because the answers were
-never produced in the browser.
+Verified in a browser on the public URL after this deployment: the Assistant answered *"Which
+Automotive projects in Europe have lost more than three margin points?"* with a scope line reading
+`Mobility · Europe · gross-margin erosion at or above 3 points` and three projects; and a real
+workbook uploaded through **Add knowledge** produced a receipt reading 3 detected, 2 accepted, 1
+quarantined, authority `supplemental`, data context `SANDBOX`.
+
+### Costs
+
+Cloud Run bills per request and idles to zero at `min-instances 0`, so a demo of this size sits
+inside or near the free tier. Anthropic calls are per token and are currently **not** being made.
+Static hosting is unchanged and free.
 
 ---
 
