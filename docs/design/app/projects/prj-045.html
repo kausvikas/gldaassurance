@@ -370,10 +370,11 @@ footer.gl-foot p{max-width:78ch}
   cursor:pointer;text-decoration:underline}
 .gl-gate__skip:hover{color:var(--steel-75)}
 
+/* The panel takes the pointer, because the action at its foot has to be clickable. */
 .gl-glimpse{position:absolute;z-index:80;width:290px;padding:16px 18px 14px;background:var(--white);
   border:1px solid var(--rule);border-radius:10px;
   box-shadow:0 1px 2px rgba(24,26,36,.05),0 12px 32px rgba(24,26,36,.14);
-  font-size:13px;line-height:1.45;pointer-events:none}
+  font-size:13px;line-height:1.45}
 .gl-glimpse__t{margin:0 0 12px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--steel-75);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .gl-glimpse__f{margin:0 0 12px;display:flex;flex-direction:column;gap:9px}
@@ -390,8 +391,11 @@ footer.gl-foot p{max-width:78ch}
 .gl-glimpse__p span{color:var(--steel-100);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gl-glimpse__p b{font-variant-numeric:tabular-nums;font-weight:600;flex:0 0 auto}
 .gl-glimpse__m{margin:5px 0 0;font-size:12px;color:var(--steel-50)}
-.gl-glimpse__a{margin:12px 0 0;padding-top:10px;border-top:1px solid var(--rule);
-  font-size:12.5px;font-weight:600;color:var(--orange-deep)}
+.gl-glimpse__a{display:block;width:100%;margin:12px 0 0;padding:10px 0 0;
+  border:0;border-top:1px solid var(--rule);background:none;text-align:left;
+  font:inherit;font-size:12.5px;font-weight:600;color:var(--orange-deep);cursor:pointer}
+.gl-glimpse__a:hover{color:var(--orange)}
+.gl-glimpse__a:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:3px}
 
 /* Restrained affordance: a tonal shift and a cursor, never a button. A health band that looked like
  * a giant button would dominate a page whose whole argument is editorial calm. */

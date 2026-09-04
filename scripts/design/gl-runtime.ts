@@ -279,11 +279,37 @@ export const GL_RUNTIME = `
 
   var glimpse = null;
   var glimpseAnchor = null;
+  var glimpseIds = [];
+  var glimpseTitle = '';
+  var closeTimer = null;
+
+  /*
+   * The panel is reachable, and closing it is deliberately lazy.
+   *
+   * It shipped with pointer-events:none and closed on the band's mouseleave, so the
+   * "Investigate all 22" line at the bottom looked exactly like a control and could not be clicked:
+   * moving toward it left the band and the panel vanished. That is the false interactivity this
+   * primitive exists to remove, reintroduced by the primitive itself.
+   *
+   * So the panel accepts the pointer, and a close is scheduled rather than immediate — the short
+   * delay is what lets a hand cross the gap between the band and the panel without the target
+   * disappearing mid-travel. Entering either one cancels the pending close.
+   */
+  function cancelClose() {
+    if (closeTimer !== null) { window.clearTimeout(closeTimer); closeTimer = null; }
+  }
+
+  function scheduleClose() {
+    cancelClose();
+    closeTimer = window.setTimeout(closeGlimpse, 160);
+  }
 
   function closeGlimpse() {
+    cancelClose();
     if (glimpse && glimpse.parentNode) glimpse.parentNode.removeChild(glimpse);
     glimpse = null;
     glimpseAnchor = null;
+    glimpseIds = [];
   }
 
   /**
@@ -322,12 +348,28 @@ export const GL_RUNTIME = `
       + '<p class="gl-glimpse__l">Largest exposures</p>'
       + '<ul class="gl-glimpse__p">' + rows + '</ul>'
       + (more > 0 ? '<p class="gl-glimpse__m">+' + countOf(more, 'more project') + '</p>' : '')
-      + '<p class="gl-glimpse__a">' + (pop.length === 1 ? 'Open this project' : 'Investigate all ' + pop.length) + ' \u2192</p>';
+      + '<button type="button" class="gl-glimpse__a">'
+      + (pop.length === 1 ? 'Open this project' : 'Investigate all ' + pop.length) + ' \u2192</button>';
 
     document.body.appendChild(el);
     positionGlimpse(el, host);
     glimpse = el;
     glimpseAnchor = host;
+    glimpseIds = ids;
+    glimpseTitle = title;
+
+    // Hovering the panel keeps it; leaving it closes it on the same lazy schedule as the band.
+    el.addEventListener('mouseenter', cancelClose);
+    el.addEventListener('mouseleave', scheduleClose);
+    var action = el.querySelector('.gl-glimpse__a');
+    if (action) {
+      action.addEventListener('click', function () {
+        var chosen = glimpseIds.slice();
+        var label = glimpseTitle;
+        closeGlimpse();
+        investigate(chosen, label);
+      });
+    }
   }
 
   /**
@@ -387,10 +429,10 @@ export const GL_RUNTIME = `
     el.setAttribute('aria-label', title
       + (band && title.indexOf(band) < 0 ? ', ' + band : '') + ', '
       + countOf(ids.length, 'project') + ' — investigate');
-    el.addEventListener('mouseenter', open);
+    el.addEventListener('mouseenter', function () { cancelClose(); open(); });
     el.addEventListener('focus', open);
-    el.addEventListener('mouseleave', closeGlimpse);
-    el.addEventListener('blur', closeGlimpse);
+    el.addEventListener('mouseleave', scheduleClose);
+    el.addEventListener('blur', scheduleClose);
     el.addEventListener('click', function () { investigate(idsFn(), title); });
     el.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); investigate(idsFn(), title); }

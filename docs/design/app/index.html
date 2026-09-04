@@ -370,10 +370,11 @@ footer.gl-foot p{max-width:78ch}
   cursor:pointer;text-decoration:underline}
 .gl-gate__skip:hover{color:var(--steel-75)}
 
+/* The panel takes the pointer, because the action at its foot has to be clickable. */
 .gl-glimpse{position:absolute;z-index:80;width:290px;padding:16px 18px 14px;background:var(--white);
   border:1px solid var(--rule);border-radius:10px;
   box-shadow:0 1px 2px rgba(24,26,36,.05),0 12px 32px rgba(24,26,36,.14);
-  font-size:13px;line-height:1.45;pointer-events:none}
+  font-size:13px;line-height:1.45}
 .gl-glimpse__t{margin:0 0 12px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--steel-75);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .gl-glimpse__f{margin:0 0 12px;display:flex;flex-direction:column;gap:9px}
@@ -390,8 +391,11 @@ footer.gl-foot p{max-width:78ch}
 .gl-glimpse__p span{color:var(--steel-100);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gl-glimpse__p b{font-variant-numeric:tabular-nums;font-weight:600;flex:0 0 auto}
 .gl-glimpse__m{margin:5px 0 0;font-size:12px;color:var(--steel-50)}
-.gl-glimpse__a{margin:12px 0 0;padding-top:10px;border-top:1px solid var(--rule);
-  font-size:12.5px;font-weight:600;color:var(--orange-deep)}
+.gl-glimpse__a{display:block;width:100%;margin:12px 0 0;padding:10px 0 0;
+  border:0;border-top:1px solid var(--rule);background:none;text-align:left;
+  font:inherit;font-size:12.5px;font-weight:600;color:var(--orange-deep);cursor:pointer}
+.gl-glimpse__a:hover{color:var(--orange)}
+.gl-glimpse__a:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:3px}
 
 /* Restrained affordance: a tonal shift and a cursor, never a button. A health band that looked like
  * a giant button would dominate a page whose whole argument is editorial calm. */
@@ -975,11 +979,37 @@ footer.gl-foot p{max-width:78ch}
 
   var glimpse = null;
   var glimpseAnchor = null;
+  var glimpseIds = [];
+  var glimpseTitle = '';
+  var closeTimer = null;
+
+  /*
+   * The panel is reachable, and closing it is deliberately lazy.
+   *
+   * It shipped with pointer-events:none and closed on the band's mouseleave, so the
+   * "Investigate all 22" line at the bottom looked exactly like a control and could not be clicked:
+   * moving toward it left the band and the panel vanished. That is the false interactivity this
+   * primitive exists to remove, reintroduced by the primitive itself.
+   *
+   * So the panel accepts the pointer, and a close is scheduled rather than immediate — the short
+   * delay is what lets a hand cross the gap between the band and the panel without the target
+   * disappearing mid-travel. Entering either one cancels the pending close.
+   */
+  function cancelClose() {
+    if (closeTimer !== null) { window.clearTimeout(closeTimer); closeTimer = null; }
+  }
+
+  function scheduleClose() {
+    cancelClose();
+    closeTimer = window.setTimeout(closeGlimpse, 160);
+  }
 
   function closeGlimpse() {
+    cancelClose();
     if (glimpse && glimpse.parentNode) glimpse.parentNode.removeChild(glimpse);
     glimpse = null;
     glimpseAnchor = null;
+    glimpseIds = [];
   }
 
   /**
@@ -1018,12 +1048,28 @@ footer.gl-foot p{max-width:78ch}
       + '<p class="gl-glimpse__l">Largest exposures</p>'
       + '<ul class="gl-glimpse__p">' + rows + '</ul>'
       + (more > 0 ? '<p class="gl-glimpse__m">+' + countOf(more, 'more project') + '</p>' : '')
-      + '<p class="gl-glimpse__a">' + (pop.length === 1 ? 'Open this project' : 'Investigate all ' + pop.length) + ' →</p>';
+      + '<button type="button" class="gl-glimpse__a">'
+      + (pop.length === 1 ? 'Open this project' : 'Investigate all ' + pop.length) + ' →</button>';
 
     document.body.appendChild(el);
     positionGlimpse(el, host);
     glimpse = el;
     glimpseAnchor = host;
+    glimpseIds = ids;
+    glimpseTitle = title;
+
+    // Hovering the panel keeps it; leaving it closes it on the same lazy schedule as the band.
+    el.addEventListener('mouseenter', cancelClose);
+    el.addEventListener('mouseleave', scheduleClose);
+    var action = el.querySelector('.gl-glimpse__a');
+    if (action) {
+      action.addEventListener('click', function () {
+        var chosen = glimpseIds.slice();
+        var label = glimpseTitle;
+        closeGlimpse();
+        investigate(chosen, label);
+      });
+    }
   }
 
   /**
@@ -1083,10 +1129,10 @@ footer.gl-foot p{max-width:78ch}
     el.setAttribute('aria-label', title
       + (band && title.indexOf(band) < 0 ? ', ' + band : '') + ', '
       + countOf(ids.length, 'project') + ' — investigate');
-    el.addEventListener('mouseenter', open);
+    el.addEventListener('mouseenter', function () { cancelClose(); open(); });
     el.addEventListener('focus', open);
-    el.addEventListener('mouseleave', closeGlimpse);
-    el.addEventListener('blur', closeGlimpse);
+    el.addEventListener('mouseleave', scheduleClose);
+    el.addEventListener('blur', scheduleClose);
     el.addEventListener('click', function () { investigate(idsFn(), title); });
     el.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); investigate(idsFn(), title); }
