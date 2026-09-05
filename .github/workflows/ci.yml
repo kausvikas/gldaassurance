@@ -38,6 +38,30 @@ jobs:
   verify:
     name: Verify
     runs-on: ubuntu-latest
+
+    # DR-012 executes the migration chain against a real PostgreSQL. Locally the script starts its
+    # own disposable container; here the runner provides one as a service, which is faster and does
+    # not depend on Docker-in-Docker behaving.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: verify
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      GLDI_PG_PSQL: '1'
+      GLDI_PG_HOST: 127.0.0.1
+      GLDI_PG_PORT: '5432'
+      GLDI_PG_USER: postgres
+      PGPASSWORD: verify
+
     steps:
       - uses: actions/checkout@v4
 
@@ -72,14 +96,21 @@ jobs:
       - name: Synthetic data validation
         run: npm run data:validate
 
-      # DR-012 — real PostgreSQL execution. Runs locally via a disposable Docker container; in CI it
-      # needs a postgres service, which is why it is not wired into the default `npm run verify`.
+      # DR-012 — real PostgreSQL execution against the service above.
+      #
+      # This step failed every run until now, and the cause is worth recording: the script's own
+      # header documented a direct-`psql` mode for exactly this situation, and the code had never
+      # implemented it — every path went through `docker exec` into a container the script started
+      # itself. So a step that could not pass was wired in with `continue-on-error: false` and took
+      # the whole job down with it. The mode now exists, and the runner supplies the server.
+      #
       # 80 checks: migration chain from empty, As-Sold immutability, privileges, NUMERIC precision,
       # authored constraints, recognised-revenue correction history, schema boundaries, transaction
       # atomicity, declared indexes.
       - name: PostgreSQL verification (DR-012)
-        run: npm run db:verify
-        continue-on-error: false
+        run: |
+          sudo apt-get install -y --no-install-recommends postgresql-client >/dev/null
+          npm run db:verify
 
       # ---------------------------------------------------------------------
       # Phase 13 gates.

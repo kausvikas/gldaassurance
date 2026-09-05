@@ -20,21 +20,58 @@ const DB = process.env['GLDI_PG_DB'] ?? 'gldi_verify';
 const IMAGE = process.env['GLDI_PG_IMAGE'] ?? 'postgres:16-alpine';
 const MIGRATIONS = join(import.meta.dirname, '..', '..', 'migrations');
 
+/**
+ * Direct `psql`, for an instance somebody else is running.
+ *
+ * The header has promised this mode since the file was written and the code never had it: every
+ * path went through `docker exec`. That is why the CI step could not pass — a GitHub runner is
+ * perfectly capable of providing PostgreSQL as a service, and this script could only ever talk to a
+ * container it had started itself. A documented capability with no implementation is the same defect
+ * class as a documented pipeline stage nobody calls.
+ */
+const DIRECT = (process.env['GLDI_PG_PSQL'] ?? '') !== '';
+const HOST = process.env['GLDI_PG_HOST'] ?? '127.0.0.1';
+const PORT = process.env['GLDI_PG_PORT'] ?? '5432';
+const USER = process.env['GLDI_PG_USER'] ?? 'postgres';
+
 // --- transport --------------------------------------------------------------
 function psql(sql, { db = DB, tuplesOnly = true } = {}) {
   // `-q` suppresses command tags (INSERT 0 1, DO, SET), so a multi-statement check returns only the
   // value the final SELECT produced. Without it every assertion has to strip status noise.
-  const args = ['exec', '-i', CONTAINER, 'psql', '-U', 'postgres', '-d', db, '-q', '-v', 'ON_ERROR_STOP=1'];
-  if (tuplesOnly) args.push('-tA');
-  return execFileSync('docker', [...args, '-f', '-'], { input: sql, encoding: 'utf8' });
+  const flags = ['-q', '-v', 'ON_ERROR_STOP=1', ...(tuplesOnly ? ['-tA'] : []), '-f', '-'];
+  if (DIRECT) {
+    return execFileSync(
+      'psql', ['-h', HOST, '-p', PORT, '-U', USER, '-d', db, ...flags],
+      { input: sql, encoding: 'utf8', env: process.env },
+    );
+  }
+  return execFileSync(
+    'docker', ['exec', '-i', CONTAINER, 'psql', '-U', USER, '-d', db, ...flags],
+    { input: sql, encoding: 'utf8' },
+  );
 }
 
 function ensureContainer() {
+  if (DIRECT) {
+    // Somebody else owns the server. Prove it answers before running 80 assertions against it, so a
+    // connection problem reports as a connection problem rather than as eighty failed checks.
+    for (let i = 0; i < 60; i += 1) {
+      try {
+        execFileSync('pg_isready', ['-h', HOST, '-p', PORT, '-U', USER], { stdio: 'ignore' });
+        return;
+      } catch {
+        execSync('sleep 1', { shell: '/bin/sh' });
+      }
+    }
+    console.error(`FATAL: no PostgreSQL answering at ${HOST}:${PORT} after 60s.`);
+    process.exit(2);
+  }
+
   try {
     execSync('docker info', { stdio: 'ignore' });
   } catch {
     console.error('FATAL: no Docker daemon. DR-012 requires a real PostgreSQL runtime.');
-    console.error('Start Docker, or point GLDI_PG_* at another PostgreSQL instance.');
+    console.error('Start Docker, or set GLDI_PG_PSQL=1 and point GLDI_PG_HOST/PORT at an instance.');
     process.exit(2);
   }
   const running = execSync(`docker ps -q -f name=^${CONTAINER}$`, { encoding: 'utf8' }).trim();
