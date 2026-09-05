@@ -265,7 +265,56 @@ footer.gl-foot p{max-width:78ch}
   .gl-nav{gap:20px;padding:12px 18px}.gl-navmeta{font-size:11.5px;gap:10px}}
 @media (max-width:1100px){.gl-split{grid-template-columns:1fr;gap:34px}.gl-flow{grid-template-columns:1fr}
   .gl-flow>div{border-right:0;border-bottom:1px solid var(--rule)}}
-@media (max-width:820px){.gl-navlinks{display:none}.gl-wrap{padding:0 22px}.gl-navwrap{padding:12px 16px 0}}
+/*
+ * Below 1000px the navigation wraps to its own scrollable row. It is not hidden.
+ *
+ * It used to be a display:none on the links with nothing put in its place, which is not a
+ * responsive rule — it is a deletion. On a phone the product had **no navigation at all**: you
+ * landed on the Command Center and there was no way to reach Projects, Forward Risk, Interventions,
+ * the Assistant or Data Sources. Reported from a Galaxy Fold, whose cover screen sits under the old
+ * 820px breakpoint.
+ *
+ * 1000px, not 820: measured, not chosen. Brand + six links + the as-at date and DEMO badge need
+ * about 990px on one row, so between 821 and 1000 the old rule left the nav intact and pushed the
+ * page 91px wider than the viewport instead. A breakpoint has to be where the content stops fitting,
+ * not where a round number falls.
+ *
+ * A scrolling row rather than a hamburger: six short labels fit a swipe, every destination stays
+ * visible rather than hidden behind an icon that has to be discovered, and it needs no menu state,
+ * no focus trap and no new interaction for a reader to learn. The scrollbar is suppressed because
+ * on touch it is chrome nobody needs; the runtime scrolls the active item into view on load, so the
+ * sixth tab is never silently off-screen.
+ */
+@media (max-width:1000px){
+  .gl-navwrap{padding:12px 12px 0}
+  .gl-nav{flex-wrap:wrap;gap:10px 16px;padding:12px 16px}
+  .gl-navmeta{margin-left:auto;font-size:11.5px;gap:8px}
+  .gl-navlinks{display:flex;order:3;width:100%;margin:0;gap:20px;
+    overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;padding:2px 0 4px;scroll-padding-inline:4px}
+  .gl-navlinks::-webkit-scrollbar{display:none}
+  .gl-navlinks li{flex:0 0 auto}
+  .gl-navlinks a{font-size:14px;white-space:nowrap}
+  .gl-wrap{padding:0 22px}
+}
+
+/*
+ * Nothing may exceed the viewport width on a phone.
+ *
+ * The tables already scroll inside their own containers; these are the blocks that were sized for a
+ * laptop and had no narrow case at all.
+ */
+@media (max-width:640px){
+  .gl-figs{grid-template-columns:1fr 1fr}
+  .gl-fig{padding:16px 14px}
+  .gl-fig:nth-child(odd){padding-left:0}
+  .gl-fig:nth-child(even){border-right:0}
+  .gl-fig dd{font-size:24px}
+  .gl-lede{font-size:34px}
+  .gl-lenses{gap:6px}
+  .gl-lenses button{font-size:12.5px;padding:6px 12px}
+  .gl-glimpse{width:min(290px,calc(100vw - 24px))}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 .gl-ask{margin-top:26px;border-top:2px solid var(--steel-100);padding-top:22px}
@@ -1935,6 +1984,24 @@ footer.gl-foot p{max-width:78ch}
     var pl = p.get('poplabel');
     if (pl) state.popLabel = pl;
   }
+
+  /*
+   * On a narrow screen the navigation scrolls, so the active tab must be brought into view.
+   *
+   * Without this, opening Data Sources on a phone shows a row starting at "Command Center" with the
+   * tab you are actually on somewhere off to the right — the page gives no sign of where you are,
+   * which is the one thing a navigation bar exists to do. Guarded on the row actually being
+   * scrollable so it does nothing at all on a laptop.
+   */
+  (function () {
+    var links = document.querySelector('.gl-navlinks');
+    var current = links && links.querySelector('[aria-current="page"]');
+    if (!links || !current) return;
+    if (links.scrollWidth <= links.clientWidth) return;
+    var box = current.getBoundingClientRect();
+    var row = links.getBoundingClientRect();
+    links.scrollLeft += (box.left - row.left) - ((row.width - box.width) / 2);
+  }());
 
   readUrl();
 

@@ -901,6 +901,24 @@ export const GL_RUNTIME = `
     if (pl) state.popLabel = pl;
   }
 
+  /*
+   * On a narrow screen the navigation scrolls, so the active tab must be brought into view.
+   *
+   * Without this, opening Data Sources on a phone shows a row starting at "Command Center" with the
+   * tab you are actually on somewhere off to the right — the page gives no sign of where you are,
+   * which is the one thing a navigation bar exists to do. Guarded on the row actually being
+   * scrollable so it does nothing at all on a laptop.
+   */
+  (function () {
+    var links = document.querySelector('.gl-navlinks');
+    var current = links && links.querySelector('[aria-current="page"]');
+    if (!links || !current) return;
+    if (links.scrollWidth <= links.clientWidth) return;
+    var box = current.getBoundingClientRect();
+    var row = links.getBoundingClientRect();
+    links.scrollLeft += (box.left - row.left) - ((row.width - box.width) / 2);
+  }());
+
   readUrl();
 
   /*
