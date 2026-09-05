@@ -476,23 +476,26 @@ export const GL_RUNTIME = `
       setText(prefix + '-legend-' + keys[m], (weight ? money(vals[m]) : String(vals[m])));
     }
     /*
-     * Only the count bar carries the investigation path.
+     * Both bars carry the investigation path.
      *
-     * Both bars describe the same three populations, so binding both would give an executive two
-     * controls that do the same thing and no reason to prefer either. The count bar is where "which
-     * projects?" is the natural next question; the value bar answers "how much does it weigh?", and
-     * the glimpse on the count bar already states the weight.
+     * Only the count bar did, on the reasoning that the two describe the same three populations and
+     * binding both would give an executive two controls doing the same thing. That was the wrong
+     * trade. The bars are visually identical siblings under one heading, so a reader who hovers the
+     * value bar and gets nothing does not conclude "this one is redundant" — they conclude the
+     * feature is unreliable, and stop trusting the one that does work.
+     *
+     * Consistency across identical-looking objects beats avoiding a redundant path. The glimpse is
+     * the same either way, because the population is the same; what differs is only which figure
+     * prompted the question.
      */
-    if (!weight) {
-      for (var q = 0; q < 3; q++) {
-        (function (idx) {
-          bindAggregate(document.getElementById(prefix + '-' + keys[idx]),
-            'Assessed ' + bands[idx] + ' today', bands[idx], function () {
-              return rows.filter(function (f) { return f.system === bands[idx]; })
-                .map(function (f) { return f.id; });
-            });
-        })(q);
-      }
+    for (var q = 0; q < 3; q++) {
+      (function (idx) {
+        bindAggregate(document.getElementById(prefix + '-' + keys[idx]),
+          'Assessed ' + bands[idx] + ' today', bands[idx], function () {
+            return rows.filter(function (f) { return f.system === bands[idx]; })
+              .map(function (f) { return f.id; });
+          });
+      })(q);
     }
   }
 

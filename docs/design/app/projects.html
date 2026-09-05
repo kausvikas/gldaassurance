@@ -533,9 +533,28 @@ footer.gl-foot p{max-width:78ch}
  * from row to row.
  */
 .gl-moves li[data-move]{display:grid;
-  grid-template-columns:minmax(170px,auto) minmax(84px,auto) minmax(130px,1fr) minmax(130px,1fr);
-  gap:10px 22px;align-items:start}
-.gl-movepair{display:flex;align-items:center;gap:8px;white-space:nowrap}
+  grid-template-columns:minmax(190px,auto) minmax(84px,auto) minmax(130px,1fr) minmax(130px,1fr);
+  gap:10px 22px;align-items:start;
+  /*
+   * No rule under the row. The base .gl-moves style draws one, and against the rounded hover box
+   * these rows now have it read as a stray outline around the first row only — the second row is
+   * :last-child and loses its border, so one row looked boxed and the other did not. The hover
+   * background is the affordance; a divider as well is two devices doing one job.
+   */
+  border-bottom:0}
+
+/*
+ * The transition chips are a fixed three-column grid, not a flex row.
+ *
+ * As flex, each chip sized to its own label, so "AMBER → RED" and "GREEN → AMBER" put the arrow and
+ * the second chip at different x positions — two rows of the same construct that visibly did not
+ * line up. The columns are fixed to the widest label so the arrow lands in the same place on every
+ * row, whatever the bands happen to be.
+ */
+.gl-movepair{display:grid;grid-template-columns:84px 14px 84px;align-items:center;gap:8px;
+  white-space:nowrap}
+.gl-movepair .gl-rag{justify-content:center}
+.gl-movepair .to{text-align:center}
 .gl-movefig{display:flex;flex-direction:column;gap:3px;min-width:0}
 .gl-movefig b{font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--steel-100);
   font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -1179,23 +1198,26 @@ footer.gl-foot p{max-width:78ch}
       setText(prefix + '-legend-' + keys[m], (weight ? money(vals[m]) : String(vals[m])));
     }
     /*
-     * Only the count bar carries the investigation path.
+     * Both bars carry the investigation path.
      *
-     * Both bars describe the same three populations, so binding both would give an executive two
-     * controls that do the same thing and no reason to prefer either. The count bar is where "which
-     * projects?" is the natural next question; the value bar answers "how much does it weigh?", and
-     * the glimpse on the count bar already states the weight.
+     * Only the count bar did, on the reasoning that the two describe the same three populations and
+     * binding both would give an executive two controls doing the same thing. That was the wrong
+     * trade. The bars are visually identical siblings under one heading, so a reader who hovers the
+     * value bar and gets nothing does not conclude "this one is redundant" — they conclude the
+     * feature is unreliable, and stop trusting the one that does work.
+     *
+     * Consistency across identical-looking objects beats avoiding a redundant path. The glimpse is
+     * the same either way, because the population is the same; what differs is only which figure
+     * prompted the question.
      */
-    if (!weight) {
-      for (var q = 0; q < 3; q++) {
-        (function (idx) {
-          bindAggregate(document.getElementById(prefix + '-' + keys[idx]),
-            'Assessed ' + bands[idx] + ' today', bands[idx], function () {
-              return rows.filter(function (f) { return f.system === bands[idx]; })
-                .map(function (f) { return f.id; });
-            });
-        })(q);
-      }
+    for (var q = 0; q < 3; q++) {
+      (function (idx) {
+        bindAggregate(document.getElementById(prefix + '-' + keys[idx]),
+          'Assessed ' + bands[idx] + ' today', bands[idx], function () {
+            return rows.filter(function (f) { return f.system === bands[idx]; })
+              .map(function (f) { return f.id; });
+          });
+      })(q);
     }
   }
 
