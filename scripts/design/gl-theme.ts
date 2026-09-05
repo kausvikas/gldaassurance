@@ -246,7 +246,20 @@ table.gl-t tbody tr:hover .gl-sticky{background:var(--steel-05)}
 /* ---- transitions ---- */
 .gl-flow{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:26px;
   border-top:1px solid var(--rule-strong)}
-.gl-flow>div{padding:22px 24px 22px 0;border-right:1px solid var(--rule)}
+/*
+ * Symmetric gutters, for the same reason the KPI row needed them.
+ *
+ * This was 22px/24px/22px/0 — nothing on the left, 24px on the right, with the divider drawn on the
+ * right edge. So "Movement to 60 days" and "Recovering" sat pressed against the rule immediately to
+ * their left while all the air was on the far side of the rule to their right. Evenly spaced
+ * dividers with unevenly placed content is exactly what reads as a column that does not line up.
+ *
+ * The third instance of this pattern found by eye rather than by a rule. It is only ever wrong where
+ * the divider is *vertical*: a table cell's bottom border with no left padding is correct, because
+ * there is no rule beside the text for it to crowd.
+ */
+.gl-flow>div{padding:22px 24px;border-right:1px solid var(--rule)}
+.gl-flow>div:first-child{padding-left:0}
 .gl-flow>div:last-child{border-right:0}
 .gl-flow h3{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--steel-50);margin-bottom:14px}
 .gl-moves{list-style:none;padding:0;margin:18px 0 0;font-size:14px}
@@ -278,7 +291,9 @@ footer.gl-foot p{max-width:78ch}
 @media (max-width:1240px){.gl-navlinks{gap:18px}.gl-navlinks a{font-size:14px}
   .gl-nav{gap:20px;padding:12px 18px}.gl-navmeta{font-size:11.5px;gap:10px}}
 @media (max-width:1100px){.gl-split{grid-template-columns:1fr;gap:34px}.gl-flow{grid-template-columns:1fr}
-  .gl-flow>div{border-right:0;border-bottom:1px solid var(--rule)}}
+  /* Stacked, the divider is horizontal, so the left inset that kept text off a vertical rule is
+     no longer buying anything and would just indent the column. */
+  .gl-flow>div{border-right:0;border-bottom:1px solid var(--rule);padding-left:0;padding-right:0}}
 /*
  * Below 1000px the navigation wraps to its own scrollable row. It is not hidden.
  *
